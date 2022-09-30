@@ -60,6 +60,7 @@ class Template : public TObject
   const int n_bin_histo_score;
 
   TMVA::Reader* reader;
+  float mva_score;
 
   TCanvas* canvas[2];
   

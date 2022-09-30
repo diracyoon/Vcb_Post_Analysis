@@ -129,25 +129,31 @@ void Template::Draw()
   for(int i=0; i<n_histo_sample; i++)
     {
       cout << vec_histo_sample[i] << endl;
-      int index = Get_Index(vec_histo_sample[i]);
-
+      
       for(int j=0; j<n_histo_type; j++)
 	{
 	  histo_template[i][j]->SetFillColorAlpha(color[j], 0.20);
 	  stack_template[i]->Add(histo_template[i][j]);
 	}
+      
+      int canvas_index;
+      if(vec_histo_sample[i].Contains("TTLJ_")) canvas_index = 0;
+      else canvas_index = 1;
+      
+      int index;
+      if(vec_histo_sample[i]=="TTLJ_ud") index = 1;
+      else if(vec_histo_sample[i]=="TTLJ_us") index = 2;
+      else if(vec_histo_sample[i]=="TTLJ_cd") index = 4;
+      else if(vec_histo_sample[i]=="TTLJ_cs") index = 5;
+      else if(vec_histo_sample[i]=="TTLJ_cb") index = 6;
+      else if(vec_histo_sample[i]=="TTLL") index = 1;
+      else if(vec_histo_sample[i]=="ST") index = 2;
+      else if(vec_histo_sample[i]=="DYJets") index = 3;
+      else if(vec_histo_sample[i]=="WJets") index = 4;
+      else if(vec_histo_sample[i]=="QCD_bEn") index = 5;
 
-     if(vec_histo_sample[i].Contains("TTLJ"))
-       {
-	 canvas[0]->cd(index-4);
-	 stack_template[i]->Draw("BAR");
-       }
-     else 
-       {
-	 canvas[1]->cd(index+1);
-	 stack_template[i]->Draw("BAR");
-       }
-     
+      canvas[canvas_index]->cd(index);
+      stack_template[i]->Draw("BAR");
     }//n_histo_sample
   
   canvas[0]->Print("Canvas_TTLJ."+draw_extension, draw_extension);
@@ -160,11 +166,23 @@ void Template::Draw()
 
 void Template::Fill_Histo(const TString& short_name, const int& index_decay_mode, const int& index_fail_reason)
 {
-  cout << short_name << " " << index_decay_mode << " " << index_fail_reason << endl;
-
   int index = Get_Index(short_name, index_decay_mode);
-  cout << index << endl;
   
+  float weight = 1;
+  weight *= event.weight_lumi;
+  weight *= event.weight_mc;
+  weight *= event.weight_pileup;
+  weight *= event.weight_prefire;
+  weight *= event.weight_top_pt;
+  weight *= event.sf_mu_trig;
+  weight *= event.sf_mu_id;
+  weight *= event.sf_mu_iso;
+  weight *= event.sf_pujet_veto;
+  weight *= event.sf_b_tag;
+  weight *= event.sf_c_tag;
+  
+  histo_template[index][index_fail_reason]->Fill(mva_score, weight);
+
   return;
 }//void Template::Fill_Histo(const TString& short_name, const int& index_decay_mode, const int& index_fail_reason)
 
@@ -227,7 +245,7 @@ void Template::Read_Tree()
 	  event.Swap();
 
 	  int index_fail_reason = -1;
-	  if(i==0) index_fail_reason = 0;//correct
+	  if(event.chk_reco_correct) index_fail_reason = 0;//correct
 	  else
 	    {
 	      if(event.chk_included==true && event.chk_hf_contamination==false) index_fail_reason = 1;
@@ -254,12 +272,11 @@ void Template::Read_Tree()
 	  //no additional c-tagging
 	  if(event.n_cjets!=1) continue;
 
-	  float mva_score = reader->EvaluateMVA("DNN_CPU");
-	  cout << mva_score << endl;
-
+	  mva_score = reader->EvaluateMVA("DNN_CPU");
+	  
 	  Fill_Histo(short_name, event.decay_mode, index_fail_reason);
 
-	  if(10<i) break;
+	  //if(100000<i) break;
 	}//loop over entries 
     }//loop over map_fin
   

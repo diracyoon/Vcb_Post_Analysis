@@ -19,7 +19,7 @@
 
 #include <Const_Def.h>
 #include <Samples.h>
-#include <Data_MC_Comparison_Event.h>
+#include <Result_Event.h>
 
 using namespace std;
 
@@ -28,7 +28,7 @@ class Data_MC_Comparison : public TObject
   //friend class W_Data;
   
  public:
-  Data_MC_Comparison(const TString& a_era="2018", const TString& a_channel="Mu", const TString& a_swap_mode="PDF");
+  Data_MC_Comparison(const TString& a_era="2018", const TString& a_channel="Mu", const TString& a_swap_mode="Permutation_MVA");
   ~Data_MC_Comparison();
 
     typedef struct _Histo_Conf
@@ -58,7 +58,7 @@ class Data_MC_Comparison : public TObject
   map<TString, TTree*> map_tree_mc;
   map<TString, TTree*> map_tree_data;
 
-  Data_MC_Comparison_Event event;
+  Result_Event event;
   
   vector<Histo_Conf> histo_conf;
   int n_histo_conf;

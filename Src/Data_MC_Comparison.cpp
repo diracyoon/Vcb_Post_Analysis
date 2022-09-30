@@ -55,7 +55,7 @@ Data_MC_Comparison::Data_MC_Comparison(const TString& a_era, const TString& a_ch
 		{"Eta_Subleading_jet", 50, -3, 3},
 		{"Met_Pt", 50, 0, 300},
 		{"Met_Phi", 80, -4, 4},
-		{"Best_MVA_Score", 50, 0, 1}};
+		{"Best_MVA_Score", 100, -1, 1}};
   n_histo_conf = histo_conf.size();
   cout << "n_histo_conf = " << n_histo_conf << endl;
 
@@ -125,8 +125,8 @@ void Data_MC_Comparison::Set_Region(const TString& a_region_type)
 bool Data_MC_Comparison::Cut()
 {
   //common cut
-  if(event.pt_had_t_b<25) return true;
-  if(event.pt_lep_t_b<25) return true;
+  //if(event.pt_had_t_b<25) return true;
+  //if(event.pt_lep_t_b<25) return true;
   if(event.bvsc_had_t_b<bvsc_wp_m_2018) return true;
   if(event.bvsc_lep_t_b<bvsc_wp_m_2018) return true;
 
@@ -134,34 +134,37 @@ bool Data_MC_Comparison::Cut()
   if(region_type=="Control0") 
     {
       //permutation MVA
-      if(event.best_mva_score<0.80) return true;
+      //if(event.best_mva_score<0.90) return true;
       
       //only 2 b-jets
       if(event.n_bjets!=2) return true;
       
-      //c-jet on w_u
-      if(event.cvsb_w_u<cvsb_wp_m_2018 || event.cvsl_w_u<cvsl_wp_m_2018) return true;
+      // //c-jet on w_u
+      //if(event.cvsb_w_u<cvsb_wp_m_2018 || event.cvsl_w_u<cvsl_wp_m_2018) return true;
       
       //no more c-jet
-      if(event.n_cjets!=1) return true;
+      //if(event.n_cjets!=1) return true;
     }
   //c-inversion
   else if(region_type=="Control1")
     {
       //permutation MVA
-      if(event.best_mva_score<0.80) return true;
+      if(event.best_mva_score<0.90) return true;
 
-      //b-jet on w_d
-      if(event.bvsc_w_d<bvsc_wp_m_2018) return true;
-
+      //no c-jet on w_u
+      if(cvsb_wp_m_2018<event.cvsb_w_u && cvsl_wp_m_2018<event.cvsl_w_u) return true;
+      
       //only 0 c-jet
       if(event.n_cjets==1) return true;
+      
+      //b-jet on w_d
+      if(event.bvsc_w_d<bvsc_wp_m_2018) return true;
     }
   //permutation mva socre invsersion
   else if(region_type=="Control2")
     {
       //permutation MVA
-      if(0.8<event.best_mva_score) return true;
+      if(0.9<event.best_mva_score) return true;
   
       //b-jet on w_d
       if(event.bvsc_w_d<bvsc_wp_m_2018) return true;
@@ -288,6 +291,19 @@ void Data_MC_Comparison::Fill_Histo_Data()
 
 void Data_MC_Comparison::Fill_Histo_MC(const int& sample_index)
 {
+  event.weight = 1;
+  event.weight *= event.weight_lumi;
+  event.weight *= event.weight_mc;
+  event.weight *= event.weight_pileup;
+  event.weight *= event.weight_prefire;
+  event.weight *= event.weight_top_pt;
+  event.weight *= event.sf_mu_trig;
+  event.weight *= event.sf_mu_id;
+  event.weight *= event.sf_mu_iso;
+  //event.weight *= event.sf_pujet_veto;
+  event.weight *= event.sf_b_tag;
+  event.weight *= event.sf_c_tag;
+  
   histo_mc[0][sample_index]->Fill(event.n_vertex, event.weight);
   histo_mc[1][sample_index]->Fill(event.lepton_pt, event.weight);
   histo_mc[2][sample_index]->Fill(event.lepton_eta, event.weight);

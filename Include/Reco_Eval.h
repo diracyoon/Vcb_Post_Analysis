@@ -27,7 +27,7 @@ class Reco_Eval : public TObject
   //class for evaluation of recostruction and signal study
 
  public:
-  Reco_Eval(const TString& a_era="2018", const TString& a_channel="Mu", const TString& a_swap_mode="Permutation_MVA", const TString& a_draw_extension="png");
+  Reco_Eval(const TString& a_era="2018", const TString& a_channel="Mu", const TString& a_swap_mode="BvsC_Only", const TString& a_draw_extension="png");
   ~Reco_Eval();
 
   void Run();

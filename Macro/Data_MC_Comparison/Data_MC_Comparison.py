@@ -14,11 +14,11 @@ ROOT.gSystem.Load("../../Build/libVcb_Post_Analysis.so")
 
 data_mc_comparison = ROOT.Data_MC_Comparison(args.Era, args.Channel)
 
-#data_mc_comparison.Set_Region("Control0")
-#data_mc_comparison.Run();
+data_mc_comparison.Set_Region("Control0")
+data_mc_comparison.Run();
 
 #data_mc_comparison.Set_Region("Control1")
 #data_mc_comparison.Run();
 
-data_mc_comparison.Set_Region("Control2")
-data_mc_comparison.Run();
+#data_mc_comparison.Set_Region("Control2")
+#data_mc_comparison.Run();
