@@ -35,7 +35,7 @@ Template::Template(const TString& a_era, const TString& a_channel, const TString
       map_fin_mc[it->first] = new TFile(path_base+it->second);
       map_tree_mc[it->first] = (TTree*)map_fin_mc[it->first]->Get("Result_Tree");
 
-      event.Setup_Tree(map_tree_mc[it->first]);
+      event.Setup_Tree(map_tree_mc[it->first], true);
     }
   
   for(auto it=samples.map_short_name_mc.begin(); it!=samples.map_short_name_mc.end(); it++)
@@ -178,8 +178,8 @@ void Template::Fill_Histo(const TString& short_name, const int& index_decay_mode
   weight *= event.sf_mu_id;
   weight *= event.sf_mu_iso;
   weight *= event.sf_pujet_veto;
-  weight *= event.sf_b_tag;
-  weight *= event.sf_c_tag;
+  weight *= event.weight_b_tag;
+  weight *= event.weight_c_tag;
   
   histo_template[index][index_fail_reason]->Fill(mva_score, weight);
 

@@ -11,28 +11,77 @@ class Data_MC_Comparison;
 
 class Result_Event : public W_Event
 {
-  friend class Data_MC_Comparison;
   friend class Template;
+  friend class Histo_Syst;
 
  public:
   Result_Event(const TString& a_era, const TString& a_channel, const TString& a_swap_mode);
   virtual ~Result_Event();
 
-  void Setup_Tree(TTree* tree);
+  void Setup_Tree(TTree* tree, const bool& chk_syst);
   
- protected:
-  float sf_b_tag;
-  float sf_c_tag;
+ protected:  
   float sf_mu_id;
+  float sf_mu_id_down;
+  float sf_mu_id_up;
+
   float sf_mu_iso;
+  float sf_mu_iso_down;
+  float sf_mu_iso_up;
+  
   float sf_mu_trig;
+  float sf_mu_trig_down;
+  float sf_mu_trig_up;
+  
   float sf_pujet_veto;
+  
   float weight;
+  
+  float weight_b_tag;
+  float weight_b_tag_hf_down;
+  float weight_b_tag_hf_up;
+  float weight_b_tag_jes_down;
+  float weight_b_tag_jes_up;
+  float weight_b_tag_lfstats1_down;
+  float weight_b_tag_lfstats1_up;
+  float weight_b_tag_lfstats2_down;
+  float weight_b_tag_lfstats2_up;
+  float weight_b_tag_cferr1_down;
+  float weight_b_tag_cferr1_up;
+  float weight_b_tag_cferr2_down;
+  float weight_b_tag_cferr2_up;
+  float weight_b_tag_hfstats1_down;
+  float weight_b_tag_hfstats1_up;
+  float weight_b_tag_hfstats2_down;
+  float weight_b_tag_hfstats2_up;
+  
+  float weight_c_tag;
   float weight_lumi;
   float weight_mc;
+
+  float weight_pdf_alternative;
+  float weight_pdf_error_set[100];
+  float weight_pdf_as_down;
+  float weight_pdf_as_up;
+
   float weight_pileup;
+  float weight_pileup_down;
+  float weight_pileup_up;
+ 
   float weight_prefire;
-  float weight_scale_variation;
+  float weight_prefire_down;
+  float weight_prefire_up;
+  
+  float weight_pujet_veto;
+  float weight_pujet_veto_down;
+  float weight_pujet_veto_up;
+
+  float weight_scale_variation_1;
+  float weight_scale_variation_2;
+  float weight_scale_variation_3;
+  float weight_scale_variation_4;
+  float weight_scale_variation_6;
+  float weight_scale_variation_8;
   float weight_top_pt;
   int n_vertex;
   float lepton_pt;

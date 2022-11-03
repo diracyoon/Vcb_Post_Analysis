@@ -10,7 +10,9 @@ if args.Era=="2016a": args.Era="2016preVFP"
 if args.Era=="2016b": args.Era="2016postVFP"
 
 import ROOT
-ROOT.gSystem.Load("../../Build/libVcb_Post_Analysis.so")
+import os
+path=os.environ['Vcb_Post_Analysis_WD']
+ROOT.gSystem.Load(f"{path}/Build/libVcb_Post_Analysis.so")
 
 histo_syst = ROOT.Histo_Syst(args.Era, args.Channel)
 histo_syst.Run()

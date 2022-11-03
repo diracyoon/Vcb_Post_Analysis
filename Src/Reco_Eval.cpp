@@ -31,6 +31,8 @@ Reco_Eval::Reco_Eval(const TString& a_era, const TString& a_channel, const TStri
   for(auto it=samples.map_mc.begin(); it!=samples.map_mc.end(); it++)
     {
       cout << it->first << endl;
+      if(it->first!="TTLJ_WtoCB_powheg" && it->first!="TTLJ_powheg") continue;
+      
       map_fin[it->first] = new TFile(path_base+it->second);
     
       map_tree_correct[it->first] = (TTree*)map_fin[it->first]->Get("Reco_Eval_Tree_Correct");
@@ -177,10 +179,10 @@ void Reco_Eval::Run()
   Calculate_Significance();
   Calculate_Prob();
   Draw_Raw();
-  Draw_Sample_By_Sample();
-  Draw_Significance();
-  Draw_Swap();
-  Draw_DV();
+  // Draw_Sample_By_Sample();
+  // Draw_Significance();
+  // Draw_Swap();
+  // Draw_DV();
 }//void Reco_Eval::Run()
 
 //////////
@@ -309,13 +311,18 @@ void Reco_Eval::Draw_Raw()
       canvas_mva[i]->Draw();
     }
   
+  float ttlj_correct = 0;
+  float ttlj_wrong = 0;
+  float ttlj_cb_correct = 0;
+  float ttlj_cb_wrong = 0;
+  
   THStack* stack_mva_pre[n_histo_sample];
   THStack* stack_mva[n_histo_sample];
   for(unsigned int i=0; i<n_histo_sample; i++)
     {
       TString name = vec_histo_sample[i];
-      stack_mva_pre[i] = new THStack(name, name);
       
+      stack_mva_pre[i] = new THStack(name, name);
       stack_mva[i] = new THStack(name, name);
 
       for(int j=0; j<5; j++)
@@ -325,6 +332,19 @@ void Reco_Eval::Draw_Raw()
 
 	  histo_mva[i][j]->SetFillColorAlpha(color[j], 0.2);
           stack_mva[i]->Add(histo_mva[i][j]);
+
+	  //cout << histo_mva[i][j]->Integral() << endl;
+	  if(name.Contains("TTLJ") && !name.Contains("cb"))
+	    {
+	      if(j==0) ttlj_correct += histo_mva[i][j]->Integral();
+	      else if(j==1 || j==3) ttlj_wrong += histo_mva[i][j]->Integral(); 
+	    }
+	  else if(name=="TTLJ_cb")
+	    {
+	      if(j==0) ttlj_cb_correct += histo_mva[i][j]->Integral();
+              else if(j==1 || j==3) ttlj_cb_wrong += histo_mva[i][j]->Integral();
+	    }
+	    
 	}
       
       if(i<5)
@@ -358,6 +378,9 @@ void Reco_Eval::Draw_Raw()
       name =  "Permutation_MVA_" + to_string(i) + "." + draw_extension;
       canvas_mva[i]->Print(name, draw_extension);
     }
+
+
+  cout << ttlj_correct << " " << ttlj_wrong << " " << ttlj_cb_correct << " " << ttlj_cb_wrong << endl;
 
   return;
 }//void Reco_Eval::Draw_Raw

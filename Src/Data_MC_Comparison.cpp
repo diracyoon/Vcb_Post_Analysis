@@ -4,374 +4,514 @@ ClassImp(Data_MC_Comparison);
 
 //////////
 
-Data_MC_Comparison::Data_MC_Comparison(const TString& a_era, const TString& a_channel, const TString& a_swap_mode) : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode)
+Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_channel, const TString &a_extension)
 {
   cout << "[Data_MC_Comparison::Data_MC_Comparison]: Init analysis" << endl;
 
   era = a_era;
   channel = a_channel;
+  extension = a_extension;
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
-  path_base += "/Sample/" + era + "/" + channel + "/RunResult/";
-  
-  if(samples.map_mc.size()!=samples.map_short_name_mc.size() || samples.map_data.size()!=samples.map_short_name_data.size())
-    {
-      cout << "size of samples::maps is not matched. Check it first." << endl;
-      exit(EXIT_FAILURE);
-    }
-  
-  for(auto it=samples.map_mc.begin(); it!=samples.map_mc.end(); it++) 
-    {
-      cout << it->first << endl;
-      
-      map_fin_mc[it->first] = new TFile(path_base+it->second);
-      map_tree_mc[it->first] = (TTree*)map_fin_mc[it->first]->Get("Result_Tree");
 
-      event.Setup_Tree(map_tree_mc[it->first]);
-    }
-  
-  path_base += "DATA/";
-  for(auto it=samples.map_data.begin(); it!=samples.map_data.end(); it++)
-    {
-      cout << it->first << endl;
-      if(it==samples.map_data.begin()) data_short_name = samples.map_short_name_data[it->first];
-      
-      map_fin_data[it->first] = new TFile(path_base+it->second);
-      map_tree_data[it->first] = (TTree*)map_fin_data[it->first]->Get("Result_Tree");
+  TString fin_name = path_base + "/Macro/Data_MC_Comparison/Vcb_Histos_" + era + "_" + channel + ".root";
 
-      event.Setup_Tree(map_tree_data[it->first]);
-    }
-  
-  //setup histos
-  histo_conf = {{"N_Vertex", 80, 0, 80},
-                {"Lepton_Pt", 50, 0, 300},
-		{"Lepton_Eta", 50, -3, 3},
-		{"N_Jets", 30, 0, 30},
-		{"N_BJets", 30, 0, 30},
-		{"N_CJets", 30, 0, 30},
-		{"Pt_Leading_Jet", 50, 0, 300},
-		{"Pt_Subleading_Jet", 50, 0, 300},
-		{"Eta_Leading_Jet", 50, -3, 3},
-		{"Eta_Subleading_jet", 50, -3, 3},
-		{"Met_Pt", 50, 0, 300},
-		{"Met_Phi", 80, -4, 4},
-		{"Best_MVA_Score", 100, -1, 1}};
-  n_histo_conf = histo_conf.size();
-  cout << "n_histo_conf = " << n_histo_conf << endl;
+  fin = new TFile(fin_name);
+  if (fin == NULL)
+  {
+    cerr << "Can not find " << fin_name << ". Abort the process." << endl;
+    exit(1);
+  }
 
-  for(auto it=samples.map_short_name_mc.begin(); it!=samples.map_short_name_mc.end(); it++)
-    {
-      cout << it->second << endl;
-      vec_short_name_mc.push_back(it->second);
-    }
-  vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
-  n_sample_merge_mc = vec_short_name_mc.size();
-  cout << "n_sample_merge_mc = " <<  n_sample_merge_mc << endl;
-  
-  histo_mc = new TH1D**[n_histo_conf];
-  for(int i=0; i<n_histo_conf; i++)
-    {
-      histo_mc[i] = new TH1D*[n_sample_merge_mc];
-      for(int j=0; j<n_sample_merge_mc; j++)
-	{
-	  TString histo_title = histo_conf[i].variable_title + "_" + vec_short_name_mc[j];
-	  cout << histo_title << endl;
-	  histo_mc[i][j] = new TH1D(histo_title, histo_title, histo_conf[i].n_bin, histo_conf[i].x_low, histo_conf[i].x_up);
-	}//loop over n_sample_merge_mc
-    }//n_histo_conf 
+  // get region_name
+  TList *list_region = fin->GetListOfKeys();
+  Setup_Name(list_region, region_name);
+  n_region = region_name.size();
 
-  histo_data = new TH1D*[n_histo_conf];
-  for(int i=0; i<n_histo_conf; i++)
+  // get syst_name
+  TList *list_syst = ((TDirectory *)fin->Get(region_name[0]))->GetListOfKeys();
+  n_pdf_error_set = Setup_Name(list_syst, syst_name, true);
+  syst_name.erase(find(syst_name.begin(), syst_name.end(), "Data"));
+  // syst_name.push_back("Nominal");
+  // syst_name.push_back("Pileup_Down");
+  // syst_name.push_back("Pileup_Up");
+  // n_pdf_error_set = 100;
+  n_syst = syst_name.size();
+  // n_pdf_error_set = 0;
+  cout << "n_pdf_error_set = " << n_pdf_error_set << endl;
+  cout << "n_syst = " << n_syst << endl;
+
+  // get sample_name
+  TList *list_sample = ((TDirectory *)fin->Get(region_name[0] + "/" + syst_name[0]))->GetListOfKeys();
+  Setup_Name(list_sample, sample_name);
+  n_sample = sample_name.size();
+
+  // get variable_name
+  TList *list_variable = ((TDirectory *)fin->Get(region_name[0] + "/" + syst_name[0] + "/" + sample_name[0]))->GetListOfKeys();
+  Setup_Name(list_variable, variable_name);
+  n_variable = variable_name.size();
+
+  // setup histo_mc
+  histo_mc = new TH1D ****[n_region];
+  histo_pdf_error_set = new TH1D ****[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_mc[i] = new TH1D ***[n_syst];
+    for (int j = 0; j < n_syst; j++)
     {
-      TString histo_title = histo_conf[i].variable_title + "_" + data_short_name;
-      cout << histo_title << endl;
-      histo_data[i] = new TH1D(histo_title, histo_title, histo_conf[i].n_bin, histo_conf[i].x_low, histo_conf[i].x_up);
-    }
-}//Data_MC_Comparison::Data_MC_Comparison(const TString& a_era, const TString& a_channel))
+      histo_mc[i][j] = new TH1D **[n_sample];
+      for (int k = 0; k < n_sample; k++)
+      {
+        histo_mc[i][j][k] = new TH1D *[n_variable];
+        for (int l = 0; l < n_variable; l++)
+        {
+          TString histo_name = region_name[i] + "/" + syst_name[j] + "/" + sample_name[k] + "/" + variable_name[l];
+          // cout << histo_name << endl;
+          histo_mc[i][j][k][l] = (TH1D *)fin->Get(histo_name);
+        } // loop over n_variable
+      }   // loop over sample
+    }     // loop over n_syst
+
+    // histograms for PDF_Error_Set
+    // For easy handle, let's separate histograms for PDF_Error_Set
+    histo_pdf_error_set[i] = new TH1D ***[n_pdf_error_set];
+    for (int j = 0; j < n_pdf_error_set; j++)
+    {
+      histo_pdf_error_set[i][j] = new TH1D **[n_sample];
+      for (int k = 0; k < n_sample; k++)
+      {
+        histo_pdf_error_set[i][j][k] = new TH1D *[n_variable];
+        for (int l = 0; l < n_variable; l++)
+        {
+          TString histo_name = region_name[i] + "/PDF_Error_Set_" + to_string(j) + "/" + sample_name[k] + "/" + variable_name[l];
+          // cout << histo_name << endl;
+          histo_pdf_error_set[i][j][k][l] = (TH1D *)fin->Get(histo_name);
+        }
+      }
+    } // loop over n_pdf_error_set
+  }   // loop over n_region
+
+  // setup histo_data
+  histo_data = new TH1D **[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_data[i] = new TH1D *[n_variable];
+    for (int j = 0; j < n_variable; j++)
+    {
+      TString histo_name = region_name[i] + "/Data/" + variable_name[j];
+      // cout << histo_name << endl;
+      histo_data[i][j] = (TH1D *)fin->Get(histo_name);
+
+      if (i == 0)
+      {
+        Histo_Conf conf;
+        conf.variable_title = histo_data[i][j]->GetName();
+        conf.n_bin = histo_data[i][j]->GetNbinsX();
+        conf.x_low = histo_data[i][j]->GetBinLowEdge(1);
+        conf.x_up = histo_data[i][j]->GetBinLowEdge(conf.n_bin) + histo_data[i][j]->GetBinWidth(conf.n_bin);
+        // cout << conf.variable_title << " " << conf.n_bin << " " << conf.x_low << " " << conf.x_up << endl;
+
+        variable_conf.push_back(conf);
+      } // if
+    }   // n_variable
+  }     // n_region
+
+  Run();
+} // Data_MC_Comparison::Data_MC_Comparison(const TString& a_era, const TString& a_channel))
 
 //////////
 
 Data_MC_Comparison::~Data_MC_Comparison()
 {
-}//Data_MC_Comparison::~Data_MC_Comparison()
+} // Data_MC_Comparison::~Data_MC_Comparison()
 
 //////////
 
 void Data_MC_Comparison::Run()
 {
-  Read_Tree();
+  cout << "Stack_MC" << endl;
+  Stack_MC();
+  cout << "Envelope" << endl;
+  Envelope();
+  Compare();
   Draw();
-}//void Data_MC_Comparison::Run()
+  Save();
 
-//////////
-
-void Data_MC_Comparison::Set_Region(const TString& a_region_type)
-{
-  cout << "DataMC_Comparison::Set_Region" << endl;
-  
-  region_type = a_region_type;
-  
-  if(region_type!="Control0" && region_type!="Control1" && region_type!="Control2")
-    {
-      cout << "[Data_MC_Comparison::Set_Region] unknown region_type = " << region_type << ". Check it." << endl;   
-      exit(EXIT_FAILURE);
-    }
-  
   return;
-}//void Data_MC_Comparision::Set_Region()
+} // void Data_MC_Comparison::Run()
 
 //////////
 
-bool Data_MC_Comparison::Cut()
+void Data_MC_Comparison::Compare()
 {
-  //common cut
-  //if(event.pt_had_t_b<25) return true;
-  //if(event.pt_lep_t_b<25) return true;
-  if(event.bvsc_had_t_b<bvsc_wp_m_2018) return true;
-  if(event.bvsc_lep_t_b<bvsc_wp_m_2018) return true;
-
-  //b-inversion
-  if(region_type=="Control0") 
+  histo_ratio = new TH1D **[n_region];
+  gr_ratio = new TGraphAsymmErrors **[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_ratio[i] = new TH1D *[n_variable];
+    gr_ratio[i] = new TGraphAsymmErrors *[n_variable];
+    for (int j = 0; j < n_variable; j++)
     {
-      //permutation MVA
-      //if(event.best_mva_score<0.90) return true;
-      
-      //only 2 b-jets
-      if(event.n_bjets!=2) return true;
-      
-      // //c-jet on w_u
-      //if(event.cvsb_w_u<cvsb_wp_m_2018 || event.cvsl_w_u<cvsl_wp_m_2018) return true;
-      
-      //no more c-jet
-      //if(event.n_cjets!=1) return true;
-    }
-  //c-inversion
-  else if(region_type=="Control1")
-    {
-      //permutation MVA
-      if(event.best_mva_score<0.90) return true;
+      TString histo_name = "Ratio_" + region_name[i] + "_" + variable_name[j];
+      histo_ratio[i][j] = new TH1D(histo_name, histo_name, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up);
+      histo_ratio[i][j]->Divide(histo_data[i][j], (TH1D *)(stack_mc[i][0][j]->GetStack()->Last()));
 
-      //no c-jet on w_u
-      if(cvsb_wp_m_2018<event.cvsb_w_u && cvsl_wp_m_2018<event.cvsl_w_u) return true;
-      
-      //only 0 c-jet
-      if(event.n_cjets==1) return true;
-      
-      //b-jet on w_d
-      if(event.bvsc_w_d<bvsc_wp_m_2018) return true;
-    }
-  //permutation mva socre invsersion
-  else if(region_type=="Control2")
-    {
-      //permutation MVA
-      if(0.9<event.best_mva_score) return true;
-  
-      //b-jet on w_d
-      if(event.bvsc_w_d<bvsc_wp_m_2018) return true;
+      gr_ratio[i][j] = new TGraphAsymmErrors();
+      for (int k = 0; k < variable_conf[j].n_bin; k++)
+      {
+        float x = gr_variation_merged[i][j]->GetPointX(k);
+        float y = gr_variation_merged[i][j]->GetPointY(k);
 
-      //c-jet on w_u
-      if(event.cvsb_w_u<cvsb_wp_m_2018 || event.cvsl_w_u<cvsl_wp_m_2018) return true;
+        float error_h = 0;
+        float error_l = 0;
+        if (y != 0)
+        {
+          error_h = gr_variation_merged[i][j]->GetErrorYhigh(k) / y;
+          error_l = gr_variation_merged[i][j]->GetErrorYlow(k) / y;
+        }
 
-      //no more c-jet
-      if(event.n_cjets!=1) return true;
-    }
-  
-  
-  return false;
-}//bool Data_MC_Comparison::Cut()
+        gr_ratio[i][j]->SetPoint(k, x, 1);
+        gr_ratio[i][j]->SetPointError(k, 0, 0, error_l, error_h);
+        // gr_ratio[i][j]->SetPointError(k, 0, 0, 1, 1);
+      } // loop over n_bin
+    }   // loop over n_variable
+  }     // loop over n_region
+
+  return;
+} // void Data_MC_Comparison::Compare()
 
 //////////
 
 void Data_MC_Comparison::Draw()
 {
-  cout << "Data_MC_Comparison::Draw" << endl;
-  
-  TLegend* tl[n_histo_conf];
-  THStack* stack[n_histo_conf];
-  for(int i=0; i<n_histo_conf; i++)
-    {
-      tl[i] = new TLegend(0.1, 0.6, 0.4, 0.9);
-      
-      TString stack_name = region_type + "_" + histo_conf[i].variable_title;
-      cout << stack_name << endl;
-      
-      stack[i] = new THStack(stack_name, stack_name);
-      
-      for(int j=0; j<n_sample_merge_mc; j++)
-	{
-	  histo_mc[i][j]->SetFillColorAlpha(j+2, 0.10);
-	  tl[i]->AddEntry(histo_mc[i][j], vec_short_name_mc[j], "f");
-	  stack[i]->Add(histo_mc[i][j]);
-	}
-    }
-  
-  histo_ratio = new TH1D*[n_histo_conf];
-  for(int i=0; i<n_histo_conf; i++)
-    {
-      TString histo_title = histo_conf[i].variable_title + "_Ratio";
-      cout << histo_title << endl;
-      histo_ratio[i] = new TH1D(histo_title, histo_title, histo_conf[i].n_bin, histo_conf[i].x_low, histo_conf[i].x_up);
-      
-      histo_ratio[i]->Divide(histo_data[i], (TH1D*)stack[i]->GetStack()->Last());
-    }
-  
-  TCanvas* canvas[n_histo_conf];
-  TPad* pad[n_histo_conf][2];
-  for(int i=0; i<n_histo_conf; i++)
-    {
-      TString name = region_type + "_" + histo_conf[i].variable_title;
-      canvas[i] = new TCanvas(name, name, 1200, 800);
-      canvas[i]->Draw();
-      
-      pad[i][0] = new TPad(name, name, 0, 0.4, 1, 1);
-      canvas[i]->cd();
-      pad[i][0]->Draw();
-      pad[i][0]->cd();
+  canvas = new TCanvas **[n_region];
+  pad = new TPad ***[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    canvas[i] = new TCanvas *[n_variable];
+    pad[i] = new TPad **[n_variable];
 
-      float maximum = histo_data[i]->GetMaximum();
-      histo_data[i]->SetMarkerStyle(21);
-      histo_data[i]->GetYaxis()->SetRangeUser(0, 2*maximum);
-      histo_data[i]->Draw("EP");
-
-      stack[i]->Draw("SAME BAR");
-      
-      histo_data[i]->Draw("EP SAME");
-      
-      tl[i]->AddEntry(histo_data[i], data_short_name, "lep");
-      tl[i]->Draw();
-
-      TString pad_name = name + "_Ratio";
-      pad[i][1] = new TPad(pad_name, pad_name, 0, 0, 1, 0.4);
-      canvas[i]->cd();
-      pad[i][1]->Draw();
-      pad[i][1]->cd();
-      histo_ratio[i]->GetYaxis()->SetRangeUser(0.5, 1.5);
-      histo_ratio[i]->Draw();
-      
-      canvas[i]->Modified();
-    }
-
-  TString fout_name = region_type + ".root";
-  TFile* fout = new TFile(fout_name, "RECREATE");
-  for(int i=0; i<n_histo_conf; i++)
+    for (int j = 0; j < n_variable; j++)
     {
-      TString name = region_type + "_" + histo_conf[i].variable_title + ".png";
-      canvas[i]->Print(name, "png");
-      
-      fout->cd();
-      canvas[i]->Write();
-    }
+      TString canvas_name = region_name[i] + "_" + variable_name[j];
+      // cout << canvas_name << endl;
+
+      canvas[i][j] = new TCanvas(canvas_name, canvas_name, 800, 500);
+      canvas[i][j]->Draw();
+
+      pad[i][j] = new TPad *[2];
+
+      TString pad_name = region_name[i] + "_" + variable_name[j] + "_";
+
+      pad[i][j][0] = new TPad(pad_name + "Comp", pad_name + "Comp", 0, 0.4, 1, 1);
+      canvas[i][j]->cd();
+      pad[i][j][0]->Draw();
+
+      pad[i][j][0]->cd();
+
+      stack_mc[i][0][j]->Draw("BAR");
+      float max = stack_mc[i][0][j]->GetMaximum();
+      stack_mc[i][0][j]->SetMaximum(2 * max);
+
+      gr_variation_merged[i][j]->SetFillColor(1);
+      gr_variation_merged[i][j]->SetFillStyle(3001);
+      gr_variation_merged[i][j]->Draw("SAME3");
+
+      histo_data[i][j]->Sumw2();
+      histo_data[i][j]->SetMarkerStyle(8);
+      // histo_data[i][j]->SetMarkerSize(8);
+      histo_data[i][j]->Draw("SAME");
+      // histo_data[i][j]->Draw("");
+
+      pad[i][j][1] = new TPad(pad_name + "Ratio", pad_name + "Ratio", 0, 0, 1, 0.4);
+      canvas[i][j]->cd();
+      pad[i][j][1]->Draw();
+      pad[i][j][1]->cd();
+      histo_ratio[i][j]->Draw();
+      histo_ratio[i][j]->GetYaxis()->SetRangeUser(0, 2);
+
+      gr_ratio[i][j]->SetFillColor(1);
+      gr_ratio[i][j]->SetFillStyle(3001);
+      gr_ratio[i][j]->Draw("SAME3");
+
+    } // loop over n_variable
+  }   // loop over_n_region
+
+  return;
+} // void Data_MC_Comparison::Draw()
+
+//////////
+
+void Data_MC_Comparison::Envelope()
+{
+  // allocation
+  gr_variation = new TGraphAsymmErrors ***[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    gr_variation[i] = new TGraphAsymmErrors **[n_syst];
+    for (int j = 0; j < n_syst; j++)
+    {
+      gr_variation[i][j] = new TGraphAsymmErrors *[n_variable];
+      for (int k = 0; k < n_variable; k++)
+      {
+        gr_variation[i][j][k] = new TGraphAsymmErrors();
+      } // loop over n_variable
+    }   // loop over n_syst;
+  }     // loop over n_region
+
+  for (int i = 0; i < n_region; i++)
+  {
+    cout << region_name[i] << endl;
+    for (int j = 0; j < n_variable; j++)
+    {
+      cout << variable_name[j] << endl;
+
+      TH1D *histo_nominal = (TH1D *)(stack_mc[i][0][j]->GetStack()->Last());
+      for (int k = 0; k < n_syst - 1; k++) // excluding nominal, excluding merged_pdf_error_set which is the last
+      {
+        cout << syst_name[k + 1] << endl;
+
+        TH1D *histo_syst = (TH1D *)(stack_mc[i][k + 1][j]->GetStack()->Last());
+
+        for (int l = 0; l < variable_conf[j].n_bin; l++)
+        {
+          float bin_center = histo_nominal->GetBinCenter(l + 1);
+          float content_nominal = histo_nominal->GetBinContent(l + 1);
+          float content_syst = histo_syst->GetBinContent(l + 1);
+
+          float diff = content_syst - content_nominal;
+
+          // if (variable_conf[j].variable_title.Contains("N_Vertex"))
+          //   cout << bin_center << " " << content_nominal << " " << content_syst << " " << diff << endl;
+
+          gr_variation[i][k][j]->SetPoint(l, bin_center, content_nominal);
+          if (0 < diff)
+            gr_variation[i][k][j]->SetPointError(l, 0, 0, 0, diff);
+          else
+            gr_variation[i][k][j]->SetPointError(l, 0, 0, TMath::Abs(diff), 0);
+        } // loop over n_bin
+      }   // loop over n_syst
+    }     // loop over n_variable
+  }       // loop over n_region
+
+  Merge_PDF_Error_Set();
+
+  // merge variations via quadratic sum
+  gr_variation_merged = new TGraphAsymmErrors **[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    cout << region_name[i] << endl;
+    gr_variation_merged[i] = new TGraphAsymmErrors *[n_variable];
+    for (int j = 0; j < n_variable; j++)
+    {
+      cout << variable_name[j] << endl;
+
+      gr_variation_merged[i][j] = new TGraphAsymmErrors();
+
+      TH1D *histo = (TH1D *)stack_mc[i][0][j]->GetStack()->Last();
+
+      for (int k = 0; k < variable_conf[j].n_bin; k++)
+      {
+        float stat_error = TMath::Sqrt(histo->GetBinContent(k + 1));
+
+        float variation_up = 0;
+        float variation_down = 0;
+
+        float x = gr_variation[i][0][j]->GetPointX(k);
+
+        for (int l = 0; l < n_syst; l++)
+        {
+          float ey_h = gr_variation[i][l][j]->GetErrorYhigh(k);
+          float ey_l = gr_variation[i][l][j]->GetErrorYlow(k);
+
+          variation_up = TMath::Sqrt(TMath::Power(variation_up, 2.) + TMath::Power(ey_h, 2.));
+          variation_down = TMath::Sqrt(TMath::Power(variation_down, 2.) + TMath::Power(ey_l, 2.));
+
+          // if (variable_conf[j].variable_title.Contains("N_Vertex"))
+          //   cout << l << ", x = " << x << ", ey_h = " << ey_h << ", variation_up = " << variation_up << ", ey_l = " << ey_l << ", variation_down = " << variation_down << endl;
+        } // loop over n_syst -1
+        // if (variable_conf[j].variable_title.Contains("N_Vertex"))
+        //   cout << "x = " << x << ", stat = " << stat_error << " " << variation_up << " " << variation_down << endl;
+
+        variation_up = TMath::Sqrt(TMath::Power(stat_error, 2.) + TMath::Power(variation_up, 2.));
+        variation_down = TMath::Sqrt(TMath::Power(stat_error, 2.) + TMath::Power(variation_down, 2.));
+
+        gr_variation_merged[i][j]->SetPoint(k, histo->GetBinCenter(k + 1), histo->GetBinContent(k + 1));
+        gr_variation_merged[i][j]->SetPointError(k, 0, 0, variation_down, variation_up);
+        // gr_variation_merged[i][j]->SetPointError(k, 0, 0, 100, 100);
+      } // loop over n_bin
+    }   // loop over n_variable
+  }     // loop over n_region
+
+  return;
+} // void Data_MC_Comparison::Envelope()
+
+//////////
+
+void Data_MC_Comparison::Merge_PDF_Error_Set()
+{
+  // Merge histos for 100 pdf_error_sets
+  cout << "Merging histograms for 100 pdf_error_sets" << endl;
+
+  stack_pdf_error_set = new THStack ***[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    stack_pdf_error_set[i] = new THStack **[n_pdf_error_set];
+    for (int j = 0; j < n_pdf_error_set; j++)
+    {
+      stack_pdf_error_set[i][j] = new THStack *[n_variable];
+      for (int k = 0; k < n_variable; k++)
+      {
+        TString stack_name = region_name[i] + "_PDF_Error_Set_" + to_string(j) + "_" + variable_name[k];
+        stack_pdf_error_set[i][j][k] = new THStack(stack_name, stack_name);
+
+        for (int l = 0; l < n_sample; l++)
+        {
+          stack_pdf_error_set[i][j][k]->Add(histo_pdf_error_set[i][j][l][k]);
+        } // loop over n_sample
+      }   // loop over n_variable
+    }     // loop over n_pdf_error_set
+  }       // loop over n_region
+
+  for (int i = 0; i < n_region; i++)
+  {
+    for (int j = 0; j < n_variable; j++)
+    {
+      if (gr_variation[i][n_syst - 1][j]->GetN() != 0)
+      {
+        cout << "gr_variation is already filled. Check Merged_PDF_Error_Set is lastly push_backed. Aborted!" << endl;
+        exit(1);
+      }
+
+      TH1D *histo_nominal = (TH1D *)(stack_mc[i][0][j]->GetStack()->Last());
+      for (int k = 0; k < variable_conf[j].n_bin; k++)
+      {
+        float x = histo_nominal->GetBinCenter(k + 1);
+        float y = histo_nominal->GetBinContent(k + 1);
+
+        float max = -999999999;
+        float min = 999999999;
+
+        for (int l = 0; l < n_pdf_error_set; l++)
+        {
+          TH1D *histo = (TH1D *)(stack_pdf_error_set[i][l][j]->GetStack()->Last());
+          float content = histo->GetBinContent(k + 1);
+
+          if (max < content)
+            max = content;
+          if (content < min)
+            min = content;
+        } // loop over n_pdf_error_set
+
+        gr_variation[i][n_syst - 1][j]->SetPoint(k, x, y);
+
+        float eyl;
+
+        if (min < y)
+          eyl = y - min;
+        else
+          eyl = 0;
+
+        float eyh;
+        if (y < max)
+          eyh = max - y;
+        else
+          eyh = 0;
+
+        gr_variation[i][n_syst - 1][j]->SetPointError(k, 0, 0, eyl, eyh);
+
+        // cout << "bin_index = " << k << ", x = " << x << ", y = " << y << ", eyl = " << y - min << ", eyh = " << max - y << endl;
+        cout << "bin_index = " << k << ", x = " << x << ", y = " << y << ", min = " << min << ", max = " << max << ", eyl = " << eyl << ", eyh = " << eyh << endl;
+      } // loop over n_bin
+    }   // loop n_variable
+  }     // loop n_region
+
+  return;
+} // void Data_MC_Comparison::Merge_PDF_Error_Set()
+
+//////////
+
+void Data_MC_Comparison::Save()
+{
+  TString fout_name = "Vcb_Data_MC_Comparison_" + era + "_" + channel + ".root";
+  fout = new TFile(fout_name, "RECREATE");
+
+  for (int i = 0; i < n_region; i++)
+  {
+    TDirectory *dir_region = fout->mkdir(region_name[i]);
+
+    for (int j = 0; j < n_variable; j++)
+    {
+      canvas[i][j]->SetName(variable_name[j]);
+      canvas[i][j]->SetTitle(variable_name[j]);
+
+      dir_region->cd();
+      canvas[i][j]->Write();
+    } // loop over n_variable
+  }   // loop over n_region
+
   fout->Close();
 
   return;
-}//void Data_MC_Comparison::Draw()
+} // void Data_MC_Comparison::Save()
 
 //////////
 
-void Data_MC_Comparison::Fill_Histo_Data()
+int Data_MC_Comparison::Setup_Name(const TList *list, vector<TString> &vec_name, const bool &chk_excluding_pdf_error_set)
 {
-  histo_data[0]->Fill(event.n_vertex, event.weight);
-  histo_data[1]->Fill(event.lepton_pt, event.weight);
-  histo_data[2]->Fill(event.lepton_eta, event.weight);
-  histo_data[3]->Fill(event.n_jets, event.weight);
-  histo_data[4]->Fill(event.n_bjets, event.weight);
-  histo_data[5]->Fill(event.n_cjets, event.weight);
-  histo_data[6]->Fill(event.pt_leading_jet, event.weight);
-  histo_data[7]->Fill(event.pt_subleading_jet, event.weight);
-  histo_data[8]->Fill(event.eta_leading_jet, event.weight);
-  histo_data[9]->Fill(event.eta_subleading_jet, event.weight);
-  histo_data[10]->Fill(event.met_pt, event.weight);
-  histo_data[11]->Fill(event.met_phi, event.weight);
-  histo_data[12]->Fill(event.best_mva_score, event.weight);
+  // maybe it's messy, but let's don't waste time
 
-  return;
-}//void Data_MC_Comparison::Fill_Histo_Data()
+  int n_entries = list->GetEntries();
+  int n_pdf_error_set = 0;
 
-//////////
+  for (int i = 0; i < n_entries; i++)
+  {
+    TDirectory *dir = (TDirectory *)list->At(i);
+    TString name = dir->GetName();
+    // cout << name << endl;
 
-void Data_MC_Comparison::Fill_Histo_MC(const int& sample_index)
-{
-  event.weight = 1;
-  event.weight *= event.weight_lumi;
-  event.weight *= event.weight_mc;
-  event.weight *= event.weight_pileup;
-  event.weight *= event.weight_prefire;
-  event.weight *= event.weight_top_pt;
-  event.weight *= event.sf_mu_trig;
-  event.weight *= event.sf_mu_id;
-  event.weight *= event.sf_mu_iso;
-  //event.weight *= event.sf_pujet_veto;
-  event.weight *= event.sf_b_tag;
-  event.weight *= event.sf_c_tag;
-  
-  histo_mc[0][sample_index]->Fill(event.n_vertex, event.weight);
-  histo_mc[1][sample_index]->Fill(event.lepton_pt, event.weight);
-  histo_mc[2][sample_index]->Fill(event.lepton_eta, event.weight);
-  histo_mc[3][sample_index]->Fill(event.n_jets, event.weight);
-  histo_mc[4][sample_index]->Fill(event.n_bjets, event.weight);
-  histo_mc[5][sample_index]->Fill(event.n_cjets, event.weight);
-  histo_mc[6][sample_index]->Fill(event.pt_leading_jet, event.weight);
-  histo_mc[7][sample_index]->Fill(event.pt_subleading_jet, event.weight);
-  histo_mc[8][sample_index]->Fill(event.eta_leading_jet, event.weight);
-  histo_mc[9][sample_index]->Fill(event.eta_subleading_jet, event.weight);
-  histo_mc[10][sample_index]->Fill(event.met_pt, event.weight);
-  histo_mc[11][sample_index]->Fill(event.met_phi, event.weight);
-  histo_mc[12][sample_index]->Fill(event.best_mva_score, event.weight);
-  
-  return;
-}//void Data_MC_Comparison::Fill_Histo()
-
-//////////
-
-void Data_MC_Comparison::Read_Tree()
-{
-  cout << "Data_MC_Comparison::Read_Tree: Start to read trees" << endl;
-  
-  for(auto it=map_tree_mc.begin(); it!=map_tree_mc.end(); it++)
+    if (!chk_excluding_pdf_error_set)
+      vec_name.push_back(name);
+    else
     {
-      int sample_index =  find(vec_short_name_mc.begin(), vec_short_name_mc.end(), samples.map_short_name_mc[it->first]) - vec_short_name_mc.begin();
-      cout << it->first << " Sample_Index = " << sample_index << endl;
-      
-      Long64_t n_entries = it->second->GetEntries();
-      for(Long64_t i=0; i<n_entries; i++)
-	{
-	  if(i%5000000==0) cout << "Processing... " << i << "/" << n_entries << endl;
-	 
-	  it->second->GetEntry(i);
-	  
-	  event.Swap();
-	  
-	  if(Cut()) continue;
-	  
-	  Fill_Histo_MC(sample_index);
+      if (name.Contains("PDF_Error_Set_"))
+        n_pdf_error_set++;
+      else
+        vec_name.push_back(name);
+    }
+  }
 
-	  //if(20<i) break;
-	}
-    }//loop over mc
-  
-  for(auto it=map_tree_data.begin(); it!=map_tree_data.end(); it++)
+  return n_pdf_error_set;
+} // int Data_MC_Comparison::Setup_Name(const TList* list, TString* name)
+
+//////////
+
+void Data_MC_Comparison::Stack_MC()
+{
+  stack_mc = new THStack ***[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    stack_mc[i] = new THStack **[n_syst];
+    for (int j = 0; j < n_syst; j++)
     {
-      cout << it->first << endl;
-      
-      Long64_t n_entries = it->second->GetEntries();
-      for(Long64_t i=0; i<n_entries; i++)
+      stack_mc[i][j] = new THStack *[n_variable];
+      for (int k = 0; k < n_variable; k++)
+      {
+        TString stack_name = region_name[i] + "_" + syst_name[j] + "_" + variable_name[k];
+        // cout << stack_name << endl;
+
+        stack_mc[i][j][k] = new THStack(stack_name, stack_name);
+
+        for (int l = 0; l < n_sample; l++)
         {
-	  if(i%5000000==0) cout << "Processing... " << i << "/n_entries." << endl;
-	  
-          it->second->GetEntry(i);
-
-          event.Swap();
-
-          if(Cut()) continue;
-
-          Fill_Histo_Data();
-
-          //if(100<i) break;
-        }
-    }//loop over data period
+          histo_mc[i][j][l][k]->SetFillColorAlpha(color[l], .2);
+          stack_mc[i][j][k]->Add(histo_mc[i][j][l][k]);
+        } // loop over n_sample
+      }   // loop over n_variable
+    }     // loop over n_syst
+  }       // loop over n_region
 
   return;
-}//void Data_MC_Comparison::Read_Tree()
+} // void Data_MC_Comparison::Stack_MC()
 
 //////////
-

@@ -80,13 +80,19 @@ W_Event::W_Event(const TString& a_era, const TString& a_channel, const TString& 
 
 W_Event::~W_Event()
 {
+  fin->Close();
+
   fout = new TFile("W_Event.root", "RECREATE");
   fout->cd();
   for(int i=0; i<6; i++) histo[i]->Write();
   fout->Close();
 
-  for(int i=0; i<6; i++) delete histo[i];
-  
+  for(int i=0; i<6; i++)
+    {
+      delete histo[i];
+      delete data_hist[i];
+      delete pdf[i];
+    }
 }//W_Event::~W_Event()
 
 //////////
