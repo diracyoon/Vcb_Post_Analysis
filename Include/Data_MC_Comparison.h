@@ -2,81 +2,89 @@
 #define __DATA_MC_COMPARISON_H__
 
 #include <iostream>
-#include <cstdlib>
-#include <map>
 #include <vector>
 
 #include <TString.h>
-#include <TObject.h>
 #include <TFile.h>
-#include <TTree.h>
 #include <TH1D.h>
+#include <TDirectory.h>
+#include <TList.h>
 #include <THStack.h>
 #include <TCanvas.h>
 #include <TPad.h>
-#include <TLegend.h>
-#include <TPaveStats.h>
-
-#include <Const_Def.h>
-#include <Samples.h>
-#include <Result_Event.h>
+#include <TGraphAsymmErrors.h>
+#include <TMath.h>
 
 using namespace std;
 
 class Data_MC_Comparison : public TObject
 {
-  //friend class W_Data;
-  
- public:
-  Data_MC_Comparison(const TString& a_era="2018", const TString& a_channel="Mu", const TString& a_swap_mode="Permutation_MVA");
+public:
+  Data_MC_Comparison(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_extension = "png");
   ~Data_MC_Comparison();
 
-    typedef struct _Histo_Conf
-    {
-      TString variable_title;
-      int n_bin;
-      float x_low;
-      float x_up;
-    } Histo_Conf;
-
   void Run();
-  void Set_Region(const TString& a_region_type);
-  
- protected:
-  Samples samples;
-  int n_sample_merge_mc;
 
+  typedef struct _Histo_Conf
+  {
+    TString variable_title;
+    int n_bin;
+    float x_low;
+    float x_up;
+  } Histo_Conf;
+
+protected:
   TString era;
   TString channel;
-  TString data_short_name;
-  TString region_type;
+  TString extension;
 
-  map<TString, TFile*> map_fin_mc;
-  map<TString, TFile*> map_fin_data;
-  vector<TString> vec_short_name_mc;
-  
-  map<TString, TTree*> map_tree_mc;
-  map<TString, TTree*> map_tree_data;
+  int n_region;
+  vector<TString> region_name;
 
-  Result_Event event;
-  
-  vector<Histo_Conf> histo_conf;
-  int n_histo_conf;
-  TH1D*** histo_mc;
-  TH1D** histo_data;
-  TH1D** histo_ratio;
+  int n_syst;
+  vector<TString> syst_name;
 
-  //cuts for selection
-  float mva_score_cut;
-  float pt_had_t_b_cut;
-  float pt_lep_t_b_cut;
+  int n_sample;
+  vector<TString> sample_name;
 
-  bool Cut();
+  int n_variable;
+  vector<TString> variable_name;
+
+  vector<Histo_Conf> variable_conf;
+
+  int color[7] = {2, 3, 4, 5, 6, 7, 8}; // n_sample
+
+  TH1D *****histo_mc;   // n_region, n_syst, n_sample, n_variable
+  THStack ****stack_mc; // n_region, n_syst, n_variable
+
+  int n_pdf_error_set;
+  TH1D *****histo_pdf_error_set;   // n_region, n_syst, n_sample, n_variable
+  THStack ****stack_pdf_error_set; // n_region, n_pdf_error_set, n_variable
+  // TH1D ****histo_merged_pdf_error_set; // n_region, n_sample, n_variable
+
+  TH1D ***histo_data; // n_region, n_variable
+
+  TH1D ***histo_ratio; // n_region, n_variable
+  TGraphAsymmErrors ***gr_ratio;//n_region, n_variable
+
+  TGraphAsymmErrors ****gr_variation;       // n_region, n_syst-1, n_variable
+  TGraphAsymmErrors ***gr_variation_merged; // n_region, n_variable
+  TList ***list_variation;                  // n_region, n_variable
+
+  TCanvas ***canvas; // n_region, n_variable
+  TPad ****pad;      // n_region, n_variable, 2
+
+  TFile *fin;
+  TFile *fout;
+
+  void Compare();
   void Draw();
-  void Fill_Histo_Data();
-  void Fill_Histo_MC(const int& sample_index);
-  void Read_Tree();
-  
+  void Envelope();
+  void Merge_PDF_Error_Set();
+  void Save();
+  int Setup_Name(const TList *list, vector<TString> &vec_name, const bool &chk_excluding_pdf_error_set = false);
+  void Stack_MC();
+
   ClassDef(Data_MC_Comparison, 1);
 };
 
