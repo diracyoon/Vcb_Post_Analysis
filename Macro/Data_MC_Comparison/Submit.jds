@@ -7,6 +7,6 @@ should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 output = job_Vcb_Histo_Syst.log
 error = job_Vcb_Histo_Syst.err
-#request_memory = 102400
+#concorruency_limits = n301.isyoon
 
 queue 1

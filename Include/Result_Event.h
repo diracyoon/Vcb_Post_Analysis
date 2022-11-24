@@ -56,6 +56,33 @@ class Result_Event : public W_Event
   float weight_b_tag_hfstats2_up;
   
   float weight_c_tag;
+  float weight_c_tag_extrap_down;
+  float weight_c_tag_extrap_up;
+  float weight_c_tag_interp_down;
+  float weight_c_tag_interp_up;
+  float weight_c_tag_lhe_scale_muf_down;
+  float weight_c_tag_lhe_scale_muf_up;
+  float weight_c_tag_lhe_scale_mur_down;
+  float weight_c_tag_lhe_scale_mur_up;
+  float weight_c_tag_ps_fsr_fixed_down;
+  float weight_c_tag_ps_fsr_fixed_up;
+  float weight_c_tag_ps_isr_fixed_down;
+  float weight_c_tag_ps_isr_fixed_up;
+  float weight_c_tag_pu_down;
+  float weight_c_tag_pu_up;
+  float weight_c_tag_stat_down;
+  float weight_c_tag_stat_up;
+  float weight_c_tag_xsec_br_unc_dyjets_b_down;
+  float weight_c_tag_xsec_br_unc_dyjets_b_up;
+  float weight_c_tag_xsec_br_unc_dyjets_c_down;
+  float weight_c_tag_xsec_br_unc_dyjets_c_up;
+  float weight_c_tag_xsec_br_unc_wjets_c_down;
+  float weight_c_tag_xsec_br_unc_wjets_c_up;
+  float weight_c_tag_jer_down;
+  float weight_c_tag_jer_up;
+  float weight_c_tag_jes_total_down;
+  float weight_c_tag_jes_total_up;
+
   float weight_lumi;
   float weight_mc;
 

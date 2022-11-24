@@ -4,108 +4,137 @@ ClassImp(Result_Event);
 
 //////////
 
-Result_Event::Result_Event(const TString& a_era, const TString& a_channel, const TString& a_swap_mode) : W_Event(a_era, a_channel, a_swap_mode)
+Result_Event::Result_Event(const TString &a_era, const TString &a_channel, const TString &a_swap_mode) : W_Event(a_era, a_channel, a_swap_mode)
 {
-}//Result_Event::Result_Event(const TString& a_swap_mode)
+} // Result_Event::Result_Event(const TString& a_swap_mode)
 
 //////////
 
 Result_Event::~Result_Event()
 {
-}//Result_Event::~Result_Event()
+} // Result_Event::~Result_Event()
 
 //////////
 
-void Result_Event::Setup_Tree(TTree* tree, const bool& chk_syst)
+void Result_Event::Setup_Tree(TTree *tree, const bool &chk_syst)
 {
   tree->SetBranchAddress("sf_mu_id", &sf_mu_id);
-  if(chk_syst)
-    {
-      tree->SetBranchAddress("sf_mu_id_down", &sf_mu_id_down);
-      tree->SetBranchAddress("sf_mu_id_up", &sf_mu_id_up);
-    }
-  
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("sf_mu_id_down", &sf_mu_id_down);
+    tree->SetBranchAddress("sf_mu_id_up", &sf_mu_id_up);
+  }
+
   tree->SetBranchAddress("sf_mu_iso", &sf_mu_iso);
-  if(chk_syst)
-    {
-      tree->SetBranchAddress("sf_mu_iso_down", &sf_mu_iso_down);
-      tree->SetBranchAddress("sf_mu_iso_up", &sf_mu_iso_up);
-    }
-  
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("sf_mu_iso_down", &sf_mu_iso_down);
+    tree->SetBranchAddress("sf_mu_iso_up", &sf_mu_iso_up);
+  }
+
   tree->SetBranchAddress("sf_mu_trig", &sf_mu_trig);
-  if(chk_syst)
-    {
-      tree->SetBranchAddress("sf_mu_trig_down", &sf_mu_trig_down);
-      tree->SetBranchAddress("sf_mu_trig_up", &sf_mu_trig_up);
-    }
-  
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("sf_mu_trig_down", &sf_mu_trig_down);
+    tree->SetBranchAddress("sf_mu_trig_up", &sf_mu_trig_up);
+  }
+
   tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
-  if(chk_syst)
-    {
-      tree->SetBranchAddress("weight_b_tag_down_hf", &weight_b_tag_hf_down);
-      tree->SetBranchAddress("weight_b_tag_up_hf", &weight_b_tag_hf_up);
-      tree->SetBranchAddress("weight_b_tag_down_jes", &weight_b_tag_jes_down);
-      tree->SetBranchAddress("weight_b_tag_up_jes", &weight_b_tag_jes_up);
-      tree->SetBranchAddress("weight_b_tag_down_lfstats1", &weight_b_tag_lfstats1_down);
-      tree->SetBranchAddress("weight_b_tag_up_lfstats1", &weight_b_tag_lfstats1_up);
-      tree->SetBranchAddress("weight_b_tag_down_lfstats2", &weight_b_tag_lfstats2_down);
-      tree->SetBranchAddress("weight_b_tag_up_lfstats2", &weight_b_tag_lfstats2_up);
-      tree->SetBranchAddress("weight_b_tag_down_cferr1", &weight_b_tag_cferr1_down);
-      tree->SetBranchAddress("weight_b_tag_up_cferr1", &weight_b_tag_cferr1_up);
-      tree->SetBranchAddress("weight_b_tag_down_cferr2", &weight_b_tag_cferr2_down);
-      tree->SetBranchAddress("weight_b_tag_up_cferr2", &weight_b_tag_cferr2_up);
-      tree->SetBranchAddress("weight_b_tag_down_hfstats1", &weight_b_tag_hfstats1_down);
-      tree->SetBranchAddress("weight_b_tag_up_hfstats1", &weight_b_tag_hfstats1_up);
-      tree->SetBranchAddress("weight_b_tag_down_hfstats2", &weight_b_tag_hfstats2_down);
-      tree->SetBranchAddress("weight_b_tag_up_hfstats2", &weight_b_tag_hfstats2_up);
-    }
-  
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("weight_b_tag_down_hf", &weight_b_tag_hf_down);
+    tree->SetBranchAddress("weight_b_tag_up_hf", &weight_b_tag_hf_up);
+    tree->SetBranchAddress("weight_b_tag_down_jes", &weight_b_tag_jes_down);
+    tree->SetBranchAddress("weight_b_tag_up_jes", &weight_b_tag_jes_up);
+    tree->SetBranchAddress("weight_b_tag_down_lfstats1", &weight_b_tag_lfstats1_down);
+    tree->SetBranchAddress("weight_b_tag_up_lfstats1", &weight_b_tag_lfstats1_up);
+    tree->SetBranchAddress("weight_b_tag_down_lfstats2", &weight_b_tag_lfstats2_down);
+    tree->SetBranchAddress("weight_b_tag_up_lfstats2", &weight_b_tag_lfstats2_up);
+    tree->SetBranchAddress("weight_b_tag_down_cferr1", &weight_b_tag_cferr1_down);
+    tree->SetBranchAddress("weight_b_tag_up_cferr1", &weight_b_tag_cferr1_up);
+    tree->SetBranchAddress("weight_b_tag_down_cferr2", &weight_b_tag_cferr2_down);
+    tree->SetBranchAddress("weight_b_tag_up_cferr2", &weight_b_tag_cferr2_up);
+    tree->SetBranchAddress("weight_b_tag_down_hfstats1", &weight_b_tag_hfstats1_down);
+    tree->SetBranchAddress("weight_b_tag_up_hfstats1", &weight_b_tag_hfstats1_up);
+    tree->SetBranchAddress("weight_b_tag_down_hfstats2", &weight_b_tag_hfstats2_down);
+    tree->SetBranchAddress("weight_b_tag_up_hfstats2", &weight_b_tag_hfstats2_up);
+  }
+
   tree->SetBranchAddress("weight_c_tag", &weight_c_tag);
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("weight_c_tag_down_extrap", &weight_c_tag_extrap_down);
+    tree->SetBranchAddress("weight_c_tag_up_extrap", &weight_c_tag_extrap_up);
+    tree->SetBranchAddress("weight_c_tag_down_interp", &weight_c_tag_interp_down);
+    tree->SetBranchAddress("weight_c_tag_up_interp", &weight_c_tag_interp_up);
+    tree->SetBranchAddress("weight_c_tag_down_lhe_scale_muf", &weight_c_tag_lhe_scale_muf_down);
+    tree->SetBranchAddress("weight_c_tag_up_lhe_scale_muf", &weight_c_tag_lhe_scale_muf_up);
+    tree->SetBranchAddress("weight_c_tag_down_lhe_scale_mur", &weight_c_tag_lhe_scale_mur_down);
+    tree->SetBranchAddress("weight_c_tag_up_lhe_scale_mur", &weight_c_tag_lhe_scale_mur_up);
+    tree->SetBranchAddress("weight_c_tag_down_ps_weight_fsr_fixed", &weight_c_tag_ps_fsr_fixed_down);
+    tree->SetBranchAddress("weight_c_tag_up_ps_weight_fsr_fixed", &weight_c_tag_ps_fsr_fixed_up);
+    tree->SetBranchAddress("weight_c_tag_down_ps_weight_isr_fixed", &weight_c_tag_ps_isr_fixed_down);
+    tree->SetBranchAddress("weight_c_tag_up_ps_weight_isr_fixed", &weight_c_tag_ps_isr_fixed_up);
+    tree->SetBranchAddress("weight_c_tag_down_pu_weight", &weight_c_tag_pu_down);
+    tree->SetBranchAddress("weight_c_tag_up_pu_weight", &weight_c_tag_pu_up);
+    tree->SetBranchAddress("weight_c_tag_down_stat", &weight_c_tag_stat_down);
+    tree->SetBranchAddress("weight_c_tag_up_stat", &weight_c_tag_stat_up);
+    tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_dyjets_b", &weight_c_tag_xsec_br_unc_dyjets_b_down);
+    tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_dyjets_b", &weight_c_tag_xsec_br_unc_dyjets_b_up);
+    tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_dyjets_c", &weight_c_tag_xsec_br_unc_dyjets_c_down);
+    tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_dyjets_c", &weight_c_tag_xsec_br_unc_dyjets_c_up);
+    tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_down);
+    tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_up);
+    tree->SetBranchAddress("weight_c_tag_down_jer", &weight_c_tag_jer_down);
+    tree->SetBranchAddress("weight_c_tag_up_jer", &weight_c_tag_jer_up);
+    tree->SetBranchAddress("weight_c_tag_down_jes_total", &weight_c_tag_jes_total_down);
+    tree->SetBranchAddress("weight_c_tag_up_jes_total", &weight_c_tag_jes_total_up);
+  }
+
   tree->SetBranchAddress("weight_lumi", &weight_lumi);
   tree->SetBranchAddress("weight_mc", &weight_mc);
-  
-  if(chk_syst)
-    {
-      tree->SetBranchAddress("weight_pdf_alternative", &weight_pdf_alternative);
-      tree->SetBranchAddress("weight_pdf_error_set", weight_pdf_error_set);
-      tree->SetBranchAddress("weight_pdf_as_down", &weight_pdf_as_down);
-      tree->SetBranchAddress("weight_pdf_as_up", &weight_pdf_as_up);
-    }
-  
+
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("weight_pdf_alternative", &weight_pdf_alternative);
+    tree->SetBranchAddress("weight_pdf_error_set", weight_pdf_error_set);
+    tree->SetBranchAddress("weight_pdf_as_down", &weight_pdf_as_down);
+    tree->SetBranchAddress("weight_pdf_as_up", &weight_pdf_as_up);
+  }
 
   tree->SetBranchAddress("weight_pileup", &weight_pileup);
-  if(chk_syst)
-    {
-      tree->SetBranchAddress("weight_pileup_down", &weight_pileup_down);
-      tree->SetBranchAddress("weight_pileup_up", &weight_pileup_up);
-    }
-  
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("weight_pileup_down", &weight_pileup_down);
+    tree->SetBranchAddress("weight_pileup_up", &weight_pileup_up);
+  }
+
   tree->SetBranchAddress("weight_prefire", &weight_prefire);
-  if(chk_syst)
-    {
-      tree->SetBranchAddress("weight_prefire_down", &weight_prefire_down);
-      tree->SetBranchAddress("weight_prefire_up", &weight_prefire_up);
-    }
-  
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("weight_prefire_down", &weight_prefire_down);
+    tree->SetBranchAddress("weight_prefire_up", &weight_prefire_up);
+  }
+
   tree->SetBranchAddress("weight_pujet_veto", &weight_pujet_veto);
-  if(chk_syst)
-    {
-      tree->SetBranchAddress("weight_pujet_veto_down", &weight_pujet_veto_down);
-      tree->SetBranchAddress("weight_pujet_veto_up", &weight_pujet_veto_up);
-    }
-  
-  if(chk_syst)
-    {
-      tree->SetBranchAddress("weight_scale_variation_1", &weight_scale_variation_1);
-      tree->SetBranchAddress("weight_scale_variation_2", &weight_scale_variation_2);
-      tree->SetBranchAddress("weight_scale_variation_3", &weight_scale_variation_3);
-      tree->SetBranchAddress("weight_scale_variation_4", &weight_scale_variation_4);
-      tree->SetBranchAddress("weight_scale_variation_6", &weight_scale_variation_6);
-      tree->SetBranchAddress("weight_scale_variation_8", &weight_scale_variation_8);
-    }
-    
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("weight_pujet_veto_down", &weight_pujet_veto_down);
+    tree->SetBranchAddress("weight_pujet_veto_up", &weight_pujet_veto_up);
+  }
+
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("weight_scale_variation_1", &weight_scale_variation_1);
+    tree->SetBranchAddress("weight_scale_variation_2", &weight_scale_variation_2);
+    tree->SetBranchAddress("weight_scale_variation_3", &weight_scale_variation_3);
+    tree->SetBranchAddress("weight_scale_variation_4", &weight_scale_variation_4);
+    tree->SetBranchAddress("weight_scale_variation_6", &weight_scale_variation_6);
+    tree->SetBranchAddress("weight_scale_variation_8", &weight_scale_variation_8);
+  }
+
   tree->SetBranchAddress("weight_top_pt", &weight_top_pt);
-    
+
   tree->SetBranchAddress("n_vertex", &n_vertex);
   tree->SetBranchAddress("lepton_pt", &lepton_pt);
   tree->SetBranchAddress("lepton_eta", &lepton_eta);
@@ -152,6 +181,6 @@ void Result_Event::Setup_Tree(TTree* tree, const bool& chk_syst)
   tree->SetBranchAddress("swapped_truth", &swapped_truth);
 
   return;
-}//void Result_Event::Setup_Tree(TTree* tree)
+} // void Result_Event::Setup_Tree(TTree* tree)
 
 //////////

@@ -30,14 +30,40 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
 
   // get syst_name
   TList *list_syst = ((TDirectory *)fin->Get(region_name[0]))->GetListOfKeys();
-  n_pdf_error_set = Setup_Name(list_syst, syst_name, true);
-  syst_name.erase(find(syst_name.begin(), syst_name.end(), "Data"));
-  // syst_name.push_back("Nominal");
+  // n_pdf_error_set = Setup_Name(list_syst, syst_name, true);
+  // syst_name.erase(find(syst_name.begin(), syst_name.end(), "Data"));
+  syst_name.push_back("Nominal");
+  // syst_name.push_back("B_Tag_HF_Down");
+  // syst_name.push_back("B_Tag_HF_Up");
+  // syst_name.push_back("B_Tag_JES_Down");
+  // syst_name.push_back("B_Tag_JES_Up");
+  // syst_name.push_back("B_Tag_LFStats1_Down");
+  // syst_name.push_back("B_Tag_LFStats1_Up");
+  // syst_name.push_back("B_Tag_LFStats2_Down");
+  // syst_name.push_back("B_Tag_LFStats2_Up");
+  // syst_name.push_back("B_Tag_CFErr1_Down");
+  // syst_name.push_back("B_Tag_CFErr1_Up");
+  // // syst_name.push_back("B_Tag_CFErr2_Down");
+  // // syst_name.push_back("B_Tag_CFErr2_Up");
+  // syst_name.push_back("B_Tag_HFStats1_Down");
+  // syst_name.push_back("B_Tag_HFStats1_Up");
+  // syst_name.push_back("B_Tag_HFStats2_Down");
+  // syst_name.push_back("B_Tag_HFStats2_Up");
+  syst_name.push_back("C_Tag_Extrap_Down");
+  syst_name.push_back("C_Tag_Extrap_Up");
+  // syst_name.push_back("C_Tag_Interp_Down");
+  // syst_name.push_back("C_Tag_Interp_Up");
+  // syst_name.push_back("C_Tag_LHE_Scale_MuF_Down");
+  // syst_name.push_back("C_Tag_LHE_Scale_MuF_Up");
+  // syst_name.push_back("C_Tag_Stat_Down");
+  // syst_name.push_back("C_Tag_Stat_Up");
+  // syst_name.push_back("C_Tag_JES_Total_Down");
+  // syst_name.push_back("C_Tag_JES_Total_Up");
   // syst_name.push_back("Pileup_Down");
   // syst_name.push_back("Pileup_Up");
-  // n_pdf_error_set = 100;
+  //   n_pdf_error_set = 100;
   n_syst = syst_name.size();
-  // n_pdf_error_set = 0;
+  n_pdf_error_set = 0;
   cout << "n_pdf_error_set = " << n_pdf_error_set << endl;
   cout << "n_syst = " << n_syst << endl;
 
@@ -129,9 +155,7 @@ Data_MC_Comparison::~Data_MC_Comparison()
 
 void Data_MC_Comparison::Run()
 {
-  cout << "Stack_MC" << endl;
   Stack_MC();
-  cout << "Envelope" << endl;
   Envelope();
   Compare();
   Draw();
@@ -219,9 +243,7 @@ void Data_MC_Comparison::Draw()
 
       histo_data[i][j]->Sumw2();
       histo_data[i][j]->SetMarkerStyle(8);
-      // histo_data[i][j]->SetMarkerSize(8);
       histo_data[i][j]->Draw("SAME");
-      // histo_data[i][j]->Draw("");
 
       pad[i][j][1] = new TPad(pad_name + "Ratio", pad_name + "Ratio", 0, 0, 1, 0.4);
       canvas[i][j]->cd();
@@ -234,16 +256,50 @@ void Data_MC_Comparison::Draw()
       gr_ratio[i][j]->SetFillStyle(3001);
       gr_ratio[i][j]->Draw("SAME3");
 
+      canvas[i][j]->Print(canvas_name + "." + extension, extension);
     } // loop over n_variable
   }   // loop over_n_region
+
+  Draw_Each();
 
   return;
 } // void Data_MC_Comparison::Draw()
 
 //////////
 
+void Data_MC_Comparison::Draw_Each()
+{
+  /*
+  canvas_each = new TCanvas ***[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    canvas_each[i] = new TCanvas **[n_syst];
+    for (int j = 0; j < n_syst; j++)
+    {
+      cout << syst_name[j] << endl;
+
+      canvas_each[i][j] = new TCanvas *[n_variable];
+      for (int k = 0; k < n_variable; k++)
+      {
+        TString can_name = region_name[i] + "_" + syst_name[j] + "_" + variable_name[k];
+
+        canvas_each[i][j][k] = new TCanvas(can_name, can_name, 800, 500);
+
+        canvas_each[i][j][k]->Draw();
+        stack_mc[i][j][k]->Draw("BAR");
+      } // loop over n_syst
+    }   // loop over n_variable
+  }     // loop over n_region
+*/
+  return;
+} // void Data_MC_Comparison::Draw_Each()
+
+//////////
+
 void Data_MC_Comparison::Envelope()
 {
+  cout << "Data_MC_Comparison::Envelope" << endl;
+
   // allocation
   gr_variation = new TGraphAsymmErrors ***[n_region];
   for (int i = 0; i < n_region; i++)
@@ -321,6 +377,8 @@ void Data_MC_Comparison::Envelope()
 
         for (int l = 0; l < n_syst; l++)
         {
+          // cout << syst_name[l + 1] << endl;
+
           float ey_h = gr_variation[i][l][j]->GetErrorYhigh(k);
           float ey_l = gr_variation[i][l][j]->GetErrorYlow(k);
 
@@ -330,8 +388,8 @@ void Data_MC_Comparison::Envelope()
           // if (variable_conf[j].variable_title.Contains("N_Vertex"))
           //   cout << l << ", x = " << x << ", ey_h = " << ey_h << ", variation_up = " << variation_up << ", ey_l = " << ey_l << ", variation_down = " << variation_down << endl;
         } // loop over n_syst -1
-        // if (variable_conf[j].variable_title.Contains("N_Vertex"))
-        //   cout << "x = " << x << ", stat = " << stat_error << " " << variation_up << " " << variation_down << endl;
+          // if (variable_conf[j].variable_title.Contains("N_Vertex"))
+        // cout << "x = " << x << ", stat = " << stat_error << ", down = " << variation_down << ", up = " << variation_up << endl;
 
         variation_up = TMath::Sqrt(TMath::Power(stat_error, 2.) + TMath::Power(variation_up, 2.));
         variation_down = TMath::Sqrt(TMath::Power(stat_error, 2.) + TMath::Power(variation_down, 2.));
@@ -394,6 +452,9 @@ void Data_MC_Comparison::Merge_PDF_Error_Set()
 
         for (int l = 0; l < n_pdf_error_set; l++)
         {
+          if (l != 99)
+            continue;
+
           TH1D *histo = (TH1D *)(stack_pdf_error_set[i][l][j]->GetStack()->Last());
           float content = histo->GetBinContent(k + 1);
 
@@ -421,7 +482,7 @@ void Data_MC_Comparison::Merge_PDF_Error_Set()
         gr_variation[i][n_syst - 1][j]->SetPointError(k, 0, 0, eyl, eyh);
 
         // cout << "bin_index = " << k << ", x = " << x << ", y = " << y << ", eyl = " << y - min << ", eyh = " << max - y << endl;
-        cout << "bin_index = " << k << ", x = " << x << ", y = " << y << ", min = " << min << ", max = " << max << ", eyl = " << eyl << ", eyh = " << eyh << endl;
+        // cout << "bin_index = " << k << ", x = " << x << ", y = " << y << ", min = " << min << ", max = " << max << ", eyl = " << eyl << ", eyh = " << eyh << endl;
       } // loop over n_bin
     }   // loop n_variable
   }     // loop n_region
@@ -442,11 +503,20 @@ void Data_MC_Comparison::Save()
 
     for (int j = 0; j < n_variable; j++)
     {
+      TDirectory *dir_variable = dir_region->mkdir(variable_name[j]);
+
       canvas[i][j]->SetName(variable_name[j]);
       canvas[i][j]->SetTitle(variable_name[j]);
 
-      dir_region->cd();
+      dir_variable->cd();
       canvas[i][j]->Write();
+
+      //   for (int k = 0; k < n_syst; k++)
+      //   {
+      //     TDirectory *dir_syst = dir_variable->mkdir(syst_name[k]);
+      //     dir_syst->cd();
+      //     canvas[i][k][j]->Write();
+      //   } // loop over n_syst
     } // loop over n_variable
   }   // loop over n_region
 

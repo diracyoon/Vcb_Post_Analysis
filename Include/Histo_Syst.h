@@ -86,7 +86,7 @@ protected:
   TFile *fout;
 
   void Fill_Histo_Data(const int &region_index);
-  void Fill_Histo_MC(const int &region_index, const int &sample_index, const TString &syst_fix = "None");
+  void Fill_Histo_MC(const int &region_index, const int &sample_index, const Long64_t& entry, const TString &syst_fix = "None");
   inline int Get_Region_Index(const TString &region);
   void Read_Tree();
   bool Set_Region();

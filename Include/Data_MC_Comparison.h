@@ -73,12 +73,15 @@ protected:
 
   TCanvas ***canvas; // n_region, n_variable
   TPad ****pad;      // n_region, n_variable, 2
+  
+  TCanvas ****canvas_each;//n_region, n_syst, n_variable
 
   TFile *fin;
   TFile *fout;
 
   void Compare();
   void Draw();
+  void Draw_Each();
   void Envelope();
   void Merge_PDF_Error_Set();
   void Save();
