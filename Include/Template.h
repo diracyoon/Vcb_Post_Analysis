@@ -11,6 +11,8 @@
 #include <THStack.h>
 #include <TMVA/Reader.h>
 #include <TCanvas.h>
+#include <TStyle.h>
+#include <TLegend.h>
 
 #include <Samples.h>
 #include <Result_Event.h>
@@ -45,6 +47,7 @@ class Template : public TObject
   
   TH1D*** histo_template;
   THStack** stack_template;
+  TLegend* legend;
   
   Result_Event event;
 
@@ -59,11 +62,16 @@ class Template : public TObject
 
   const int n_bin_histo_score;
 
+  int reduction;
+
   TMVA::Reader* reader;
   float mva_score;
 
   TCanvas* canvas[2];
-  
+  TCanvas* canvas_only;
+
+  TFile* fout;
+
   void Draw();
   void Fill_Histo(const TString& short_name, const int& index_decay_mode, const int& index_fail_reason);
   int Get_Index(const TString& name);

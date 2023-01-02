@@ -12,6 +12,8 @@ Template::Template(const TString& a_era, const TString& a_channel, const TString
   channel = a_channel;
   draw_extension = a_draw_extension;
 
+  reduction = 1;
+
   if(era=="2018")
     {
       bvsc_wp_m = bvsc_wp_m_2018;
@@ -20,7 +22,7 @@ Template::Template(const TString& a_era, const TString& a_channel, const TString
     }
   
   TString path_base = getenv("Vcb_Post_Analysis_WD");
-  path_base += "/Sample/" + era + "/" + channel + "/RunResult/";
+  path_base += "/Sample/" + era + "/" + channel + "/RunResult/Central_Syst/";
   
   if(samples.map_mc.size()!=samples.map_short_name_mc.size())
     {
@@ -31,9 +33,9 @@ Template::Template(const TString& a_era, const TString& a_channel, const TString
   for(auto it=samples.map_mc.begin(); it!=samples.map_mc.end(); it++)
     {
       cout << it->first << endl;
-
+      
       map_fin_mc[it->first] = new TFile(path_base+it->second);
-      map_tree_mc[it->first] = (TTree*)map_fin_mc[it->first]->Get("Result_Tree");
+      map_tree_mc[it->first] = (TTree*)map_fin_mc[it->first]->Get("POGTightWithTightIso_Central/Result_Tree");
 
       event.Setup_Tree(map_tree_mc[it->first], true);
     }
@@ -96,12 +98,22 @@ Template::Template(const TString& a_era, const TString& a_channel, const TString
   
   weight_file = "dataset/weights/TMVAClassification_DNN_CPU.weights.xml";
   reader->BookMVA("DNN_CPU", weight_file);
+
+  fout = new TFile("Template.root", "RECREATE");
 }//Template::Template()
 
 //////////
 
 Template::~Template()
 {
+  fout->cd();
+  for(int i=0; i<n_histo_sample; i++)
+    {
+      stack_template[i]->Write(); 
+    }
+      
+
+  fout->Close();
 }//Template::~Template()
 
 //////////
@@ -119,13 +131,21 @@ void Template::Run()
 void Template::Draw()
 {
   cout << "[Template::Draw] Init Draw" << endl;  
-  
+  //gStyle->SetTitleSize(0.11, "t");
+  //gStyle->SetLabelOffset(0.1, "T");
+  gStyle->SetTitleFontSize(0.10);
+
+  legend = new TLegend(0.38, 0.68, 0.88, 0.88);
+  legend->SetBorderSize(0);
+
   canvas[0] = new TCanvas("Canvas_TTLJ", "Canvas_TTLJ", 1200, 800);
   canvas[1] = new TCanvas("Canvas_Others", "Canvas_Others", 1200, 800);
-  
+  canvas_only = new TCanvas("Canvas_Only", "Canvas_Only", 1200, 800);  
+
   canvas[0]->Divide(3, 2);
   canvas[1]->Divide(3, 2);
-
+  canvas_only->Divide(2, 1);
+ 
   for(int i=0; i<n_histo_sample; i++)
     {
       cout << vec_histo_sample[i] << endl;
@@ -134,6 +154,15 @@ void Template::Draw()
 	{
 	  histo_template[i][j]->SetFillColorAlpha(color[j], 0.20);
 	  stack_template[i]->Add(histo_template[i][j]);
+	
+	  if(i==0)
+	    {
+	      if(j==0) legend->AddEntry(histo_template[i][j], "Succeed", "f");
+	      else if(j==1) legend->AddEntry(histo_template[i][j], "Fail", "f");
+	      else if(j==2) legend->AddEntry(histo_template[i][j], "Fail Out of selection", "f");
+	      //else if(j==3) legend->AddEntry(histo_template[i][j], "Fail HF contaminated", "f");
+	      else if(j==4) legend->AddEntry(histo_template[i][j], "#splitline{Fail Out of selection}{       HF contaminated}", "f");
+	    }
 	}
       
       int canvas_index;
@@ -154,11 +183,36 @@ void Template::Draw()
 
       canvas[canvas_index]->cd(index);
       stack_template[i]->Draw("BAR");
-    }//n_histo_sample
+  
+      if(canvas_index==0)
+	{
+	  if(index==5)
+	    { 
+	      canvas_only->cd(1);
+	      stack_template[i]->Draw("BAR");
+	      double max = stack_template[i]->GetMaximum();
+	      stack_template[i]->SetMaximum(1.6*max);
+	      stack_template[i]->GetXaxis()->SetTitle("WCBness");
+	      legend->Draw("SAME");
+	    }
+	  else if(index==6)
+	    {
+	      canvas_only->cd(2);
+	      stack_template[i]->Draw("BAR");
+	      double max = stack_template[i]->GetMaximum();
+              stack_template[i]->SetMaximum(1.6*max);
+	      stack_template[i]->GetXaxis()->SetTitle("WCBness");
+	      legend->Draw("SAME");
+	    }
+	}
+  }//n_histo_sample
   
   canvas[0]->Print("Canvas_TTLJ."+draw_extension, draw_extension);
   canvas[1]->Print("Canvas_Others."+draw_extension, draw_extension);
 
+  //canvas_only
+  canvas_only->Print("Canvas_Only."+draw_extension, draw_extension);
+  
   return;
 }//void Template::Draw()
 
@@ -177,7 +231,7 @@ void Template::Fill_Histo(const TString& short_name, const int& index_decay_mode
   weight *= event.sf_mu_trig;
   weight *= event.sf_mu_id;
   weight *= event.sf_mu_iso;
-  weight *= event.sf_pujet_veto;
+  //weight *= event.sf_pujet_veto;
   weight *= event.weight_b_tag;
   weight *= event.weight_c_tag;
   
@@ -237,6 +291,7 @@ void Template::Read_Tree()
       TTree* tree = map_tree_mc[it->first];
       
       Long64_t n_entries = tree->GetEntries();
+      n_entries /= reduction;
       for(Long64_t i=0; i<n_entries; i++)
      	{
 	  tree->GetEntry(i);

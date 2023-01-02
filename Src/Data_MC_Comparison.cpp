@@ -28,10 +28,17 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   Setup_Name(list_region, region_name);
   n_region = region_name.size();
 
+  // get c-tag weight
+  TList *list_c_tag_weight = ((TDirectory *)fin->Get(region_name[0] + "/Weight"))->GetListOfKeys();
+  Setup_C_Tag_Weight_Name(list_c_tag_weight);
+
   // get syst_name
   TList *list_syst = ((TDirectory *)fin->Get(region_name[0]))->GetListOfKeys();
   // n_pdf_error_set = Setup_Name(list_syst, syst_name, true);
   // syst_name.erase(find(syst_name.begin(), syst_name.end(), "Data"));
+  // syst_name.erase(find(syst_name.begin(), syst_name.end(), "Weight"));
+
+  // for debug
   syst_name.push_back("Nominal");
   // syst_name.push_back("B_Tag_HF_Down");
   // syst_name.push_back("B_Tag_HF_Up");
@@ -43,27 +50,66 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   // syst_name.push_back("B_Tag_LFStats2_Up");
   // syst_name.push_back("B_Tag_CFErr1_Down");
   // syst_name.push_back("B_Tag_CFErr1_Up");
-  // // syst_name.push_back("B_Tag_CFErr2_Down");
-  // // syst_name.push_back("B_Tag_CFErr2_Up");
+  // syst_name.push_back("B_Tag_CFErr2_Down");
+  // syst_name.push_back("B_Tag_CFErr2_Up");
   // syst_name.push_back("B_Tag_HFStats1_Down");
   // syst_name.push_back("B_Tag_HFStats1_Up");
   // syst_name.push_back("B_Tag_HFStats2_Down");
   // syst_name.push_back("B_Tag_HFStats2_Up");
-  syst_name.push_back("C_Tag_Extrap_Down");
-  syst_name.push_back("C_Tag_Extrap_Up");
+  // syst_name.push_back("C_Tag_Extrap_Down");
+  // syst_name.push_back("C_Tag_Extrap_Up");
   // syst_name.push_back("C_Tag_Interp_Down");
   // syst_name.push_back("C_Tag_Interp_Up");
   // syst_name.push_back("C_Tag_LHE_Scale_MuF_Down");
   // syst_name.push_back("C_Tag_LHE_Scale_MuF_Up");
+  // syst_name.push_back("C_Tag_LHE_Scale_MuR_Down");
+  // syst_name.push_back("C_Tag_LHE_Scale_MuR_Up");
+  // syst_name.push_back("C_Tag_PS_FSR_Fixed_Down");
+  // syst_name.push_back("C_Tag_PS_FSR_Fixed_Up");
+  // syst_name.push_back("C_Tag_PS_ISR_Fixed_Down");
+  // syst_name.push_back("C_Tag_PU_Down");
+  // syst_name.push_back("C_Tag_PU_Up");
   // syst_name.push_back("C_Tag_Stat_Down");
   // syst_name.push_back("C_Tag_Stat_Up");
+  // syst_name.push_back("C_Tag_XSec_Br_Unc_DYJets_B_Down");
+  // syst_name.push_back("C_Tag_XSec_Br_Unc_DYJets_B_Up");
+  // syst_name.push_back("C_Tag_XSec_Br_Unc_DYJets_C_Down");
+  // syst_name.push_back("C_Tag_XSec_Br_Unc_DYJets_C_Up");
+  // syst_name.push_back("C_Tag_XSec_Br_Unc_WJets_C_Down");
+  // syst_name.push_back("C_Tag_XSec_Br_Unc_WJets_C_Up");
+  // syst_name.push_back("C_Tag_JER_Down");
+  // syst_name.push_back("C_Tag_JER_Up");
   // syst_name.push_back("C_Tag_JES_Total_Down");
   // syst_name.push_back("C_Tag_JES_Total_Up");
+  // syst_name.push_back("JesDown");
+  // syst_name.push_back("JesUp");
+  // syst_name.push_back("JetEnDown");
+  // syst_name.push_back("JetEnUp");
+  // syst_name.push_back("Mu_Id_Down");
+  // syst_name.push_back("Mu_Id_Up");
+  // syst_name.push_back("Mu_Iso_Down");
+  // syst_name.push_back("Mu_Iso_Up");
+  // syst_name.push_back("Mu_Trig_Down");
+  // syst_name.push_back("Mu_Trig_Up");
+  // syst_name.push_back("PDF_Alternative");
+  // syst_name.push_back("PDF_As_Down");
+  // syst_name.push_back("PDF_As_Up");
   // syst_name.push_back("Pileup_Down");
   // syst_name.push_back("Pileup_Up");
-  //   n_pdf_error_set = 100;
-  n_syst = syst_name.size();
+  // syst_name.push_back("Pileup_Veto_Down");
+  // syst_name.push_back("Pileup_Veto_Up");
+  // syst_name.push_back("Prefire_Down");
+  // syst_name.push_back("Prefire_Up");
+  // syst_name.push_back("Scale_Variation_1");
+  // syst_name.push_back("Scale_Variation_2");
+  // syst_name.push_back("Scale_Variation_3");
+  // syst_name.push_back("Scale_Variation_4");
+  // syst_name.push_back("Scale_Variation_6");
+  // syst_name.push_back("Scale_Variation_8");
+  // syst_name.push_back("Top_Pt_Reweight");
   n_pdf_error_set = 0;
+
+  n_syst = syst_name.size();
   cout << "n_pdf_error_set = " << n_pdf_error_set << endl;
   cout << "n_syst = " << n_syst << endl;
 
@@ -77,70 +123,15 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   Setup_Name(list_variable, variable_name);
   n_variable = variable_name.size();
 
-  // setup histo_mc
-  histo_mc = new TH1D ****[n_region];
-  histo_pdf_error_set = new TH1D ****[n_region];
-  for (int i = 0; i < n_region; i++)
-  {
-    histo_mc[i] = new TH1D ***[n_syst];
-    for (int j = 0; j < n_syst; j++)
-    {
-      histo_mc[i][j] = new TH1D **[n_sample];
-      for (int k = 0; k < n_sample; k++)
-      {
-        histo_mc[i][j][k] = new TH1D *[n_variable];
-        for (int l = 0; l < n_variable; l++)
-        {
-          TString histo_name = region_name[i] + "/" + syst_name[j] + "/" + sample_name[k] + "/" + variable_name[l];
-          // cout << histo_name << endl;
-          histo_mc[i][j][k][l] = (TH1D *)fin->Get(histo_name);
-        } // loop over n_variable
-      }   // loop over sample
-    }     // loop over n_syst
+  // setup histo_c_tag_weight
+  Setup_Histo_C_Tag_Weight();
 
-    // histograms for PDF_Error_Set
-    // For easy handle, let's separate histograms for PDF_Error_Set
-    histo_pdf_error_set[i] = new TH1D ***[n_pdf_error_set];
-    for (int j = 0; j < n_pdf_error_set; j++)
-    {
-      histo_pdf_error_set[i][j] = new TH1D **[n_sample];
-      for (int k = 0; k < n_sample; k++)
-      {
-        histo_pdf_error_set[i][j][k] = new TH1D *[n_variable];
-        for (int l = 0; l < n_variable; l++)
-        {
-          TString histo_name = region_name[i] + "/PDF_Error_Set_" + to_string(j) + "/" + sample_name[k] + "/" + variable_name[l];
-          // cout << histo_name << endl;
-          histo_pdf_error_set[i][j][k][l] = (TH1D *)fin->Get(histo_name);
-        }
-      }
-    } // loop over n_pdf_error_set
-  }   // loop over n_region
+  // setup histo_mc
+  Setup_Histo_MC();
+  Setup_Histo_PDF_Error_Set();
 
   // setup histo_data
-  histo_data = new TH1D **[n_region];
-  for (int i = 0; i < n_region; i++)
-  {
-    histo_data[i] = new TH1D *[n_variable];
-    for (int j = 0; j < n_variable; j++)
-    {
-      TString histo_name = region_name[i] + "/Data/" + variable_name[j];
-      // cout << histo_name << endl;
-      histo_data[i][j] = (TH1D *)fin->Get(histo_name);
-
-      if (i == 0)
-      {
-        Histo_Conf conf;
-        conf.variable_title = histo_data[i][j]->GetName();
-        conf.n_bin = histo_data[i][j]->GetNbinsX();
-        conf.x_low = histo_data[i][j]->GetBinLowEdge(1);
-        conf.x_up = histo_data[i][j]->GetBinLowEdge(conf.n_bin) + histo_data[i][j]->GetBinWidth(conf.n_bin);
-        // cout << conf.variable_title << " " << conf.n_bin << " " << conf.x_low << " " << conf.x_up << endl;
-
-        variable_conf.push_back(conf);
-      } // if
-    }   // n_variable
-  }     // n_region
+  Setup_Histo_Data();
 
   Run();
 } // Data_MC_Comparison::Data_MC_Comparison(const TString& a_era, const TString& a_channel))
@@ -155,7 +146,13 @@ Data_MC_Comparison::~Data_MC_Comparison()
 
 void Data_MC_Comparison::Run()
 {
+  cout << "Data_MC_Comparison::Run" << endl;
+
+  Get_C_Tag_Renormalization_Factor();
+  Apply_C_Tag_Renormalization_Factor();
+  cout << "test" << endl;
   Stack_MC();
+  cout << "test test" << endl;
   Envelope();
   Compare();
   Draw();
@@ -163,6 +160,42 @@ void Data_MC_Comparison::Run()
 
   return;
 } // void Data_MC_Comparison::Run()
+
+//////////
+
+void Data_MC_Comparison::Apply_C_Tag_Renormalization_Factor()
+{
+  cout << "Test Data_MC_Comparison::Apply_C_Tag_Renormalization_Factor" << endl;
+
+  for (int i = 0; i < n_region; i++)
+  {
+    // cout << i << " " << region_name[i] << endl;
+    for (int j = 0; j < n_syst; j++)
+    {
+      cout << j << " " << syst_name[j] << endl;
+
+      TString target_syst;
+      if (syst_name[j] == "Nominal")
+        target_syst = "C_Tag_Nominal";
+      else if (syst_name[j].Contains("C_Tag_"))
+        target_syst = syst_name[j];
+      else
+        continue;
+
+      for (int k = 0; k < n_sample; k++)
+      {
+        // cout << k << " " << sample_name[k] << endl;
+        for (int l = 0; l < n_variable; l++)
+        {
+          // cout << l << " " << variable_name[l] << endl;
+          histo_mc[i][j][k][l]->Scale(1 / c_tag_rf[i][target_syst]);
+        } // loop over n_variable
+      }   // loop over n_sample
+    }     // loop over n_syst
+  }       // loop over n_region;
+
+  return;
+} // void Data_MC_Comparison::Apply_C_Tag_Renormalization_Factor()
 
 //////////
 
@@ -406,6 +439,30 @@ void Data_MC_Comparison::Envelope()
 
 //////////
 
+void Data_MC_Comparison::Get_C_Tag_Renormalization_Factor()
+{
+  cout << "Data_MC_Comparison::C_Tag_Weight" << endl;
+
+  Stack_C_Tag_Weight();
+
+  map<TString, float> weights;
+  for (int i = 0; i < n_region; i++)
+  {
+    for (int j = 0; j < n_c_tag_weight; j++)
+    {
+      TH1D *stacked_histo = (TH1D *)(stack_c_tag_weight[i][j]->GetStack()->Last());
+      float mean = stacked_histo->GetMean();
+
+      weights.insert({c_tag_weight_name[j], mean});
+    } // loop over n_c_tag_weight
+    c_tag_rf.push_back(weights);
+  } // loop over n_region
+
+  return;
+} // void Data_MC_Comparison::Get_C_Tag_Renormalization_Factor()
+
+//////////
+
 void Data_MC_Comparison::Merge_PDF_Error_Set()
 {
   // Merge histos for 100 pdf_error_sets
@@ -527,6 +584,132 @@ void Data_MC_Comparison::Save()
 
 //////////
 
+void Data_MC_Comparison::Setup_C_Tag_Weight_Name(const TList *list)
+{
+  int n_entries = list->GetEntries();
+
+  for (int i = 0; i < n_entries; i++)
+  {
+    TDirectory *dir = (TDirectory *)list->At(i);
+    TString name = dir->GetName();
+
+    c_tag_weight_name.push_back(name);
+  }
+  n_c_tag_weight = c_tag_weight_name.size();
+
+  return;
+} // void Data_MC_Comparison::Setup_C_Tag_Weight_Name(const TList *list)
+
+//////////
+
+void Data_MC_Comparison::Setup_Histo_C_Tag_Weight()
+{
+  histo_c_tag_weight = new TH1D ***[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_c_tag_weight[i] = new TH1D **[n_c_tag_weight];
+    for (int j = 0; j < n_c_tag_weight; j++)
+    {
+      histo_c_tag_weight[i][j] = new TH1D *[n_sample];
+      for (int k = 0; k < n_sample; k++)
+      {
+        histo_c_tag_weight[i][j][k] = (TH1D *)fin->Get(region_name[i] + "/Weight/" + c_tag_weight_name[j] + "/" + sample_name[k]);
+      } // loop over n_sample
+    }   // loop over n_c_tag_weight
+  }     // loop over n_region
+
+  return;
+} // void Data_MC_Comparison::Setup_Histo_C_Tag_Weight()
+
+//////////
+
+void Data_MC_Comparison::Setup_Histo_Data()
+{
+  histo_data = new TH1D **[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_data[i] = new TH1D *[n_variable];
+    for (int j = 0; j < n_variable; j++)
+    {
+      TString histo_name = region_name[i] + "/Data/" + variable_name[j];
+      // cout << histo_name << endl;
+      histo_data[i][j] = (TH1D *)fin->Get(histo_name);
+
+      if (i == 0)
+      {
+        Histo_Conf conf;
+        conf.variable_title = histo_data[i][j]->GetName();
+        conf.n_bin = histo_data[i][j]->GetNbinsX();
+        conf.x_low = histo_data[i][j]->GetBinLowEdge(1);
+        conf.x_up = histo_data[i][j]->GetBinLowEdge(conf.n_bin) + histo_data[i][j]->GetBinWidth(conf.n_bin);
+        // cout << conf.variable_title << " " << conf.n_bin << " " << conf.x_low << " " << conf.x_up << endl;
+
+        variable_conf.push_back(conf);
+      } // if
+    }   // n_variable
+  }     // n_region
+
+  return;
+} // void Data_MC_Comparison::Setup_Histo_Data()
+
+//////////
+
+void Data_MC_Comparison::Setup_Histo_MC()
+{
+  histo_mc = new TH1D ****[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_mc[i] = new TH1D ***[n_syst];
+    for (int j = 0; j < n_syst; j++)
+    {
+      histo_mc[i][j] = new TH1D **[n_sample];
+      for (int k = 0; k < n_sample; k++)
+      {
+        histo_mc[i][j][k] = new TH1D *[n_variable];
+        for (int l = 0; l < n_variable; l++)
+        {
+          TString histo_name = region_name[i] + "/" + syst_name[j] + "/" + sample_name[k] + "/" + variable_name[l];
+          // cout << histo_name << endl;
+          histo_mc[i][j][k][l] = (TH1D *)fin->Get(histo_name);
+        } // loop over n_variable
+      }   // loop over sample
+    }     // loop over n_syst
+  }       // loop over n_region
+
+  return;
+} // void Data_MC_Comparison::Setup_Histo_MC()
+
+//////////
+
+void Data_MC_Comparison::Setup_Histo_PDF_Error_Set()
+{
+  // histograms for PDF_Error_Set
+  // For easy handle, let's separate histograms for PDF_Error_Set
+  histo_pdf_error_set = new TH1D ****[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_pdf_error_set[i] = new TH1D ***[n_pdf_error_set];
+    for (int j = 0; j < n_pdf_error_set; j++)
+    {
+      histo_pdf_error_set[i][j] = new TH1D **[n_sample];
+      for (int k = 0; k < n_sample; k++)
+      {
+        histo_pdf_error_set[i][j][k] = new TH1D *[n_variable];
+        for (int l = 0; l < n_variable; l++)
+        {
+          TString histo_name = region_name[i] + "/PDF_Error_Set_" + to_string(j) + "/" + sample_name[k] + "/" + variable_name[l];
+          // cout << histo_name << endl;
+          histo_pdf_error_set[i][j][k][l] = (TH1D *)fin->Get(histo_name);
+        } // loop over n_variable
+      }   // loop over n_variable
+    }     // loop over n_pdf_error_set
+  }       // loop over n_region
+
+  return;
+} // void Data_MC_Comparison::Setup_Histo_PDF_Error_Set()
+
+//////////
+
 int Data_MC_Comparison::Setup_Name(const TList *list, vector<TString> &vec_name, const bool &chk_excluding_pdf_error_set)
 {
   // maybe it's messy, but let's don't waste time
@@ -556,6 +739,31 @@ int Data_MC_Comparison::Setup_Name(const TList *list, vector<TString> &vec_name,
 
 //////////
 
+void Data_MC_Comparison::Stack_C_Tag_Weight()
+{
+  stack_c_tag_weight = new THStack **[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    stack_c_tag_weight[i] = new THStack *[n_c_tag_weight];
+    for (int j = 0; j < n_c_tag_weight; j++)
+    {
+      cout << c_tag_weight_name[j] << endl;
+      TString stack_name = region_name[i] + "_" + c_tag_weight_name[j];
+      stack_c_tag_weight[i][j] = new THStack(stack_name, stack_name);
+
+      for (int k = 0; k < n_sample; k++)
+      {
+        histo_c_tag_weight[i][j][k]->SetFillColorAlpha(color[k], .2);
+        stack_c_tag_weight[i][j]->Add(histo_c_tag_weight[i][j][k]);
+      } // loop over n_sample
+    }   // loop over n_c_tag_weight
+  }     // loop over n_region
+
+  return;
+} // void Data_MC_Comparison::Stack_C_Tag_Weight()
+
+//////////
+
 void Data_MC_Comparison::Stack_MC()
 {
   stack_mc = new THStack ***[n_region];
@@ -568,7 +776,7 @@ void Data_MC_Comparison::Stack_MC()
       for (int k = 0; k < n_variable; k++)
       {
         TString stack_name = region_name[i] + "_" + syst_name[j] + "_" + variable_name[k];
-        // cout << stack_name << endl;
+        cout << stack_name << endl;
 
         stack_mc[i][j][k] = new THStack(stack_name, stack_name);
 

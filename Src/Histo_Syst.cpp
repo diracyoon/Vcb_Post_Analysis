@@ -8,7 +8,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
 {
   cout << "[Histo_Syst::Histo_Syst]: Init analysis" << endl;
 
-  reduction = 10;
+  reduction = 100;
 
   era = a_era;
   channel = a_channel;
@@ -32,46 +32,128 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
 
     event.Setup_Tree(map_tree_mc[it->first], true);
 
-    //   // jec down
-    //   map_fin_mc_jec_down[it->first] = new TFile(path_base + "JetEnDown/" + it->second);
-    //   map_tree_mc_jec_down[it->first] = (TTree *)map_fin_mc_jec_down[it->first]->Get("POGTightWithTightIso_JetEnDown/Result_Tree");
+    // jec down
+    map_fin_mc_jec_down[it->first] = new TFile(path_base + "JetEnDown/" + it->second);
+    map_tree_mc_jec_down[it->first] = (TTree *)map_fin_mc_jec_down[it->first]->Get("POGTightWithTightIso_JetEnDown/Result_Tree");
 
-    //   event.Setup_Tree(map_tree_mc_jec_down[it->first], false);
+    event.Setup_Tree(map_tree_mc_jec_down[it->first], false);
 
-    //   // jec up
-    //   map_fin_mc_jec_up[it->first] = new TFile(path_base + "JetEnUp/" + it->second);
-    //   map_tree_mc_jec_up[it->first] = (TTree *)map_fin_mc_jec_up[it->first]->Get("POGTightWithTightIso_JetEnUp/Result_Tree");
+    // jec up
+    map_fin_mc_jec_up[it->first] = new TFile(path_base + "JetEnUp/" + it->second);
+    map_tree_mc_jec_up[it->first] = (TTree *)map_fin_mc_jec_up[it->first]->Get("POGTightWithTightIso_JetEnUp/Result_Tree");
 
-    //   event.Setup_Tree(map_tree_mc_jec_up[it->first], false);
+    event.Setup_Tree(map_tree_mc_jec_up[it->first], false);
 
-    //   // jes down
-    //   map_fin_mc_jes_down[it->first] = new TFile(path_base + "JesDown/" + it->second);
-    //   map_tree_mc_jes_down[it->first] = (TTree *)map_fin_mc_jes_down[it->first]->Get("POGTightWithTightIso_JetResDown/Result_Tree");
+    // jes down
+    map_fin_mc_jes_down[it->first] = new TFile(path_base + "JesDown/" + it->second);
+    map_tree_mc_jes_down[it->first] = (TTree *)map_fin_mc_jes_down[it->first]->Get("POGTightWithTightIso_JetResDown/Result_Tree");
 
-    //   event.Setup_Tree(map_tree_mc_jes_down[it->first], false);
+    event.Setup_Tree(map_tree_mc_jes_down[it->first], false);
 
-    //   // jes up
-    //   map_fin_mc_jes_up[it->first] = new TFile(path_base + "JesUp/" + it->second);
-    //   map_tree_mc_jes_up[it->first] = (TTree *)map_fin_mc_jes_up[it->first]->Get("POGTightWithTightIso_JetResUp/Result_Tree");
+    // jes up
+    map_fin_mc_jes_up[it->first] = new TFile(path_base + "JesUp/" + it->second);
+    map_tree_mc_jes_up[it->first] = (TTree *)map_fin_mc_jes_up[it->first]->Get("POGTightWithTightIso_JetResUp/Result_Tree");
 
-    //   event.Setup_Tree(map_tree_mc_jes_up[it->first], false);
+    event.Setup_Tree(map_tree_mc_jes_up[it->first], false);
   }
 
-  // syst trees
+  // Top Syst
+  // CP5 down
+  map_fin_mc_cp5_down = map_fin_mc;
+  map_fin_mc_cp5_down.erase("TTLJ_powheg");
+  map_fin_mc_cp5_down["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5down"]);
+
+  map_tree_mc_cp5_down = map_tree_mc;
+  map_tree_mc_cp5_down.erase("TTLJ_powheg");
+  map_tree_mc_cp5_down["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_down["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+
+  event.Setup_Tree(map_tree_mc_cp5_down["TTLJ_powheg"], false);
+
+  // CP5 up
+  map_fin_mc_cp5_up = map_fin_mc;
+  map_fin_mc_cp5_up.erase("TTLJ_powheg");
+  map_fin_mc_cp5_up["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5up"]);
+
+  map_tree_mc_cp5_up = map_tree_mc;
+  map_tree_mc_cp5_up.erase("TTLJ_powheg");
+  map_tree_mc_cp5_up["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_up["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+
+  event.Setup_Tree(map_tree_mc_cp5_up["TTLJ_powheg"], false);
+
+  // hdamp down
+  map_fin_mc_hdamp_down = map_fin_mc;
+  map_fin_mc_hdamp_down.erase("TTLJ_powheg");
+  map_fin_mc_hdamp_down["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampdown"]);
+
+  map_tree_mc_hdamp_down = map_tree_mc;
+  map_tree_mc_hdamp_down.erase("TTLJ_powheg");
+  map_tree_mc_hdamp_down["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_down["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+
+  event.Setup_Tree(map_tree_mc_hdamp_down["TTLJ_powheg"], false);
+
+  // hdamp up
+  map_fin_mc_hdamp_up = map_fin_mc;
+  map_fin_mc_hdamp_up.erase("TTLJ_powheg");
+  map_fin_mc_hdamp_up["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampup"]);
+
+  map_tree_mc_hdamp_up = map_tree_mc;
+  map_tree_mc_hdamp_up.erase("TTLJ_powheg");
+  map_tree_mc_hdamp_up["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_up["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+
+  event.Setup_Tree(map_tree_mc_hdamp_up["TTLJ_powheg"], false);
+
+  // mTop 171p5
+  map_fin_mc_mtop_171p5 = map_fin_mc;
+  map_fin_mc_mtop_171p5.erase("TTLJ_powheg");
+  map_fin_mc_mtop_171p5["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_171p5"]);
+
+  map_tree_mc_mtop_171p5 = map_tree_mc;
+  map_tree_mc_mtop_171p5.erase("TTLJ_powheg");
+  map_tree_mc_mtop_171p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_171p5["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+
+  event.Setup_Tree(map_tree_mc_mtop_171p5["TTLJ_powheg"], false);
+
+  // mTop 173p5
+  map_fin_mc_mtop_173p5 = map_fin_mc;
+  map_fin_mc_mtop_173p5.erase("TTLJ_powheg");
+  map_fin_mc_mtop_173p5["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_173p5"]);
+
+  map_tree_mc_mtop_173p5 = map_tree_mc;
+  map_tree_mc_mtop_173p5.erase("TTLJ_powheg");
+  map_tree_mc_mtop_173p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_173p5["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+
+  event.Setup_Tree(map_tree_mc_mtop_173p5["TTLJ_powheg"], false);
+
+  // TFile and TTree handlers
   map_map_fin_mc["Central"] = &map_fin_mc;
   map_map_tree_mc["Central"] = &map_tree_mc;
 
-  // map_map_fin_mc["JesDown"] = &map_fin_mc_jes_down;
-  // map_map_tree_mc["JesDown"] = &map_tree_mc_jes_down;
+  map_map_fin_mc["Jes_Down"] = &map_fin_mc_jes_down;
+  map_map_tree_mc["Jes_Down"] = &map_tree_mc_jes_down;
 
-  // map_map_fin_mc["JesUp"] = &map_fin_mc_jes_up;
-  // map_map_tree_mc["JesUp"] = &map_tree_mc_jes_up;
+  map_map_fin_mc["Jes_Up"] = &map_fin_mc_jes_up;
+  map_map_tree_mc["Jes_Up"] = &map_tree_mc_jes_up;
 
-  // map_map_fin_mc["JetEnDown"] = &map_fin_mc_jec_down;
-  // map_map_tree_mc["JetEnDown"] = &map_tree_mc_jec_down;
+  map_map_fin_mc["Jet_En_Down"] = &map_fin_mc_jec_down;
+  map_map_tree_mc["Jet_En_Down"] = &map_tree_mc_jec_down;
 
-  // map_map_fin_mc["JetEnUp"] = &map_fin_mc_jec_up;
-  // map_map_tree_mc["JetEnUp"] = &map_tree_mc_jec_up;
+  map_map_fin_mc["Jet_En_Up"] = &map_fin_mc_jec_up;
+  map_map_tree_mc["Jet_En_Up"] = &map_tree_mc_jec_up;
+
+  map_map_fin_mc["CP5_Down"] = &map_fin_mc_cp5_down;
+  map_map_tree_mc["CP5_Down"] = &map_tree_mc_cp5_down;
+
+  map_map_fin_mc["CP5_Up"] = &map_fin_mc_cp5_up;
+  map_map_tree_mc["CP5_Up"] = &map_tree_mc_cp5_up;
+
+  map_map_fin_mc["hDamp_Down"] = &map_fin_mc_hdamp_down;
+  map_map_tree_mc["hDamp_Down"] = &map_tree_mc_hdamp_down;
+
+  map_map_fin_mc["mTop_171p5"] = &map_fin_mc_mtop_171p5;
+  map_map_tree_mc["mTop_171p5"] = &map_tree_mc_mtop_171p5;
+
+   map_map_fin_mc["mTop_173p5"] = &map_fin_mc_mtop_173p5;
+  map_map_tree_mc["mTop_173p5"] = &map_tree_mc_mtop_173p5;
 
   for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
   {
@@ -105,8 +187,8 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
                "C_Tag_Extrap_Down", "C_Tag_Extrap_Up", "C_Tag_Interp_Down", "C_Tag_Interp_Up", "C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up", "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up", "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up", "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up", "C_Tag_PU_Down", "C_Tag_PU_Up", "C_Tag_Stat_Down", "C_Tag_Stat_Up",
                "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up", "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up", "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
                "C_Tag_JER_Down", "C_Tag_JER_Up", "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up",
-               "JesDown", "JesUp",
-               "JetEnDown", "JetEnUp",
+               "Jes_Down", "Jes_Up",
+               "Jet_En_Down", "Jet_En_Up",
                "Mu_Id_Down", "Mu_Id_Up",
                "Mu_Iso_Down", "Mu_Iso_Up",
                "Mu_Trig_Down", "Mu_Trig_Up",
@@ -115,7 +197,10 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
                "Pileup_Veto_Down", "Pileup_Veto_Up",
                "Prefire_Down", "Prefire_Up",
                "Scale_Variation_1", "Scale_Variation_2", "Scale_Variation_3", "Scale_Variation_4", "Scale_Variation_6", "Scale_Variation_8",
-               "Top_Pt_Reweight"};
+               "Top_Pt_Reweight",
+               "CP5_Down", "CP5_Up",
+               "hDamp_Down", "hDamp_Up",
+               "mTop_171p5", "mTop_173p5"};
   for (int i = 0; i < sizeof(event.weight_pdf_error_set) / sizeof(float); i++)
   {
     TString pdf_error_set = "PDF_Error_Set_" + to_string(i);
@@ -124,6 +209,18 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
 
   n_syst = syst_name.size();
   cout << "N_Syst = " << n_syst << endl;
+
+  // for c-tag weight
+  name_c_tag_weight.push_back("C_Tag_Nominal");
+  for (int i = 0; i < n_syst; i++)
+  {
+    if (syst_name[i].Contains("C_Tag"))
+    {
+      name_c_tag_weight.push_back(syst_name[i]);
+    }
+  }
+  n_c_tag_weight = name_c_tag_weight.size();
+  cout << "N_C_Tag_weight = " << n_c_tag_weight << endl;
 
   variable_conf = {{"N_Vertex", 80, 0, 80},
                    {"Lepton_Pt", 50, 0, 300},
@@ -153,12 +250,26 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
         for (int l = 0; l < n_variable; l++)
         {
           TString histo_name = region_name[i] + "_" + syst_name[j] + "_" + vec_short_name_mc[k] + "_" + variable_conf[l].variable_title;
-
           histo_mc[i][j][k][l] = new TH1D(histo_name, variable_conf[l].variable_title, variable_conf[l].n_bin, variable_conf[l].x_low, variable_conf[l].x_up);
         } // loop over n_variable
       }   // loop over n_sample_merge_mc
     }     // loop over n_syst
-  }       // loop over n_regions
+  }       // loop over n_region
+
+  histo_weight = new TH1D ***[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_weight[i] = new TH1D **[n_c_tag_weight];
+    for (int j = 0; j < n_c_tag_weight; j++)
+    {
+      histo_weight[i][j] = new TH1D *[n_sample_merge_mc];
+      for (int k = 0; k < n_sample_merge_mc; k++)
+      {
+        TString histo_name = region_name[i] + "_" + name_c_tag_weight[j] + "_" + vec_short_name_mc[k];
+        histo_weight[i][j][k] = new TH1D(histo_name, histo_name, 1000, 0, 10);
+      } // loop over n_sample_merge_mc
+    }   // loop over n_syst
+  }     // loop over n_regions
 
   histo_data = new TH1D **[n_region];
   for (int i = 0; i < n_region; i++)
@@ -203,6 +314,11 @@ Histo_Syst::~Histo_Syst()
       {
         TDirectory *dir_sample = dir_syst->mkdir(vec_short_name_mc[k]);
 
+        // dir_sample->cd();
+        // histo_weight[i][j][k]->SetTitle("Weight_" + vec_short_name_mc[k]);
+        // histo_weight[i][j][k]->SetName("Weight_" + vec_short_name_mc[k]);
+        // histo_weight[i][j][k]->Write();
+
         for (int l = 0; l < n_variable; l++)
         {
           dir_sample->cd();
@@ -212,7 +328,22 @@ Histo_Syst::~Histo_Syst()
         } // loop over variable
       }   // loop over sample
     }     // loop over syst
-  }       // loop over region
+
+    // for c-tagging weight
+    TDirectory *dir_weight = dir_region->mkdir("Weight");
+    for (int j = 0; j < n_c_tag_weight; j++)
+    {
+      TDirectory *dir_name_c_tag_weight = dir_weight->mkdir(name_c_tag_weight[j]);
+      for (int k = 0; k < n_sample_merge_mc; k++)
+      {
+        dir_name_c_tag_weight->cd();
+
+        histo_weight[i][j][k]->SetTitle(vec_short_name_mc[k]);
+        histo_weight[i][j][k]->SetName(vec_short_name_mc[k]);
+        histo_weight[i][j][k]->Write();
+      } // loop over n_sample
+    }   // loop over n_c_tag_weight
+  }     // loop over region
 
   fout->Close();
 } // Histo_Syst::~Histo_Syst()
@@ -258,8 +389,11 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
 
     // for central tree, don't consider the following syst
     if (syst_fix == "None" &&
-        (syst_type == "JesDown" || syst_type == "JesUp" ||
-         syst_type == "JetEnDown" || syst_type == "JetEnUp"))
+        (syst_type == "Jes_Down" || syst_type == "Jes_Up" ||
+         syst_type == "Jet_En_Down" || syst_type == "Jet_En_Up" ||
+         syst_type == "CP5_Down" || syst_type == "CP5_Up" ||
+         syst_type == "hDamp_Down" || syst_type == "hDamp_Up" ||
+         syst_type == "mTop_171p5" || syst_type == "mTop_173p5"))
       continue;
 
     // if syst_fix is fixed, only nominal is considered
@@ -447,10 +581,81 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
     histo_mc[region_index][i][sample_index][10]->Fill(event.met_pt, event.weight);
     histo_mc[region_index][i][sample_index][11]->Fill(event.met_phi, event.weight);
     histo_mc[region_index][i][sample_index][12]->Fill(event.best_mva_score, event.weight);
-  }
+  } // loop over n_syst
 
   return;
 } // void Histo_Syst::Fill_Histo_MC(const int& sample_index)
+
+//////////
+
+void Histo_Syst::Fill_Histo_Weight(const int &region_index, const int &sample_index)
+{
+  for (int i = 0; i < n_c_tag_weight; i++)
+  {
+    // cout << "c_tag_weight_index = " << i << ", name_c_tag_weight = " << name_c_tag_weight[i] << endl;
+
+    float weight = 1;
+
+    if (name_c_tag_weight[i] == "C_Tag_Nominal")
+      weight = event.weight_c_tag;
+    else if (name_c_tag_weight[i] == "C_Tag_Extrap_Down")
+      weight = event.weight_c_tag_extrap_down;
+    else if (name_c_tag_weight[i] == "C_Tag_Extrap_Up")
+      weight = event.weight_c_tag_extrap_up;
+    else if (name_c_tag_weight[i] == "C_Tag_Interp_Down")
+      weight = event.weight_c_tag_interp_down;
+    else if (name_c_tag_weight[i] == "C_Tag_Interp_Up")
+      weight = event.weight_c_tag_interp_up;
+    else if (name_c_tag_weight[i] == "C_Tag_LHE_Scale_MuF_Down")
+      weight = event.weight_c_tag_lhe_scale_muf_down;
+    else if (name_c_tag_weight[i] == "C_Tag_LHE_Scale_MuF_Up")
+      weight = event.weight_c_tag_lhe_scale_muf_up;
+    else if (name_c_tag_weight[i] == "C_Tag_LHE_Scale_MuR_Down")
+      weight = event.weight_c_tag_lhe_scale_mur_down;
+    else if (name_c_tag_weight[i] == "C_Tag_LHE_Scale_MuR_Up")
+      weight = event.weight_c_tag_lhe_scale_mur_up;
+    else if (name_c_tag_weight[i] == "C_Tag_PS_FSR_Fixed_Down")
+      weight = event.weight_c_tag_ps_fsr_fixed_down;
+    else if (name_c_tag_weight[i] == "C_Tag_PS_FSR_Fixed_Up")
+      weight = event.weight_c_tag_ps_fsr_fixed_up;
+    else if (name_c_tag_weight[i] == "C_Tag_PS_ISR_Fixed_Down")
+      weight = event.weight_c_tag_ps_isr_fixed_down;
+    else if (name_c_tag_weight[i] == "C_Tag_PS_ISR_Fixed_Up")
+      weight = event.weight_c_tag_ps_isr_fixed_up;
+    else if (name_c_tag_weight[i] == "C_Tag_PU_Down")
+      weight = event.weight_c_tag_pu_down;
+    else if (name_c_tag_weight[i] == "C_Tag_PU_Up")
+      weight = event.weight_c_tag_pu_up;
+    else if (name_c_tag_weight[i] == "C_Tag_Stat_Down")
+      weight = event.weight_c_tag_stat_down;
+    else if (name_c_tag_weight[i] == "C_Tag_Stat_Up")
+      weight = event.weight_c_tag_stat_up;
+    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_DYJets_B_Down")
+      weight = event.weight_c_tag_xsec_br_unc_dyjets_b_down;
+    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_DYJets_B_Up")
+      weight = event.weight_c_tag_xsec_br_unc_dyjets_b_up;
+    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_DYJets_C_Down")
+      weight = event.weight_c_tag_xsec_br_unc_dyjets_c_down;
+    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_DYJets_C_Up")
+      weight = event.weight_c_tag_xsec_br_unc_dyjets_c_up;
+    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_WJets_C_Down")
+      weight = event.weight_c_tag_xsec_br_unc_wjets_c_down;
+    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_WJets_C_Up")
+      weight = event.weight_c_tag_xsec_br_unc_wjets_c_up;
+    else if (name_c_tag_weight[i] == "C_Tag_JER_Down")
+      weight = event.weight_c_tag_jer_down;
+    else if (name_c_tag_weight[i] == "C_Tag_JER_Up")
+      weight = event.weight_c_tag_jer_up;
+    else if (name_c_tag_weight[i] == "C_Tag_JES_Total_Down")
+      weight = event.weight_c_tag_jes_total_down;
+    else if (name_c_tag_weight[i] == "C_Tag_JES_Total_Up")
+      weight = event.weight_c_tag_jes_total_up;
+
+    histo_weight[region_index][i][sample_index]->Fill(weight);
+  } // loop over n_syst
+
+  return;
+} // void Histo_Syst::Fill_Histo_Weight(const int& region_index, const int& sample_index)
 
 //////////
 
@@ -514,6 +719,8 @@ void Histo_Syst::Read_Tree()
         int region_index = Get_Region_Index(region);
 
         Fill_Histo_MC(region_index, sample_index, i, syst_fix);
+        if (syst_fix == "None")
+          Fill_Histo_Weight(region_index, sample_index);
       } // loop over entries
     }   // loop over map_tree_mc
 

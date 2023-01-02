@@ -41,6 +41,10 @@ protected:
   int n_region;
   vector<TString> region_name;
 
+  int n_c_tag_weight;
+  vector<TString> c_tag_weight_name;
+  vector<map<TString, float>> c_tag_rf;
+
   int n_syst;
   vector<TString> syst_name;
 
@@ -54,6 +58,9 @@ protected:
 
   int color[7] = {2, 3, 4, 5, 6, 7, 8}; // n_sample
 
+  TH1D ****histo_c_tag_weight;   // n_region, n_c_tag_weight, n_sample
+  THStack ***stack_c_tag_weight; // n_region, n_c_tag_weight
+
   TH1D *****histo_mc;   // n_region, n_syst, n_sample, n_variable
   THStack ****stack_mc; // n_region, n_syst, n_variable
 
@@ -64,8 +71,8 @@ protected:
 
   TH1D ***histo_data; // n_region, n_variable
 
-  TH1D ***histo_ratio; // n_region, n_variable
-  TGraphAsymmErrors ***gr_ratio;//n_region, n_variable
+  TH1D ***histo_ratio;           // n_region, n_variable
+  TGraphAsymmErrors ***gr_ratio; // n_region, n_variable
 
   TGraphAsymmErrors ****gr_variation;       // n_region, n_syst-1, n_variable
   TGraphAsymmErrors ***gr_variation_merged; // n_region, n_variable
@@ -73,19 +80,27 @@ protected:
 
   TCanvas ***canvas; // n_region, n_variable
   TPad ****pad;      // n_region, n_variable, 2
-  
-  TCanvas ****canvas_each;//n_region, n_syst, n_variable
+
+  TCanvas ****canvas_each; // n_region, n_syst, n_variable
 
   TFile *fin;
   TFile *fout;
 
+  void Apply_C_Tag_Renormalization_Factor();
   void Compare();
   void Draw();
   void Draw_Each();
   void Envelope();
+  void Get_C_Tag_Renormalization_Factor();
   void Merge_PDF_Error_Set();
   void Save();
+  void Setup_C_Tag_Weight_Name(const TList *list);
+  void Setup_Histo_C_Tag_Weight();
+  void Setup_Histo_Data();
+  void Setup_Histo_MC();
+  void Setup_Histo_PDF_Error_Set();
   int Setup_Name(const TList *list, vector<TString> &vec_name, const bool &chk_excluding_pdf_error_set = false);
+  void Stack_C_Tag_Weight();
   void Stack_MC();
 
   ClassDef(Data_MC_Comparison, 1);

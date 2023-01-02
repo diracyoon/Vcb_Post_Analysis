@@ -15,6 +15,7 @@ class Samples : public TObject
   ~Samples();
 
   map<TString, TString> map_mc;
+  map<TString, TString> map_top_syst;
   map<TString, TString> map_data;
 
   map<TString, TString> map_short_name_mc;
