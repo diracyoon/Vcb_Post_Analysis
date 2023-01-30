@@ -14,7 +14,7 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
 
-  TString fin_name = path_base + "/Macro/Data_MC_Comparison/Vcb_Histos_" + era + "_" + channel + ".root";
+  TString fin_name = path_base + "/Macro/Data_MC_Comparison/Vcb_Histos_" + era + "_" + channel + "_All.root";
 
   fin = new TFile(fin_name);
   if (fin == NULL)
@@ -28,9 +28,11 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   Setup_Name(list_region, region_name);
   n_region = region_name.size();
 
-  // get c-tag weight
-  TList *list_c_tag_weight = ((TDirectory *)fin->Get(region_name[0] + "/Weight"))->GetListOfKeys();
-  Setup_C_Tag_Weight_Name(list_c_tag_weight);
+  /*
+    // get c-tag weight
+    TList *list_c_tag_weight = ((TDirectory *)fin->Get(region_name[0] + "/Weight"))->GetListOfKeys();
+    Setup_C_Tag_Weight_Name(list_c_tag_weight);
+  */
 
   // get syst_name
   TList *list_syst = ((TDirectory *)fin->Get(region_name[0]))->GetListOfKeys();
@@ -81,10 +83,10 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   // syst_name.push_back("C_Tag_JER_Up");
   // syst_name.push_back("C_Tag_JES_Total_Down");
   // syst_name.push_back("C_Tag_JES_Total_Up");
-  // syst_name.push_back("JesDown");
-  // syst_name.push_back("JesUp");
-  // syst_name.push_back("JetEnDown");
-  // syst_name.push_back("JetEnUp");
+  // // syst_name.push_back("Jes_Down");
+  // syst_name.push_back("Jes_Up");
+  // syst_name.push_back("Jet_En_Down");
+  // syst_name.push_back("Jet_En_Up");
   // syst_name.push_back("Mu_Id_Down");
   // syst_name.push_back("Mu_Id_Up");
   // syst_name.push_back("Mu_Iso_Down");
@@ -107,6 +109,12 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   // syst_name.push_back("Scale_Variation_6");
   // syst_name.push_back("Scale_Variation_8");
   // syst_name.push_back("Top_Pt_Reweight");
+  // syst_name.push_back("CP5_Down");
+  // syst_name.push_back("CP5_Up");
+  // syst_name.push_back("hDamp_Down");
+  // syst_name.push_back("hDamp_Up");
+  // syst_name.push_back("mTop_171p5");
+  // syst_name.push_back("mTop_173p5");
   n_pdf_error_set = 0;
 
   n_syst = syst_name.size();
@@ -124,7 +132,7 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   n_variable = variable_name.size();
 
   // setup histo_c_tag_weight
-  Setup_Histo_C_Tag_Weight();
+  // Setup_Histo_C_Tag_Weight();
 
   // setup histo_mc
   Setup_Histo_MC();
@@ -148,11 +156,9 @@ void Data_MC_Comparison::Run()
 {
   cout << "Data_MC_Comparison::Run" << endl;
 
-  Get_C_Tag_Renormalization_Factor();
-  Apply_C_Tag_Renormalization_Factor();
-  cout << "test" << endl;
+  // Get_C_Tag_Renormalization_Factor();
+  // Apply_C_Tag_Renormalization_Factor();
   Stack_MC();
-  cout << "test test" << endl;
   Envelope();
   Compare();
   Draw();
@@ -162,17 +168,17 @@ void Data_MC_Comparison::Run()
 } // void Data_MC_Comparison::Run()
 
 //////////
-
+/*
 void Data_MC_Comparison::Apply_C_Tag_Renormalization_Factor()
 {
-  cout << "Test Data_MC_Comparison::Apply_C_Tag_Renormalization_Factor" << endl;
+  cout << "Data_MC_Comparison::Apply_C_Tag_Renormalization_Factor" << endl;
 
   for (int i = 0; i < n_region; i++)
   {
     // cout << i << " " << region_name[i] << endl;
     for (int j = 0; j < n_syst; j++)
     {
-      cout << j << " " << syst_name[j] << endl;
+      // cout << j << " " << syst_name[j] << endl;
 
       TString target_syst;
       if (syst_name[j] == "Nominal")
@@ -194,9 +200,11 @@ void Data_MC_Comparison::Apply_C_Tag_Renormalization_Factor()
     }     // loop over n_syst
   }       // loop over n_region;
 
+  cout << "Data_MC_Comparison::Apply_C_Tag_Renormalization_Factor Done" << endl;
+
   return;
 } // void Data_MC_Comparison::Apply_C_Tag_Renormalization_Factor()
-
+*/
 //////////
 
 void Data_MC_Comparison::Compare()
@@ -253,7 +261,7 @@ void Data_MC_Comparison::Draw()
       TString canvas_name = region_name[i] + "_" + variable_name[j];
       // cout << canvas_name << endl;
 
-      canvas[i][j] = new TCanvas(canvas_name, canvas_name, 800, 500);
+      canvas[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
       canvas[i][j]->Draw();
 
       pad[i][j] = new TPad *[2];
@@ -350,15 +358,15 @@ void Data_MC_Comparison::Envelope()
 
   for (int i = 0; i < n_region; i++)
   {
-    cout << region_name[i] << endl;
+    // cout << region_name[i] << endl;
     for (int j = 0; j < n_variable; j++)
     {
-      cout << variable_name[j] << endl;
+      // cout << variable_name[j] << endl;
 
       TH1D *histo_nominal = (TH1D *)(stack_mc[i][0][j]->GetStack()->Last());
       for (int k = 0; k < n_syst - 1; k++) // excluding nominal, excluding merged_pdf_error_set which is the last
       {
-        cout << syst_name[k + 1] << endl;
+        // cout << syst_name[k + 1] << endl;
 
         TH1D *histo_syst = (TH1D *)(stack_mc[i][k + 1][j]->GetStack()->Last());
 
@@ -438,7 +446,7 @@ void Data_MC_Comparison::Envelope()
 } // void Data_MC_Comparison::Envelope()
 
 //////////
-
+/*
 void Data_MC_Comparison::Get_C_Tag_Renormalization_Factor()
 {
   cout << "Data_MC_Comparison::C_Tag_Weight" << endl;
@@ -460,7 +468,7 @@ void Data_MC_Comparison::Get_C_Tag_Renormalization_Factor()
 
   return;
 } // void Data_MC_Comparison::Get_C_Tag_Renormalization_Factor()
-
+*/
 //////////
 
 void Data_MC_Comparison::Merge_PDF_Error_Set()
@@ -583,7 +591,7 @@ void Data_MC_Comparison::Save()
 } // void Data_MC_Comparison::Save()
 
 //////////
-
+/*
 void Data_MC_Comparison::Setup_C_Tag_Weight_Name(const TList *list)
 {
   int n_entries = list->GetEntries();
@@ -599,9 +607,9 @@ void Data_MC_Comparison::Setup_C_Tag_Weight_Name(const TList *list)
 
   return;
 } // void Data_MC_Comparison::Setup_C_Tag_Weight_Name(const TList *list)
-
+*/
 //////////
-
+/*
 void Data_MC_Comparison::Setup_Histo_C_Tag_Weight()
 {
   histo_c_tag_weight = new TH1D ***[n_region];
@@ -620,7 +628,7 @@ void Data_MC_Comparison::Setup_Histo_C_Tag_Weight()
 
   return;
 } // void Data_MC_Comparison::Setup_Histo_C_Tag_Weight()
-
+*/
 //////////
 
 void Data_MC_Comparison::Setup_Histo_Data()
@@ -738,7 +746,7 @@ int Data_MC_Comparison::Setup_Name(const TList *list, vector<TString> &vec_name,
 } // int Data_MC_Comparison::Setup_Name(const TList* list, TString* name)
 
 //////////
-
+/*
 void Data_MC_Comparison::Stack_C_Tag_Weight()
 {
   stack_c_tag_weight = new THStack **[n_region];
@@ -761,11 +769,13 @@ void Data_MC_Comparison::Stack_C_Tag_Weight()
 
   return;
 } // void Data_MC_Comparison::Stack_C_Tag_Weight()
-
+*/
 //////////
 
 void Data_MC_Comparison::Stack_MC()
 {
+  cout << "[Data_MC_Comparison::Stack_MC] Init" << endl;
+
   stack_mc = new THStack ***[n_region];
   for (int i = 0; i < n_region; i++)
   {
@@ -788,6 +798,8 @@ void Data_MC_Comparison::Stack_MC()
       }   // loop over n_variable
     }     // loop over n_syst
   }       // loop over n_region
+
+  cout << "[Data_MC_Comparison::Stack_MC] Done" << endl;
 
   return;
 } // void Data_MC_Comparison::Stack_MC()

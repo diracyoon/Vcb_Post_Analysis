@@ -24,7 +24,7 @@ using namespace std;
 class Histo_Syst : public TObject
 {
 public:
-  Histo_Syst(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_swap_mode = "Permutation_MVA");
+  Histo_Syst(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_run_flag = "Central", const TString &a_swap_mode = "Permutation_MVA");
   ~Histo_Syst();
 
   void Run();
@@ -38,7 +38,9 @@ public:
   } Histo_Conf;
 
 protected:
-  float reduction;
+  int n_split;
+  int index_split; 
+  int reduction;
 
   Samples samples;
   int n_sample_merge_mc;
@@ -46,6 +48,9 @@ protected:
 
   TString era;
   TString channel;
+  TString path_base;
+  TString run_flag;
+
   TString data_short_name;
 
   map<TString, TFile *> map_fin_mc;
@@ -86,28 +91,40 @@ protected:
   int n_syst;
   vector<TString> syst_name;
 
-  int n_c_tag_weight;
-  vector<TString> name_c_tag_weight;
-
   int n_variable;
   vector<Histo_Conf> variable_conf;
 
-  TH1D *****histo_mc;    // n_region, n_syst, n_sample, n_variable
-  TH1D ****histo_weight; // n_region, n_c_tag_weight, n_sample
+  int n_syst_b;
+  vector<TString> name_syst_b;
+
+  int n_syst_c;
+  vector<TString> name_syst_c;
+
+  TH1D **histo_tagging_rf_b; // n_syst_b
+  TH1D **histo_tagging_rf_c; // n_syst_c
+
+  float b_tag_rf;
+  float c_tag_rf;
+
+  TH1D *****histo_mc; // n_region, n_syst, n_sample, n_variable
+  // TH1D ****histo_weight; // n_region, n_c_tag_weight, n_sample
   // THStack ****stack_mc;  // n_region, n_syst, n_variable
 
   TH1D ***histo_data; // n_region, n_variable
 
   TString region;
 
+  TFile *fin_tagging_rf;
   TFile *fout;
 
   void Fill_Histo_Data(const int &region_index);
-  void Fill_Histo_MC(const int &region_index, const int &sample_index, const Long64_t &entry, const TString &syst_fix = "None");
-  void Fill_Histo_Weight(const int &region_index, const int &sample_index);
+  void Fill_Histo_MC(const int &region_index, const int &sample_index, const TString &syst_fix = "None");
+  // void Fill_Histo_Weight(const int &region_index, const int &sample_index);
   inline int Get_Region_Index(const TString &region);
+  float Get_Tagging_RF(const TString &syst_name);
   void Read_Tree();
   bool Set_Region();
+  void Set_Tagging_RF();
 
   ClassDef(Histo_Syst, 1);
 };

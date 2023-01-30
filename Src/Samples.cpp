@@ -29,6 +29,22 @@ ClassImp(Samples)
 			map_mc["QCD_bEn_HT1500to2000"] = "Vcb_QCD_bEnriched_HT1500to2000.root";
 			map_mc["QCD_bEn_HT2000toInf"] = "Vcb_QCD_bEnriched_HT2000toInf.root";
 
+			map_mc_tagging_rf["TTLJ_WtoCB_powheg"] = "Vcb_Tagging_RF_TTLJ_WtoCB_powheg.root";
+			map_mc_tagging_rf["TTLJ_powheg"] = "Vcb_Tagging_RF_TTLJ_powheg.root";
+			map_mc_tagging_rf["TTLL_powheg"] = "Vcb_Tagging_RF_TTLL_powheg.root";
+			map_mc_tagging_rf["SingleTop_tW_top"] = "Vcb_Tagging_RF_SingleTop_tW_top_NoFullyHad.root";
+			map_mc_tagging_rf["SingleTop_tW_antitop"] = "Vcb_Tagging_RF_SingleTop_tW_antitop_NoFullyHad.root";
+			map_mc_tagging_rf["WJets"] = "Vcb_Tagging_RF_WJets_MG.root";
+			map_mc_tagging_rf["DYJets"] = "Vcb_Tagging_RF_DYJets_MG.root";
+			map_mc_tagging_rf["QCD_bEn_HT100to200"] = "Vcb_Tagging_RF_QCD_bEnriched_HT100to200.root";
+			map_mc_tagging_rf["QCD_bEn_HT200to300"] = "Vcb_Tagging_RF_QCD_bEnriched_HT200to300.root";
+			map_mc_tagging_rf["QCD_bEn_HT300to500"] = "Vcb_Tagging_RF_QCD_bEnriched_HT300to500.root";
+			map_mc_tagging_rf["QCD_bEn_HT500to700"] = "Vcb_Tagging_RF_QCD_bEnriched_HT500to700.root";
+			map_mc_tagging_rf["QCD_bEn_HT700to1000"] = "Vcb_Tagging_RF_QCD_bEnriched_HT700to1000.root";
+			map_mc_tagging_rf["QCD_bEn_HT1000to1500"] = "Vcb_Tagging_RF_QCD_bEnriched_HT1000to1500.root";
+			map_mc_tagging_rf["QCD_bEn_HT1500to2000"] = "Vcb_Tagging_RF_QCD_bEnriched_HT1500to2000.root";
+			map_mc_tagging_rf["QCD_bEn_HT2000toInf"] = "Vcb_Tagging_RF_QCD_bEnriched_HT2000toInf.root";
+
 			map_short_name_mc["TTLJ_WtoCB_powheg"] = "TTLJ_WtoCB";
 			map_short_name_mc["TTLJ_powheg"] = "TTLJ";
 			map_short_name_mc["TTLL_powheg"] = "TTLL";

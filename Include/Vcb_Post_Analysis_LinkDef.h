@@ -13,6 +13,7 @@
 #pragma link C++ class Histo_Syst+;
 #pragma link C++ class Reco_Eval+;
 #pragma link C++ class Average_Syst_PDF+;
-#pragma link C++ class Template++;
+#pragma link C++ class Template+;
+#pragma link C++ class Tagging_RF+;
 
 #endif /* __ROOTCLING__ */

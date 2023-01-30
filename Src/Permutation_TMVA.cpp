@@ -21,7 +21,7 @@ Permutation_TMVA::Permutation_TMVA(const TString& a_era, const TString& a_channe
   TString path_base = getenv("Vcb_Post_Analysis_WD");
   path_base += "/Sample/" + era + "/" + channel + "/RunPermutationTree/";
 
-  fin = new TFile(path_base + "Vcb_Mu_TTLJ_WtoCB_powheg.root");
+  fin = new TFile(path_base + "Vcb_TTLJ_WtoCB_powheg.root");
   tree_correct = (TTree*)fin->Get("Permutation_Correct");
   tree_wrong = (TTree*)fin->Get("Permutation_Wrong");
 

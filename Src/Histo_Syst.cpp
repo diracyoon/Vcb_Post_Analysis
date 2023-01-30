@@ -4,17 +4,30 @@ ClassImp(Histo_Syst);
 
 //////////
 
-Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TString &a_swap_mode) : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode)
+Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TString &a_run_flag, const TString &a_swap_mode) : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode)
 {
   cout << "[Histo_Syst::Histo_Syst]: Init analysis" << endl;
 
-  reduction = 100;
+  reduction = 1;
 
   era = a_era;
   channel = a_channel;
+  run_flag = a_run_flag;
+  if (run_flag.Contains("Central"))
+  {
 
-  TString path_base = getenv("Vcb_Post_Analysis_WD");
-  path_base += "/Sample/" + era + "/" + channel + "/RunResult/";
+    index_split = TString(run_flag[7]).Atoi();
+    n_split = TString(run_flag[8]).Atoi();
+    run_flag = "Central";
+  }
+
+  cout << "[Histo_Syst::Histo_Syst]: run_flag = " << run_flag << endl;
+  if (run_flag == "Central")
+    cout << "Index_Split = " << index_split << ", N_Split = " << n_split << endl;
+
+  path_base = getenv("Vcb_Post_Analysis_WD");
+
+  TString result_path = path_base + "/Sample/" + era + "/" + channel + "/RunResult/";
 
   if (samples.map_mc.size() != samples.map_short_name_mc.size() || samples.map_data.size() != samples.map_short_name_data.size())
   {
@@ -22,164 +35,213 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
     exit(EXIT_FAILURE);
   }
 
-  for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
+  if (run_flag != "Data")
   {
-    cout << it->first << endl;
+    for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
+    {
+      cout << it->first << endl;
 
-    // central and syst weights
-    map_fin_mc[it->first] = new TFile(path_base + "Central_Syst/" + it->second);
-    map_tree_mc[it->first] = (TTree *)map_fin_mc[it->first]->Get("POGTightWithTightIso_Central/Result_Tree");
+      // central and syst weights
+      // cout << "Central_Syst" << endl;
+      map_fin_mc[it->first] = new TFile(result_path + "Central_Syst/" + it->second);
+      map_tree_mc[it->first] = (TTree *)map_fin_mc[it->first]->Get("POGTightWithTightIso_Central/Result_Tree");
 
-    event.Setup_Tree(map_tree_mc[it->first], true);
+      event.Setup_Tree(map_tree_mc[it->first], true);
 
-    // jec down
-    map_fin_mc_jec_down[it->first] = new TFile(path_base + "JetEnDown/" + it->second);
-    map_tree_mc_jec_down[it->first] = (TTree *)map_fin_mc_jec_down[it->first]->Get("POGTightWithTightIso_JetEnDown/Result_Tree");
+      // jec down
+      // cout << "Jec Down" << endl;
+      map_fin_mc_jec_down[it->first] = new TFile(result_path + "JetEnDown/" + it->second);
+      map_tree_mc_jec_down[it->first] = (TTree *)map_fin_mc_jec_down[it->first]->Get("POGTightWithTightIso_JetEnDown/Result_Tree");
 
-    event.Setup_Tree(map_tree_mc_jec_down[it->first], false);
+      event.Setup_Tree(map_tree_mc_jec_down[it->first], false);
 
-    // jec up
-    map_fin_mc_jec_up[it->first] = new TFile(path_base + "JetEnUp/" + it->second);
-    map_tree_mc_jec_up[it->first] = (TTree *)map_fin_mc_jec_up[it->first]->Get("POGTightWithTightIso_JetEnUp/Result_Tree");
+      // jec up
+      // cout << "Jec Up" << endl;
+      map_fin_mc_jec_up[it->first] = new TFile(result_path + "JetEnUp/" + it->second);
+      map_tree_mc_jec_up[it->first] = (TTree *)map_fin_mc_jec_up[it->first]->Get("POGTightWithTightIso_JetEnUp/Result_Tree");
 
-    event.Setup_Tree(map_tree_mc_jec_up[it->first], false);
+      event.Setup_Tree(map_tree_mc_jec_up[it->first], false);
 
-    // jes down
-    map_fin_mc_jes_down[it->first] = new TFile(path_base + "JesDown/" + it->second);
-    map_tree_mc_jes_down[it->first] = (TTree *)map_fin_mc_jes_down[it->first]->Get("POGTightWithTightIso_JetResDown/Result_Tree");
+      // jes down
+      // cout << "Jes Down" << endl;
+      map_fin_mc_jes_down[it->first] = new TFile(result_path + "JesDown/" + it->second);
+      map_tree_mc_jes_down[it->first] = (TTree *)map_fin_mc_jes_down[it->first]->Get("POGTightWithTightIso_JetResDown/Result_Tree");
 
-    event.Setup_Tree(map_tree_mc_jes_down[it->first], false);
+      event.Setup_Tree(map_tree_mc_jes_down[it->first], false);
 
-    // jes up
-    map_fin_mc_jes_up[it->first] = new TFile(path_base + "JesUp/" + it->second);
-    map_tree_mc_jes_up[it->first] = (TTree *)map_fin_mc_jes_up[it->first]->Get("POGTightWithTightIso_JetResUp/Result_Tree");
+      // jes up
+      // cout << "Jes Up" << endl;
+      map_fin_mc_jes_up[it->first] = new TFile(result_path + "JesUp/" + it->second);
+      map_tree_mc_jes_up[it->first] = (TTree *)map_fin_mc_jes_up[it->first]->Get("POGTightWithTightIso_JetResUp/Result_Tree");
 
-    event.Setup_Tree(map_tree_mc_jes_up[it->first], false);
-  }
+      event.Setup_Tree(map_tree_mc_jes_up[it->first], false);
+    }
 
-  // Top Syst
-  // CP5 down
-  map_fin_mc_cp5_down = map_fin_mc;
-  map_fin_mc_cp5_down.erase("TTLJ_powheg");
-  map_fin_mc_cp5_down["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5down"]);
+    // Top Syst
+    // CP5 down
+    map_fin_mc_cp5_down = map_fin_mc;
+    map_fin_mc_cp5_down.erase("TTLJ_powheg");
+    map_fin_mc_cp5_down["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5down"]);
 
-  map_tree_mc_cp5_down = map_tree_mc;
-  map_tree_mc_cp5_down.erase("TTLJ_powheg");
-  map_tree_mc_cp5_down["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_down["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+    map_tree_mc_cp5_down = map_tree_mc;
+    map_tree_mc_cp5_down.erase("TTLJ_powheg");
+    map_tree_mc_cp5_down["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_down["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
 
-  event.Setup_Tree(map_tree_mc_cp5_down["TTLJ_powheg"], false);
+    event.Setup_Tree(map_tree_mc_cp5_down["TTLJ_powheg"], false);
 
-  // CP5 up
-  map_fin_mc_cp5_up = map_fin_mc;
-  map_fin_mc_cp5_up.erase("TTLJ_powheg");
-  map_fin_mc_cp5_up["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5up"]);
+    // CP5 up
+    map_fin_mc_cp5_up = map_fin_mc;
+    map_fin_mc_cp5_up.erase("TTLJ_powheg");
+    map_fin_mc_cp5_up["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5up"]);
 
-  map_tree_mc_cp5_up = map_tree_mc;
-  map_tree_mc_cp5_up.erase("TTLJ_powheg");
-  map_tree_mc_cp5_up["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_up["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+    map_tree_mc_cp5_up = map_tree_mc;
+    map_tree_mc_cp5_up.erase("TTLJ_powheg");
+    map_tree_mc_cp5_up["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_up["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
 
-  event.Setup_Tree(map_tree_mc_cp5_up["TTLJ_powheg"], false);
+    event.Setup_Tree(map_tree_mc_cp5_up["TTLJ_powheg"], false);
 
-  // hdamp down
-  map_fin_mc_hdamp_down = map_fin_mc;
-  map_fin_mc_hdamp_down.erase("TTLJ_powheg");
-  map_fin_mc_hdamp_down["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampdown"]);
+    // hdamp down
+    map_fin_mc_hdamp_down = map_fin_mc;
+    map_fin_mc_hdamp_down.erase("TTLJ_powheg");
+    map_fin_mc_hdamp_down["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampdown"]);
 
-  map_tree_mc_hdamp_down = map_tree_mc;
-  map_tree_mc_hdamp_down.erase("TTLJ_powheg");
-  map_tree_mc_hdamp_down["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_down["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+    map_tree_mc_hdamp_down = map_tree_mc;
+    map_tree_mc_hdamp_down.erase("TTLJ_powheg");
+    map_tree_mc_hdamp_down["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_down["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
 
-  event.Setup_Tree(map_tree_mc_hdamp_down["TTLJ_powheg"], false);
+    event.Setup_Tree(map_tree_mc_hdamp_down["TTLJ_powheg"], false);
 
-  // hdamp up
-  map_fin_mc_hdamp_up = map_fin_mc;
-  map_fin_mc_hdamp_up.erase("TTLJ_powheg");
-  map_fin_mc_hdamp_up["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampup"]);
+    // hdamp up
+    map_fin_mc_hdamp_up = map_fin_mc;
+    map_fin_mc_hdamp_up.erase("TTLJ_powheg");
+    map_fin_mc_hdamp_up["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampup"]);
 
-  map_tree_mc_hdamp_up = map_tree_mc;
-  map_tree_mc_hdamp_up.erase("TTLJ_powheg");
-  map_tree_mc_hdamp_up["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_up["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+    map_tree_mc_hdamp_up = map_tree_mc;
+    map_tree_mc_hdamp_up.erase("TTLJ_powheg");
+    map_tree_mc_hdamp_up["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_up["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
 
-  event.Setup_Tree(map_tree_mc_hdamp_up["TTLJ_powheg"], false);
+    event.Setup_Tree(map_tree_mc_hdamp_up["TTLJ_powheg"], false);
 
-  // mTop 171p5
-  map_fin_mc_mtop_171p5 = map_fin_mc;
-  map_fin_mc_mtop_171p5.erase("TTLJ_powheg");
-  map_fin_mc_mtop_171p5["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_171p5"]);
+    // mTop 171p5
+    map_fin_mc_mtop_171p5 = map_fin_mc;
+    map_fin_mc_mtop_171p5.erase("TTLJ_powheg");
+    map_fin_mc_mtop_171p5["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_171p5"]);
 
-  map_tree_mc_mtop_171p5 = map_tree_mc;
-  map_tree_mc_mtop_171p5.erase("TTLJ_powheg");
-  map_tree_mc_mtop_171p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_171p5["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+    map_tree_mc_mtop_171p5 = map_tree_mc;
+    map_tree_mc_mtop_171p5.erase("TTLJ_powheg");
+    map_tree_mc_mtop_171p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_171p5["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
 
-  event.Setup_Tree(map_tree_mc_mtop_171p5["TTLJ_powheg"], false);
+    event.Setup_Tree(map_tree_mc_mtop_171p5["TTLJ_powheg"], false);
 
-  // mTop 173p5
-  map_fin_mc_mtop_173p5 = map_fin_mc;
-  map_fin_mc_mtop_173p5.erase("TTLJ_powheg");
-  map_fin_mc_mtop_173p5["TTLJ_powheg"] = new TFile(path_base + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_173p5"]);
+    // mTop 173p5
+    map_fin_mc_mtop_173p5 = map_fin_mc;
+    map_fin_mc_mtop_173p5.erase("TTLJ_powheg");
+    map_fin_mc_mtop_173p5["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_173p5"]);
 
-  map_tree_mc_mtop_173p5 = map_tree_mc;
-  map_tree_mc_mtop_173p5.erase("TTLJ_powheg");
-  map_tree_mc_mtop_173p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_173p5["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+    map_tree_mc_mtop_173p5 = map_tree_mc;
+    map_tree_mc_mtop_173p5.erase("TTLJ_powheg");
+    map_tree_mc_mtop_173p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_173p5["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
 
-  event.Setup_Tree(map_tree_mc_mtop_173p5["TTLJ_powheg"], false);
+    event.Setup_Tree(map_tree_mc_mtop_173p5["TTLJ_powheg"], false);
 
-  // TFile and TTree handlers
-  map_map_fin_mc["Central"] = &map_fin_mc;
-  map_map_tree_mc["Central"] = &map_tree_mc;
+    // TFile and TTree handlers
+    if (run_flag == "Central" || run_flag == "All")
+    {
+      map_map_fin_mc["Central"] = &map_fin_mc;
+      map_map_tree_mc["Central"] = &map_tree_mc;
+    }
 
-  map_map_fin_mc["Jes_Down"] = &map_fin_mc_jes_down;
-  map_map_tree_mc["Jes_Down"] = &map_tree_mc_jes_down;
+    if (run_flag == "Jes_Down" || run_flag == "All")
+    {
+      map_map_fin_mc["Jes_Down"] = &map_fin_mc_jes_down;
+      map_map_tree_mc["Jes_Down"] = &map_tree_mc_jes_down;
+    }
 
-  map_map_fin_mc["Jes_Up"] = &map_fin_mc_jes_up;
-  map_map_tree_mc["Jes_Up"] = &map_tree_mc_jes_up;
+    if (run_flag == "Jes_Up" || run_flag == "All")
+    {
+      map_map_fin_mc["Jes_Up"] = &map_fin_mc_jes_up;
+      map_map_tree_mc["Jes_Up"] = &map_tree_mc_jes_up;
+    }
 
-  map_map_fin_mc["Jet_En_Down"] = &map_fin_mc_jec_down;
-  map_map_tree_mc["Jet_En_Down"] = &map_tree_mc_jec_down;
+    if (run_flag == "Jet_En_Down" || run_flag == "All")
+    {
+      map_map_fin_mc["Jet_En_Down"] = &map_fin_mc_jec_down;
+      map_map_tree_mc["Jet_En_Down"] = &map_tree_mc_jec_down;
+    }
 
-  map_map_fin_mc["Jet_En_Up"] = &map_fin_mc_jec_up;
-  map_map_tree_mc["Jet_En_Up"] = &map_tree_mc_jec_up;
+    if (run_flag == "Jet_En_Up" || run_flag == "All")
+    {
+      map_map_fin_mc["Jet_En_Up"] = &map_fin_mc_jec_up;
+      map_map_tree_mc["Jet_En_Up"] = &map_tree_mc_jec_up;
+    }
 
-  map_map_fin_mc["CP5_Down"] = &map_fin_mc_cp5_down;
-  map_map_tree_mc["CP5_Down"] = &map_tree_mc_cp5_down;
+    if (run_flag == "CP5_Down" || run_flag == "All")
+    {
+      map_map_fin_mc["CP5_Down"] = &map_fin_mc_cp5_down;
+      map_map_tree_mc["CP5_Down"] = &map_tree_mc_cp5_down;
+    }
 
-  map_map_fin_mc["CP5_Up"] = &map_fin_mc_cp5_up;
-  map_map_tree_mc["CP5_Up"] = &map_tree_mc_cp5_up;
+    if (run_flag == "CP5_Up" || run_flag == "All")
+    {
+      map_map_fin_mc["CP5_Up"] = &map_fin_mc_cp5_up;
+      map_map_tree_mc["CP5_Up"] = &map_tree_mc_cp5_up;
+    }
 
-  map_map_fin_mc["hDamp_Down"] = &map_fin_mc_hdamp_down;
-  map_map_tree_mc["hDamp_Down"] = &map_tree_mc_hdamp_down;
+    if (run_flag == "hDamp_Down" || run_flag == "All")
+    {
+      map_map_fin_mc["hDamp_Down"] = &map_fin_mc_hdamp_down;
+      map_map_tree_mc["hDamp_Down"] = &map_tree_mc_hdamp_down;
+    }
 
-  map_map_fin_mc["mTop_171p5"] = &map_fin_mc_mtop_171p5;
-  map_map_tree_mc["mTop_171p5"] = &map_tree_mc_mtop_171p5;
+    if (run_flag == "hDamp_Up" || run_flag == "All")
+    {
+      map_map_fin_mc["hDamp_Up"] = &map_fin_mc_hdamp_up;
+      map_map_tree_mc["hDamp_Up"] = &map_tree_mc_hdamp_up;
+    }
 
-   map_map_fin_mc["mTop_173p5"] = &map_fin_mc_mtop_173p5;
-  map_map_tree_mc["mTop_173p5"] = &map_tree_mc_mtop_173p5;
+    if (run_flag == "mTop_171p5" || run_flag == "All")
+    {
+      map_map_fin_mc["mTop_171p5"] = &map_fin_mc_mtop_171p5;
+      map_map_tree_mc["mTop_171p5"] = &map_tree_mc_mtop_171p5;
+    }
 
-  for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
+    if (run_flag == "mTop_173p5" || run_flag == "All")
+    {
+      map_map_fin_mc["mTop_173p5"] = &map_fin_mc_mtop_173p5;
+      map_map_tree_mc["mTop_173p5"] = &map_tree_mc_mtop_173p5;
+    }
+  } // if (run_flag != "Data")
+
+  // data
+  if (run_flag == "Data" || run_flag == "All")
   {
-    cout << it->second << endl;
-    vec_short_name_mc.push_back(it->second);
-  }
-  vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
-  n_sample_merge_mc = vec_short_name_mc.size();
-  cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
+    result_path += "DATA/";
+    for (auto it = samples.map_data.begin(); it != samples.map_data.end(); it++)
+    {
+      cout << it->first << endl;
+      if (it == samples.map_data.begin())
+        data_short_name = samples.map_short_name_data[it->first];
 
-  path_base += "DATA/";
-  for (auto it = samples.map_data.begin(); it != samples.map_data.end(); it++)
-  {
-    cout << it->first << endl;
-    if (it == samples.map_data.begin())
-      data_short_name = samples.map_short_name_data[it->first];
+      map_fin_data[it->first] = new TFile(result_path + it->second);
+      map_tree_data[it->first] = (TTree *)map_fin_data[it->first]->Get("POGTightWithTightIso_Central/Result_Tree");
 
-    map_fin_data[it->first] = new TFile(path_base + it->second);
-    map_tree_data[it->first] = (TTree *)map_fin_data[it->first]->Get("POGTightWithTightIso_Central/Result_Tree");
-
-    event.Setup_Tree(map_tree_data[it->first], false);
-  }
+      event.Setup_Tree(map_tree_data[it->first], false);
+    }
+  } // if (run_flag == "Data" || run_flag == "All")
 
   // Region
   region_name = {"Control0"};
   n_region = region_name.size();
+
+  // number of merged MC
+  for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
+  {
+    // cout << it->second << endl;
+    vec_short_name_mc.push_back(it->second);
+  }
+  vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
+  n_sample_merge_mc = vec_short_name_mc.size();
+  // cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
 
   // Systs
   syst_name = {"Nominal",
@@ -210,18 +272,34 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
   n_syst = syst_name.size();
   cout << "N_Syst = " << n_syst << endl;
 
-  // for c-tag weight
-  name_c_tag_weight.push_back("C_Tag_Nominal");
+  // for b-tag rf
+  name_syst_b.push_back("B_Tag_Nominal");
+  for (int i = 0; i < n_syst; i++)
+  {
+    if (syst_name[i].Contains("B_Tag"))
+    {
+      name_syst_b.push_back(syst_name[i]);
+    }
+  }
+  n_syst_b = name_syst_b.size();
+  cout << "N_Syst_B = " << n_syst_b << endl;
+
+  // for c-tag rf
+  name_syst_c.push_back("C_Tag_Nominal");
   for (int i = 0; i < n_syst; i++)
   {
     if (syst_name[i].Contains("C_Tag"))
     {
-      name_c_tag_weight.push_back(syst_name[i]);
+      name_syst_c.push_back(syst_name[i]);
     }
   }
-  n_c_tag_weight = name_c_tag_weight.size();
-  cout << "N_C_Tag_weight = " << n_c_tag_weight << endl;
+  n_syst_c = name_syst_c.size();
+  cout << "N_Syst_C = " << n_syst_c << endl;
 
+  // Tagging Renormalization Factor
+  Set_Tagging_RF();
+
+  // variable Config.
   variable_conf = {{"N_Vertex", 80, 0, 80},
                    {"Lepton_Pt", 50, 0, 300},
                    {"Lepton_Eta", 50, -3, 3},
@@ -232,11 +310,18 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
                    {"Pt_Subleading_Jet", 50, 0, 300},
                    {"Eta_Leading_Jet", 50, -3, 3},
                    {"Eta_Subleading_jet", 50, -3, 3},
+                   {"BvsC_Leading_Jet", 50, 0, 1},
+                   {"CvsB_Leading_Jet", 50, 0, 1},
+                   {"CvsL_Leading_Jet", 50, 0, 1},
+                   {"BvsC_Subleading_Jet", 50, 0, 1},
+                   {"CvsB_Subleading_Jet", 50, 0, 1},
+                   {"CvsL_Subleading_Jet", 50, 0, 1},
                    {"Met_Pt", 50, 0, 300},
                    {"Met_Phi", 80, -4, 4},
                    {"Best_MVA_Score", 100, -1, 1}};
   n_variable = variable_conf.size();
 
+  // histo for MC
   histo_mc = new TH1D ****[n_region];
   for (int i = 0; i < n_region; i++)
   {
@@ -256,21 +341,25 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
     }     // loop over n_syst
   }       // loop over n_region
 
-  histo_weight = new TH1D ***[n_region];
-  for (int i = 0; i < n_region; i++)
-  {
-    histo_weight[i] = new TH1D **[n_c_tag_weight];
-    for (int j = 0; j < n_c_tag_weight; j++)
+  /*
+    // histo for c-tagging weight
+    histo_weight = new TH1D ***[n_region];
+    for (int i = 0; i < n_region; i++)
     {
-      histo_weight[i][j] = new TH1D *[n_sample_merge_mc];
-      for (int k = 0; k < n_sample_merge_mc; k++)
+      histo_weight[i] = new TH1D **[n_c_tag_weight];
+      for (int j = 0; j < n_c_tag_weight; j++)
       {
-        TString histo_name = region_name[i] + "_" + name_c_tag_weight[j] + "_" + vec_short_name_mc[k];
-        histo_weight[i][j][k] = new TH1D(histo_name, histo_name, 1000, 0, 10);
-      } // loop over n_sample_merge_mc
-    }   // loop over n_syst
-  }     // loop over n_regions
+        histo_weight[i][j] = new TH1D *[n_sample_merge_mc];
+        for (int k = 0; k < n_sample_merge_mc; k++)
+        {
+          TString histo_name = region_name[i] + "_" + name_c_tag_weight[j] + "_" + vec_short_name_mc[k];
+          histo_weight[i][j][k] = new TH1D(histo_name, histo_name, 1000, 0, 10);
+        } // loop over n_sample_merge_mc
+      }   // loop over n_syst
+    }     // loop over n_regions
+  */
 
+  // histo for data
   histo_data = new TH1D **[n_region];
   for (int i = 0; i < n_region; i++)
   {
@@ -282,7 +371,12 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
     } // loop over n_variable
   }   // loop over n_region
 
-  TString fout_name = "Vcb_Histos_" + era + "_" + channel + ".root";
+  TString fout_name = "Vcb_Histos_" + era + "_" + channel + "_";
+  if (run_flag == "Central")
+    fout_name += run_flag + to_string(index_split) + to_string(n_split);
+  else
+    fout_name += run_flag;
+  fout_name += ".root";
   fout = new TFile(fout_name, "RECREATE");
 } // Histo_Syst::Histo_Syst(const TString& a_era, const TString& a_channel, const TString& a_swap_mode)
 
@@ -295,19 +389,25 @@ Histo_Syst::~Histo_Syst()
   {
     TDirectory *dir_region = fout->mkdir(region_name[i]);
 
-    // for Data
-    TDirectory *dir_data = dir_region->mkdir("Data");
-    for (int j = 0; j < n_variable; j++)
+    if (run_flag == "Data")
     {
-      dir_data->cd();
-      histo_data[i][j]->SetTitle(variable_conf[j].variable_title);
-      histo_data[i][j]->SetName(variable_conf[j].variable_title);
-      histo_data[i][j]->Write();
-    } // loop over variable
+      // for Data
+      TDirectory *dir_data = dir_region->mkdir("Data");
+      for (int j = 0; j < n_variable; j++)
+      {
+        dir_data->cd();
+        histo_data[i][j]->SetTitle(variable_conf[j].variable_title);
+        histo_data[i][j]->SetName(variable_conf[j].variable_title);
+        histo_data[i][j]->Write();
+      } // loop over variable
+    }
 
     // for MC
     for (int j = 0; j < n_syst; j++)
     {
+      if (run_flag != "Central" && run_flag != syst_name[j])
+        continue;
+
       TDirectory *dir_syst = dir_region->mkdir(syst_name[j]);
 
       for (int k = 0; k < n_sample_merge_mc; k++)
@@ -329,21 +429,26 @@ Histo_Syst::~Histo_Syst()
       }   // loop over sample
     }     // loop over syst
 
-    // for c-tagging weight
-    TDirectory *dir_weight = dir_region->mkdir("Weight");
-    for (int j = 0; j < n_c_tag_weight; j++)
-    {
-      TDirectory *dir_name_c_tag_weight = dir_weight->mkdir(name_c_tag_weight[j]);
-      for (int k = 0; k < n_sample_merge_mc; k++)
-      {
-        dir_name_c_tag_weight->cd();
+    /*
+        // for c-tagging weight
+        if (run_flag == "Central")
+        {
+          TDirectory *dir_weight = dir_region->mkdir("Weight");
+          for (int j = 0; j < n_c_tag_weight; j++)
+          {
+            TDirectory *dir_name_c_tag_weight = dir_weight->mkdir(name_c_tag_weight[j]);
+            for (int k = 0; k < n_sample_merge_mc; k++)
+            {
+              dir_name_c_tag_weight->cd();
 
-        histo_weight[i][j][k]->SetTitle(vec_short_name_mc[k]);
-        histo_weight[i][j][k]->SetName(vec_short_name_mc[k]);
-        histo_weight[i][j][k]->Write();
-      } // loop over n_sample
-    }   // loop over n_c_tag_weight
-  }     // loop over region
+              histo_weight[i][j][k]->SetTitle(vec_short_name_mc[k]);
+              histo_weight[i][j][k]->SetName(vec_short_name_mc[k]);
+              histo_weight[i][j][k]->Write();
+            } // loop over n_sample
+          }   // loop over n_c_tag_weight
+        }     // if
+    */
+  } // loop over region
 
   fout->Close();
 } // Histo_Syst::~Histo_Syst()
@@ -372,16 +477,22 @@ void Histo_Syst::Fill_Histo_Data(const int &region_index)
   histo_data[region_index][7]->Fill(event.pt_subleading_jet, 1.);
   histo_data[region_index][8]->Fill(event.eta_leading_jet, 1.);
   histo_data[region_index][9]->Fill(event.eta_subleading_jet, 1.);
-  histo_data[region_index][10]->Fill(event.met_pt, 1.);
-  histo_data[region_index][11]->Fill(event.met_phi, 1.);
-  histo_data[region_index][12]->Fill(event.best_mva_score, 1.);
+  histo_data[region_index][10]->Fill(event.bvsc_leading_jet, 1.);
+  histo_data[region_index][11]->Fill(event.cvsb_leading_jet, 1.);
+  histo_data[region_index][12]->Fill(event.cvsl_leading_jet, 1.);
+  histo_data[region_index][13]->Fill(event.bvsc_subleading_jet, 1.);
+  histo_data[region_index][14]->Fill(event.cvsb_subleading_jet, 1.);
+  histo_data[region_index][15]->Fill(event.cvsl_subleading_jet, 1.);
+  histo_data[region_index][16]->Fill(event.met_pt, 1.);
+  histo_data[region_index][17]->Fill(event.met_phi, 1.);
+  histo_data[region_index][18]->Fill(event.best_mva_score, 1.);
 
   return;
 } // void Histo_Syst::Fill_Histo_Data()
 
 //////////
 
-void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index, const Long64_t &entry, const TString &syst_fix)
+void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index, const TString &syst_fix)
 {
   for (int i = 0; i < n_syst; i++)
   {
@@ -509,8 +620,7 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
       event.weight *= event.weight_b_tag_hfstats2_up;
     else
       event.weight *= event.weight_b_tag;
-    // event.weight *= 1;
-
+    /*
     if (syst_type == "C_Tag_Extrap_Down")
       event.weight *= event.weight_c_tag_extrap_down;
     else if (syst_type == "C_Tag_Extrap_Up")
@@ -564,9 +674,27 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
     else if (syst_type == "C_Tag_JES_Total_Up")
       event.weight *= event.weight_c_tag_jes_total_up;
     else
-      // event.weight *= 1;
       event.weight *= event.weight_c_tag;
+*/
+    /*
+        // b-tag renormalization factor
+        b_tag_rf = 1;
+        if (syst_type.Contains("B_Tag"))
+          b_tag_rf = Get_Tagging_RF(syst_type);
+        else
+          b_tag_rf = Get_Tagging_RF("B_Tag_Nominal");
 
+        event.weight *= b_tag_rf;
+
+        // c-tag renormalization factor
+        c_tag_rf = 1;
+        if (syst_type.Contains("C_Tag"))
+          c_tag_rf = Get_Tagging_RF(syst_type);
+        else
+          c_tag_rf = Get_Tagging_RF("C_Tag_Nominal");
+
+        event.weight *= c_tag_rf;
+    */
     // this part is not satisfactory, but don't waste time
     histo_mc[region_index][i][sample_index][0]->Fill(event.n_vertex, event.weight);
     histo_mc[region_index][i][sample_index][1]->Fill(event.lepton_pt, event.weight);
@@ -578,16 +706,22 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
     histo_mc[region_index][i][sample_index][7]->Fill(event.pt_subleading_jet, event.weight);
     histo_mc[region_index][i][sample_index][8]->Fill(event.eta_leading_jet, event.weight);
     histo_mc[region_index][i][sample_index][9]->Fill(event.eta_subleading_jet, event.weight);
-    histo_mc[region_index][i][sample_index][10]->Fill(event.met_pt, event.weight);
-    histo_mc[region_index][i][sample_index][11]->Fill(event.met_phi, event.weight);
-    histo_mc[region_index][i][sample_index][12]->Fill(event.best_mva_score, event.weight);
+    histo_mc[region_index][i][sample_index][10]->Fill(event.bvsc_leading_jet, event.weight);
+    histo_mc[region_index][i][sample_index][11]->Fill(event.cvsb_leading_jet, event.weight);
+    histo_mc[region_index][i][sample_index][12]->Fill(event.cvsl_leading_jet, event.weight);
+    histo_mc[region_index][i][sample_index][13]->Fill(event.bvsc_subleading_jet, event.weight);
+    histo_mc[region_index][i][sample_index][14]->Fill(event.cvsb_subleading_jet, event.weight);
+    histo_mc[region_index][i][sample_index][15]->Fill(event.cvsl_subleading_jet, event.weight);
+    histo_mc[region_index][i][sample_index][16]->Fill(event.met_pt, event.weight);
+    histo_mc[region_index][i][sample_index][17]->Fill(event.met_phi, event.weight);
+    histo_mc[region_index][i][sample_index][18]->Fill(event.best_mva_score, event.weight);
   } // loop over n_syst
 
   return;
 } // void Histo_Syst::Fill_Histo_MC(const int& sample_index)
 
 //////////
-
+/*
 void Histo_Syst::Fill_Histo_Weight(const int &region_index, const int &sample_index)
 {
   for (int i = 0; i < n_c_tag_weight; i++)
@@ -656,13 +790,39 @@ void Histo_Syst::Fill_Histo_Weight(const int &region_index, const int &sample_in
 
   return;
 } // void Histo_Syst::Fill_Histo_Weight(const int& region_index, const int& sample_index)
-
+*/
 //////////
 
 int Histo_Syst::Get_Region_Index(const TString &region)
 {
   return find(region_name.begin(), region_name.end(), region) - region_name.begin();
 } // int Histo_Syst::Get_Region_Index(const TString& region)
+
+//////////
+
+float Histo_Syst::Get_Tagging_RF(const TString &syst_name)
+{
+  if (syst_name.Contains("B_Tag"))
+  {
+    for (int i = 0; i < n_syst_b; i++)
+    {
+      if (syst_name == name_syst_b[i])
+        return histo_tagging_rf_b[i]->GetBinContent(event.n_jets + 1);
+    }
+  }
+  else if (syst_name.Contains("C_Tag"))
+  {
+    for (int i = 0; i < n_syst_c; i++)
+    {
+      if (syst_name == name_syst_c[i])
+        return histo_tagging_rf_c[i]->GetBinContent(event.n_jets + 1);
+    }
+  }
+  else
+    return -1;
+
+  return -1;
+} // float Get_Taggging_RF(const TString& syst_name)
 
 //////////
 
@@ -693,7 +853,28 @@ void Histo_Syst::Read_Tree()
       n_entries /= reduction;
       cout << "N_Entries = " << it->second->GetEntries() << ", Reduction = " << reduction << ", N_Entries/Reduction = " << n_entries << endl;
 
-      for (Long64_t i = 0; i < n_entries; i++)
+      // split
+      Long64_t init;
+      Long64_t end;
+
+      if (run_flag == "Central")
+      {
+        Long64_t step = n_entries / n_split;
+        init = step * index_split;
+        end = step * (index_split + 1);
+        if (index_split + 1 == n_split)
+          end = n_entries;
+
+        cout << "Test N_Entries:" << n_entries << " N_Split:" << n_split << " Index_Split:" << index_split << " Step:" << step << " Init:" << init << " End:" << end << endl;
+        cout << endl;
+      }
+      else
+      {
+        init = 0;
+        end = n_entries;
+      }
+
+      for (Long64_t i = init; i < end; i++)
       {
         if (i % 500000 == 0)
           cout << "Processing... " << i << "/" << n_entries << endl;
@@ -718,9 +899,8 @@ void Histo_Syst::Read_Tree()
 
         int region_index = Get_Region_Index(region);
 
-        Fill_Histo_MC(region_index, sample_index, i, syst_fix);
-        if (syst_fix == "None")
-          Fill_Histo_Weight(region_index, sample_index);
+        Fill_Histo_MC(region_index, sample_index, syst_fix);
+        // if (syst_fix == "None") Fill_Histo_Weight(region_index, sample_index);
       } // loop over entries
     }   // loop over map_tree_mc
 
@@ -803,5 +983,30 @@ bool Histo_Syst::Set_Region()
 
   return true;
 } // void Histo_Syst::Set_Region()
+
+//////////
+
+void Histo_Syst::Set_Tagging_RF()
+{
+  cout << "[Histo_Syst::Set_Tagging_RF]" << endl;
+
+  fin_tagging_rf = new TFile(path_base + "/Corrections/Vcb_Tagging_RF_" + era + ".root");
+
+  histo_tagging_rf_b = new TH1D *[n_syst_b];
+  for (int i = 0; i < n_syst_b; i++)
+  {
+    TString ratio_name = "Ratio_" + name_syst_b[i];
+    histo_tagging_rf_b[i] = (TH1D *)fin_tagging_rf->Get(ratio_name);
+  }
+
+  histo_tagging_rf_c = new TH1D *[n_syst_c];
+  for (int i = 0; i < n_syst_c; i++)
+  {
+    TString ratio_name = "Ratio_" + name_syst_c[i];
+    histo_tagging_rf_c[i] = (TH1D *)fin_tagging_rf->Get(ratio_name);
+  }
+
+  return;
+} // void Histo_Syst::Set_Tagging_RF()
 
 //////////

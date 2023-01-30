@@ -1,12 +1,12 @@
 executable = Histo_Syst.py
 jobbatchname = Vcb_Histo_Syst
 universe   = vanilla
+arguments  = -run_flag $(Process)
 log = condor.log
 getenv     = True
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
-output = job_Vcb_Histo_Syst.log
-error = job_Vcb_Histo_Syst.err
-#concorruency_limits = n301.isyoon
+output = job_Vcb_Histo_Syst_$(Process).log
+error = job_Vcb_Histo_Syst_$(Process).err
 
-queue 1
+queue 20

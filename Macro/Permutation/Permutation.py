@@ -18,8 +18,4 @@ path=os.environ['Vcb_Post_Analysis_WD']
 import ROOT
 ROOT.gSystem.Load(f"{path}/Build/libVcb_Post_Analysis.so")
 
-print(type(int(args.Pre_Cut)))
-print(int(args.Pre_Cut))
-print(bool(int(args.Pre_Cut)))
-print(args.Final_Kin)
 permutation = ROOT.Permutation_TMVA(args.Era, args.Channel, int(args.NJet), bool(int(args.Pre_Cut)), bool(int(args.Final_Kin)))
