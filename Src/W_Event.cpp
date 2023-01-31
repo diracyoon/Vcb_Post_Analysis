@@ -14,7 +14,7 @@ W_Event::W_Event(const TString& a_era, const TString& a_channel, const TString& 
   cout << mode << endl;
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
-  path_base += "/Sample/" + era + "/" + channel + "/RunTemplateTruth/";
+  path_base += "/Sample/" + era + "/RunTemplateTruth/";
   
   for(int i=0; i<6; i++)
     {
@@ -29,7 +29,7 @@ W_Event::W_Event(const TString& a_era, const TString& a_channel, const TString& 
       histo[i] = new TH1D(histo_name, histo_name, 100, 0, 1);
     }
   
-  fin = new TFile(path_base+"Vcb_Mu_TTLJ_WtoCB_powheg.root");
+  fin = new TFile(path_base+"Vcb_TTLJ_WtoCB_powheg.root");
   tree = (TTree*)fin->Get("Template_Truth_45");
 
   tree->SetBranchAddress("bvsc_w_u", &bvsc_w_u);

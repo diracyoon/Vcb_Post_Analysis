@@ -5,7 +5,7 @@ if [ $1 -gt 11 ]; then
     exit
 fi
 
-channel="El"
+channel="Mu"
 n_jet=`expr $1 % 4 + 4`
 pre_cut=`expr $1 / 4`
 final_kin=`expr $1 / 8` 

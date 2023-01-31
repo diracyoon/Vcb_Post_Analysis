@@ -18,7 +18,8 @@
 #include <TLegend.h>
 
 #include <Samples.h>
-#include <Reco_Eval_Event.h>
+#include <Result_Event.h>
+#include <Tagging_RF.h>
 #include <Const_Def.h>
 
 using namespace std;
@@ -28,7 +29,7 @@ class Reco_Eval : public TObject
   // class for evaluation of recostruction and signal study
 
 public:
-  Reco_Eval(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_swap_mode = "BvsC_Only", const TString &a_draw_extension = "png");
+  Reco_Eval(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_swap_mode = "Permutation_MVA", const TString &a_draw_extension = "png");
   ~Reco_Eval();
 
   void Run();
@@ -45,21 +46,21 @@ protected:
   int reduction;
 
   Samples samples;
+  Tagging_RF tagging_rf;
 
   TString era;
   TString channel;
   TString draw_extension;
 
   map<TString, TFile *> map_fin;
-  map<TString, TTree *> map_tree_correct;
-  map<TString, TTree *> map_tree_wrong;
+  map<TString, TTree *> map_tree;
   vector<TString> vec_short_name_mc;
   vector<TString> vec_histo_sample;
 
   int n_sample_merge_mc;
   int n_histo_sample;
 
-  Reco_Eval_Event event;
+  Result_Event event;
 
   int decay_modes[6] = {45, 21, 23, 41, 43, 999};
 

@@ -32,11 +32,25 @@ void Result_Event::Setup_Tree(TTree *tree, const bool &chk_syst)
     tree->SetBranchAddress("sf_mu_iso_up", &sf_mu_iso_up);
   }
 
-  tree->SetBranchAddress("sf_mu_trig", &sf_mu_trig);
+  tree->SetBranchAddress("sf_el_id", &sf_el_id);
+  if( chk_syst)
+    {
+      tree->SetBranchAddress("sf_el_id_down", &sf_el_id_down);
+      tree->SetBranchAddress("sf_el_id_up", &sf_el_id_up);
+    }
+
+  tree->SetBranchAddress("sf_el_reco", &sf_el_reco);
+  if( chk_syst)
+    {
+      tree->SetBranchAddress("sf_el_reco_down", &sf_el_reco_down);
+      tree->SetBranchAddress("sf_el_reco_up", &sf_el_reco_up);
+    }
+
+  tree->SetBranchAddress("sf_sl_trig", &sf_sl_trig);
   if (chk_syst)
   {
-    tree->SetBranchAddress("sf_mu_trig_down", &sf_mu_trig_down);
-    tree->SetBranchAddress("sf_mu_trig_up", &sf_mu_trig_up);
+    tree->SetBranchAddress("sf_sl_trig_down", &sf_sl_trig_down);
+    tree->SetBranchAddress("sf_sl_trig_up", &sf_sl_trig_up);
   }
 
   tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
@@ -153,6 +167,7 @@ void Result_Event::Setup_Tree(TTree *tree, const bool &chk_syst)
   tree->SetBranchAddress("cvsl_subleading_jet", &cvsl_subleading_jet);
   tree->SetBranchAddress("met_pt", &met_pt);
   tree->SetBranchAddress("met_phi", &met_phi);
+  tree->SetBranchAddress("best_mva_score_pre", &best_mva_score_pre);
   tree->SetBranchAddress("best_mva_score", &best_mva_score);
   tree->SetBranchAddress("best_chi2", &best_chi2);
   tree->SetBranchAddress("mt", &mt);

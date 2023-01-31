@@ -228,7 +228,7 @@ void Template::Fill_Histo(const TString& short_name, const int& index_decay_mode
   weight *= event.weight_pileup;
   weight *= event.weight_prefire;
   weight *= event.weight_top_pt;
-  weight *= event.sf_mu_trig;
+  weight *= event.sf_sl_trig;
   weight *= event.sf_mu_id;
   weight *= event.sf_mu_iso;
   //weight *= event.sf_pujet_veto;

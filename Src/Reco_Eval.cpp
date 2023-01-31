@@ -4,11 +4,11 @@ ClassImp(Reco_Eval);
 
 //////////
 
-Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TString &a_swap_mode, const TString &a_draw_extension) : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode)
+Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TString &a_swap_mode, const TString &a_draw_extension) : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
 {
   cout << "[Reco_Eval::Reco_Eval]: Init analysis" << endl;
 
-  reduction = 1;
+  reduction = 100;
 
   era = a_era;
   channel = a_channel;
@@ -22,7 +22,7 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   }
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
-  path_base += "/Sample/" + era + "/" + channel + "/RunRecoEval/";
+  path_base += "/Sample/" + era + "/" + channel + "/RunResult/Central_Syst/";
 
   if (samples.map_mc.size() != samples.map_short_name_mc.size())
   {
@@ -30,19 +30,24 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     exit(EXIT_FAILURE);
   }
 
+  cout << samples.map_mc.size() << endl;
   for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
   {
     cout << it->first << endl;
-    if (it->first != "TTLJ_WtoCB_powheg" && it->first != "TTLJ_powheg")
-      continue;
+    // if (it->first != "TTLJ_WtoCB_powheg" && it->first != "TTLJ_powheg")
+    //  continue;
 
     map_fin[it->first] = new TFile(path_base + it->second);
 
-    map_tree_correct[it->first] = (TTree *)map_fin[it->first]->Get("Reco_Eval_Tree_Correct");
-    map_tree_wrong[it->first] = (TTree *)map_fin[it->first]->Get("Reco_Eval_Tree_Wrong");
+    TString key;
+    if (channel == "Mu")
+      key = "POGTightWithTightIso_Central/Result_Tree";
+    else if (channel == "El")
+      key = "passTightID_Central/Result_Tree";
 
-    event.Setup_Tree(map_tree_correct[it->first]);
-    event.Setup_Tree(map_tree_wrong[it->first]);
+    map_tree[it->first] = (TTree *)map_fin[it->first]->Get(key);
+
+    event.Setup_Tree(map_tree[it->first], false);
   }
 
   for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
@@ -142,7 +147,8 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 
   gr_significance = new TGraphErrors();
 
-  fout_tree = new TFile("Vcb_Reco_Tree.root", "RECREATE");
+  TString fout_name = "Vcb_" + channel + "_Reco_Tree.root";
+  fout_tree = new TFile(fout_name, "RECREATE");
   for (int i = 0; i < 5; i++)
   {
     TString name = "Reco_";
@@ -360,37 +366,51 @@ void Reco_Eval::Draw_Raw()
       }
     }
 
-    if (i < 5)
+    // indexing for position
+    int canvas_index;
+    int subpad_index;
+    if (name.Contains("TTLJ"))
     {
-      canvas_mva_pre[0]->cd(i + 1);
-      stack_mva_pre[i]->Draw("BAR");
-
-      canvas_mva[0]->cd(i + 1);
-      stack_mva[i]->Draw("BAR");
+      canvas_index = 0;
+      if (name.Contains("ud"))
+        subpad_index = 1;
+      else if (name.Contains("us"))
+        subpad_index = 2;
+      else if (name.Contains("cd"))
+        subpad_index = 4;
+      else if (name.Contains("cs"))
+        subpad_index = 5;
+      else if (name.Contains("cb"))
+        subpad_index = 6;
     }
     else
     {
-      int index;
-      if (i == 5 || i == 6)
-        index = i - 4;
-      else
-        index = i - 3;
-
-      canvas_mva_pre[1]->cd(index);
-      stack_mva_pre[i]->Draw("BAR");
-
-      canvas_mva[1]->cd(index);
-      stack_mva[i]->Draw("BAR");
+      canvas_index = 1;
+      if (name.Contains("TTLL"))
+        subpad_index = 1;
+      else if (name.Contains("ST"))
+        subpad_index = 2;
+      else if (name.Contains("DY"))
+        subpad_index = 4;
+      else if (name.Contains("WJet"))
+        subpad_index = 5;
+      else if (name.Contains("QCD"))
+        subpad_index = 6;
     }
+
+    canvas_mva_pre[canvas_index]->cd(subpad_index);
+    stack_mva_pre[i]->Draw("BAR");
+
+    canvas_mva[canvas_index]->cd(subpad_index);
+    stack_mva[i]->Draw("BAR");
   }
 
   legend = new TLegend(0.2, 0.2, 0.8, 0.8);
   legend->SetBorderSize(0);
-  
+
   legend->AddEntry(histo_mva[0][0], "Succeeded", "f");
   legend->AddEntry(histo_mva[0][1], "F., Selected, !HF Conta.", "f");
   legend->AddEntry(histo_mva[0][2], "F., !Selected, !HF Conta.", "f");
-  //legend->AddEntry(histo_mva[0][3], "Selected, HF Conta.", "f");
   legend->AddEntry(histo_mva[0][4], "F., !Selected, HF Conta.", "f");
   for (int i = 0; i < 2; i++)
   {
@@ -683,99 +703,118 @@ void Reco_Eval::Read_Tree()
 
     cout << it->first << " " << short_name << endl;
 
-    for (int i = 0; i < 2; i++)
+    TTree *tree = map_tree[it->first];
+
+    Long64_t n_entries = tree->GetEntries();
+    n_entries /= reduction;
+
+    for (Long64_t j = 0; j < n_entries; j++)
     {
-      TTree *tree;
-      if (i == 0)
-        tree = map_tree_correct[it->first];
-      else if (i == 1)
-        tree = map_tree_wrong[it->first];
+      if (j % 5000000 == 0)
+        cout << "Processing... " << j << "/" << n_entries << endl;
 
-      Long64_t n_entries = tree->GetEntries();
-      n_entries /= reduction;
+      tree->GetEntry(j);
 
-      for (Long64_t j = 0; j < n_entries; j++)
+      chk_swap = event.Swap();
+
+      int index_fail_reason = -1;
+      if (event.chk_reco_correct)
+        index_fail_reason = 0; // correct
+      else
       {
-        if (j % 5000000 == 0)
-          cout << "Processing... " << j << "/" << n_entries << endl;
+        if (event.chk_included == true && event.chk_hf_contamination == false)
+          index_fail_reason = 1;
+        else if (event.chk_included == false && event.chk_hf_contamination == false)
+          index_fail_reason = 2;
+        else if (event.chk_included == true && event.chk_hf_contamination == true)
+          index_fail_reason = 3;
+        else if (event.chk_included == false && event.chk_hf_contamination == true)
+          index_fail_reason = 4;
+      }
 
-        tree->GetEntry(j);
+      event.weight = 1;
+      event.weight *= event.weight_lumi;
+      event.weight *= event.weight_mc;
+      event.weight *= event.weight_pileup;
+      event.weight *= event.weight_prefire;
+      event.weight *= event.weight_top_pt;
+      event.weight *= event.sf_sl_trig;
 
-        chk_swap = event.Swap();
+      if (channel == "Mu")
+      {
+        event.weight *= event.sf_mu_id;
+        event.weight *= event.sf_mu_iso;
+      }
+      else if (channel == "El")
+      {
+        event.weight *= event.sf_el_id;
+        event.weight *= event.sf_el_reco;
+      }
 
-        int index_fail_reason = -1;
-        if (i == 0)
-          index_fail_reason = 0; // correct
-        else
-        {
-          if (event.chk_included == true && event.chk_hf_contamination == false)
-            index_fail_reason = 1;
-          else if (event.chk_included == false && event.chk_hf_contamination == false)
-            index_fail_reason = 2;
-          else if (event.chk_included == true && event.chk_hf_contamination == true)
-            index_fail_reason = 3;
-          else if (event.chk_included == false && event.chk_hf_contamination == true)
-            index_fail_reason = 4;
-        }
+      event.weight *= tagging_rf.Get_Tagging_RF("Ratio_B_Tag_Nominal", event.n_jets);
+      event.weight *= tagging_rf.Get_Tagging_RF("Ratio_C_Tag_Nominal", event.n_jets);
+      event.weight *= event.weight_c_tag;
 
-        Fill_Histo(short_name, event.decay_mode, index_fail_reason);
+      Fill_Output_Tree(short_name, event.decay_mode);
 
-        // no cut
-        int n_cut = 0;
-        Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
+      Fill_Histo(short_name, event.decay_mode, index_fail_reason);
 
-        // //ttbar pt cut
-        // if(event.pt_had_t_b<25 || event.pt_lep_t_b<25) continue;
-        // n_cut++;
-        // Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
+      // no cut
+      int n_cut = 0;
+      Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
 
-        // b-tagging on ttbar
-        if (event.bvsc_had_t_b < bvsc_wp_m || event.bvsc_lep_t_b < bvsc_wp_m)
-          continue;
-        n_cut++;
-        Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
+      // //ttbar pt cut
+      // if(event.pt_had_t_b<25 || event.pt_lep_t_b<25) continue;
+      // n_cut++;
+      // Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
 
-        // mva score cut
-        if (event.best_mva_score < 0.9)
-          continue;
-        n_cut++;
-        Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
+      // b-tagging on ttbar
+      if (event.bvsc_had_t_b < bvsc_wp_m || event.bvsc_lep_t_b < bvsc_wp_m)
+        continue;
+      n_cut++;
+      Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
 
-        // b-tagging on w_d
-        if (event.bvsc_w_d < bvsc_wp_m)
-          continue;
-        n_cut++;
-        Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
+      // mva score cut
+      if (event.best_mva_score < 0.9)
+        continue;
+      n_cut++;
+      Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
 
-        // c-tagging on w_u
-        if (event.cvsb_w_u < cvsb_wp_m || event.cvsl_w_u < cvsl_wp_m)
-          continue;
-        n_cut++;
-        Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
+      // b-tagging on w_d
+      if (event.bvsc_w_d < bvsc_wp_m)
+        continue;
+      n_cut++;
+      Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
 
-        // no additional c-tagging
-        if (event.n_cjets != 1)
-          continue;
-        n_cut++;
-        Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
+      // c-tagging on w_u
+      if (event.cvsb_w_u < cvsb_wp_m || event.cvsl_w_u < cvsl_wp_m)
+        continue;
+      n_cut++;
+      Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
 
-        Fill_Histo_Count(short_name, event.decay_mode, index_fail_reason);
-        Fill_Histo_Discriminators(short_name, event.decay_mode, index_fail_reason);
-        if (index_fail_reason == 0)
-          Fill_Histo_Swap(short_name, event.decay_mode);
-        Fill_Output_Tree(short_name, event.decay_mode);
+      // no additional c-tagging
+      if (event.n_cjets != 1)
+        continue;
+      n_cut++;
+      Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
 
-        // no additional b-tagging
-        if (event.n_bjets != 3)
-          continue;
-        n_cut++;
-        Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
+      Fill_Histo_Count(short_name, event.decay_mode, index_fail_reason);
+      Fill_Histo_Discriminators(short_name, event.decay_mode, index_fail_reason);
+      if (index_fail_reason == 0)
+        Fill_Histo_Swap(short_name, event.decay_mode);
 
-        // if(1000<j) break;
-        // histo_mva_pre
-      } // loop over entries
-    }   // loop over correct or wrong
-  }     // loop over map_fin
+      // Fill_Output_Tree(short_name, event.decay_mode);
+
+      // no additional b-tagging
+      if (event.n_bjets != 3)
+        continue;
+      n_cut++;
+      Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
+
+      // if(1000<j) break;
+      // histo_mva_pre
+    } // loop over entries
+  }   // loop over map_fin
 
   return;
 } // void Reco_Eval::Read_Tree()

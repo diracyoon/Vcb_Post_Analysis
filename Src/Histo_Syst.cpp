@@ -253,7 +253,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
                "Jet_En_Down", "Jet_En_Up",
                "Mu_Id_Down", "Mu_Id_Up",
                "Mu_Iso_Down", "Mu_Iso_Up",
-               "Mu_Trig_Down", "Mu_Trig_Up",
+               "Trig_Down", "Trig_Up",
                "PDF_Alternative", "PDF_As_Down", "PDF_As_Up",
                "Pileup_Down", "Pileup_Up",
                "Pileup_Veto_Down", "Pileup_Veto_Up",
@@ -563,12 +563,12 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
     else
       event.weight *= event.weight_top_pt;
 
-    if (syst_type == "Mu_Trig_Down")
-      event.weight *= event.sf_mu_trig_down;
-    else if (syst_type == "Mu_Trig_Up")
-      event.weight *= event.sf_mu_trig_up;
+    if (syst_type == "Trig_Down")
+      event.weight *= event.sf_sl_trig_down;
+    else if (syst_type == "Trig_Up")
+      event.weight *= event.sf_sl_trig_up;
     else
-      event.weight *= event.sf_mu_trig;
+      event.weight *= event.sf_sl_trig;
 
     if (syst_type == "Mu_Id_Down")
       event.weight *= event.sf_mu_id_down;
@@ -586,41 +586,43 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
 
     // event.weight *= event.weight_pujet_veto;
 
-    if (syst_type == "B_Tag_HF_Down")
-      event.weight *= event.weight_b_tag_hf_down;
-    else if (syst_type == "B_Tag_HF_Up")
-      event.weight *= event.weight_b_tag_hf_up;
-    else if (syst_type == "B_Tag_JES_Down")
-      event.weight *= event.weight_b_tag_jes_down;
-    else if (syst_type == "B_Tag_JES_Up")
-      event.weight *= event.weight_b_tag_jes_up;
-    else if (syst_type == "B_Tag_LFStats1_Down")
-      event.weight *= event.weight_b_tag_lfstats1_down;
-    else if (syst_type == "B_Tag_LFStats1_Up")
-      event.weight *= event.weight_b_tag_lfstats1_up;
-    else if (syst_type == "B_Tag_LFStats2_Down")
-      event.weight *= event.weight_b_tag_lfstats2_down;
-    else if (syst_type == "B_Tag_LFStats2_Up")
-      event.weight *= event.weight_b_tag_lfstats2_up;
-    else if (syst_type == "B_Tag_CFErr1_Down")
-      event.weight *= event.weight_b_tag_cferr1_down;
-    else if (syst_type == "B_Tag_CFErr1_Up")
-      event.weight *= event.weight_b_tag_cferr1_up;
-    else if (syst_type == "B_Tag_CFErr2_Down")
-      event.weight *= event.weight_b_tag_cferr2_down;
-    else if (syst_type == "B_Tag_CFErr2_Up")
-      event.weight *= event.weight_b_tag_cferr2_up;
-    else if (syst_type == "B_Tag_HFStats1_Down")
-      event.weight *= event.weight_b_tag_hfstats1_down;
-    else if (syst_type == "B_Tag_HFStats1_Up")
-      event.weight *= event.weight_b_tag_hfstats1_up;
-    else if (syst_type == "B_Tag_HFStats2_Down")
-      event.weight *= event.weight_b_tag_hfstats2_down;
-    else if (syst_type == "B_Tag_HFStats2_Up")
-      event.weight *= event.weight_b_tag_hfstats2_up;
-    else
-      event.weight *= event.weight_b_tag;
     /*
+        if (syst_type == "B_Tag_HF_Down")
+          event.weight *= event.weight_b_tag_hf_down;
+        else if (syst_type == "B_Tag_HF_Up")
+          event.weight *= event.weight_b_tag_hf_up;
+        else if (syst_type == "B_Tag_JES_Down")
+          event.weight *= event.weight_b_tag_jes_down;
+        else if (syst_type == "B_Tag_JES_Up")
+          event.weight *= event.weight_b_tag_jes_up;
+        else if (syst_type == "B_Tag_LFStats1_Down")
+          event.weight *= event.weight_b_tag_lfstats1_down;
+        else if (syst_type == "B_Tag_LFStats1_Up")
+          event.weight *= event.weight_b_tag_lfstats1_up;
+        else if (syst_type == "B_Tag_LFStats2_Down")
+          event.weight *= event.weight_b_tag_lfstats2_down;
+        else if (syst_type == "B_Tag_LFStats2_Up")
+          event.weight *= event.weight_b_tag_lfstats2_up;
+        else if (syst_type == "B_Tag_CFErr1_Down")
+          event.weight *= event.weight_b_tag_cferr1_down;
+        else if (syst_type == "B_Tag_CFErr1_Up")
+          event.weight *= event.weight_b_tag_cferr1_up;
+        else if (syst_type == "B_Tag_CFErr2_Down")
+          event.weight *= event.weight_b_tag_cferr2_down;
+        else if (syst_type == "B_Tag_CFErr2_Up")
+          event.weight *= event.weight_b_tag_cferr2_up;
+        else if (syst_type == "B_Tag_HFStats1_Down")
+          event.weight *= event.weight_b_tag_hfstats1_down;
+        else if (syst_type == "B_Tag_HFStats1_Up")
+          event.weight *= event.weight_b_tag_hfstats1_up;
+        else if (syst_type == "B_Tag_HFStats2_Down")
+          event.weight *= event.weight_b_tag_hfstats2_down;
+        else if (syst_type == "B_Tag_HFStats2_Up")
+          event.weight *= event.weight_b_tag_hfstats2_up;
+        else
+          event.weight *= event.weight_b_tag;
+        */
+
     if (syst_type == "C_Tag_Extrap_Down")
       event.weight *= event.weight_c_tag_extrap_down;
     else if (syst_type == "C_Tag_Extrap_Up")
@@ -675,26 +677,25 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
       event.weight *= event.weight_c_tag_jes_total_up;
     else
       event.weight *= event.weight_c_tag;
-*/
-    /*
-        // b-tag renormalization factor
-        b_tag_rf = 1;
-        if (syst_type.Contains("B_Tag"))
-          b_tag_rf = Get_Tagging_RF(syst_type);
-        else
-          b_tag_rf = Get_Tagging_RF("B_Tag_Nominal");
 
-        event.weight *= b_tag_rf;
+    // b-tag renormalization factor
+    b_tag_rf = 1;
+    if (syst_type.Contains("B_Tag"))
+      b_tag_rf = Get_Tagging_RF(syst_type);
+    else
+      b_tag_rf = Get_Tagging_RF("B_Tag_Nominal");
 
-        // c-tag renormalization factor
-        c_tag_rf = 1;
-        if (syst_type.Contains("C_Tag"))
-          c_tag_rf = Get_Tagging_RF(syst_type);
-        else
-          c_tag_rf = Get_Tagging_RF("C_Tag_Nominal");
+    event.weight *= b_tag_rf;
 
-        event.weight *= c_tag_rf;
-    */
+    // c-tag renormalization factor
+    c_tag_rf = 1;
+    if (syst_type.Contains("C_Tag"))
+      c_tag_rf = Get_Tagging_RF(syst_type);
+    else
+      c_tag_rf = Get_Tagging_RF("C_Tag_Nominal");
+
+    event.weight *= c_tag_rf;
+
     // this part is not satisfactory, but don't waste time
     histo_mc[region_index][i][sample_index][0]->Fill(event.n_vertex, event.weight);
     histo_mc[region_index][i][sample_index][1]->Fill(event.lepton_pt, event.weight);
@@ -720,77 +721,6 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
   return;
 } // void Histo_Syst::Fill_Histo_MC(const int& sample_index)
 
-//////////
-/*
-void Histo_Syst::Fill_Histo_Weight(const int &region_index, const int &sample_index)
-{
-  for (int i = 0; i < n_c_tag_weight; i++)
-  {
-    // cout << "c_tag_weight_index = " << i << ", name_c_tag_weight = " << name_c_tag_weight[i] << endl;
-
-    float weight = 1;
-
-    if (name_c_tag_weight[i] == "C_Tag_Nominal")
-      weight = event.weight_c_tag;
-    else if (name_c_tag_weight[i] == "C_Tag_Extrap_Down")
-      weight = event.weight_c_tag_extrap_down;
-    else if (name_c_tag_weight[i] == "C_Tag_Extrap_Up")
-      weight = event.weight_c_tag_extrap_up;
-    else if (name_c_tag_weight[i] == "C_Tag_Interp_Down")
-      weight = event.weight_c_tag_interp_down;
-    else if (name_c_tag_weight[i] == "C_Tag_Interp_Up")
-      weight = event.weight_c_tag_interp_up;
-    else if (name_c_tag_weight[i] == "C_Tag_LHE_Scale_MuF_Down")
-      weight = event.weight_c_tag_lhe_scale_muf_down;
-    else if (name_c_tag_weight[i] == "C_Tag_LHE_Scale_MuF_Up")
-      weight = event.weight_c_tag_lhe_scale_muf_up;
-    else if (name_c_tag_weight[i] == "C_Tag_LHE_Scale_MuR_Down")
-      weight = event.weight_c_tag_lhe_scale_mur_down;
-    else if (name_c_tag_weight[i] == "C_Tag_LHE_Scale_MuR_Up")
-      weight = event.weight_c_tag_lhe_scale_mur_up;
-    else if (name_c_tag_weight[i] == "C_Tag_PS_FSR_Fixed_Down")
-      weight = event.weight_c_tag_ps_fsr_fixed_down;
-    else if (name_c_tag_weight[i] == "C_Tag_PS_FSR_Fixed_Up")
-      weight = event.weight_c_tag_ps_fsr_fixed_up;
-    else if (name_c_tag_weight[i] == "C_Tag_PS_ISR_Fixed_Down")
-      weight = event.weight_c_tag_ps_isr_fixed_down;
-    else if (name_c_tag_weight[i] == "C_Tag_PS_ISR_Fixed_Up")
-      weight = event.weight_c_tag_ps_isr_fixed_up;
-    else if (name_c_tag_weight[i] == "C_Tag_PU_Down")
-      weight = event.weight_c_tag_pu_down;
-    else if (name_c_tag_weight[i] == "C_Tag_PU_Up")
-      weight = event.weight_c_tag_pu_up;
-    else if (name_c_tag_weight[i] == "C_Tag_Stat_Down")
-      weight = event.weight_c_tag_stat_down;
-    else if (name_c_tag_weight[i] == "C_Tag_Stat_Up")
-      weight = event.weight_c_tag_stat_up;
-    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_DYJets_B_Down")
-      weight = event.weight_c_tag_xsec_br_unc_dyjets_b_down;
-    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_DYJets_B_Up")
-      weight = event.weight_c_tag_xsec_br_unc_dyjets_b_up;
-    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_DYJets_C_Down")
-      weight = event.weight_c_tag_xsec_br_unc_dyjets_c_down;
-    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_DYJets_C_Up")
-      weight = event.weight_c_tag_xsec_br_unc_dyjets_c_up;
-    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_WJets_C_Down")
-      weight = event.weight_c_tag_xsec_br_unc_wjets_c_down;
-    else if (name_c_tag_weight[i] == "C_Tag_XSec_Br_Unc_WJets_C_Up")
-      weight = event.weight_c_tag_xsec_br_unc_wjets_c_up;
-    else if (name_c_tag_weight[i] == "C_Tag_JER_Down")
-      weight = event.weight_c_tag_jer_down;
-    else if (name_c_tag_weight[i] == "C_Tag_JER_Up")
-      weight = event.weight_c_tag_jer_up;
-    else if (name_c_tag_weight[i] == "C_Tag_JES_Total_Down")
-      weight = event.weight_c_tag_jes_total_down;
-    else if (name_c_tag_weight[i] == "C_Tag_JES_Total_Up")
-      weight = event.weight_c_tag_jes_total_up;
-
-    histo_weight[region_index][i][sample_index]->Fill(weight);
-  } // loop over n_syst
-
-  return;
-} // void Histo_Syst::Fill_Histo_Weight(const int& region_index, const int& sample_index)
-*/
 //////////
 
 int Histo_Syst::Get_Region_Index(const TString &region)

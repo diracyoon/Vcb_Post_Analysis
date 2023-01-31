@@ -39,7 +39,7 @@ public:
 
 protected:
   int n_split;
-  int index_split; 
+  int index_split;
   int reduction;
 
   Samples samples;
@@ -119,7 +119,6 @@ protected:
 
   void Fill_Histo_Data(const int &region_index);
   void Fill_Histo_MC(const int &region_index, const int &sample_index, const TString &syst_fix = "None");
-  // void Fill_Histo_Weight(const int &region_index, const int &sample_index);
   inline int Get_Region_Index(const TString &region);
   float Get_Tagging_RF(const TString &syst_name);
   void Read_Tree();
