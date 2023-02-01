@@ -30,12 +30,16 @@ class W_Event : public TObject
   float bvsc_w_u;
   float cvsb_w_u;
   float cvsl_w_u;
+
   float bvsc_w_d;
   float cvsb_w_d;
   float cvsl_w_d;
 
   float pt_w_u;
   float pt_w_d;
+
+  float eta_w_u;
+  float eta_w_d;
 
   float m_w_u;
   float m_w_d;

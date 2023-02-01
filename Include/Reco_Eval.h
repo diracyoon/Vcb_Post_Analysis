@@ -73,18 +73,7 @@ protected:
 
   int color[5] = {2, 4, 5, 1, 6}; // this index should be index of fail reason + 1
 
-  DV_Histo_Conf dv_histo_conf[12] = {{"MVA_Scores", 100, -1, 1},
-                                     {"N_Jets", 20, 0, 20},
-                                     {"N_BJets", 10, 0, 10},
-                                     {"N_CJets", 10, 0, 10},
-                                     {"BvsC_w_u", 100, 0, 1},
-                                     {"CvsB_w_u", 100, 0, 1},
-                                     {"CvsL_w_u", 100, 0, 1},
-                                     {"M_w_u", 50, 0, 50},
-                                     {"BvsC_w_d", 100, 0, 1},
-                                     {"CvsB_w_d", 100, 0, 1},
-                                     {"CvsL_w_d", 100, 0, 1},
-                                     {"M_w_d", 50, 0, 50}};
+  vector<DV_Histo_Conf> dv_histo_conf; 
   int n_discriminators;
 
   float bvsc_wp_m;

@@ -137,19 +137,25 @@ bool W_Event::Swap()
       float cvsb_temp = cvsb_w_u;
       float cvsl_temp = cvsl_w_u;
       float pt_temp = pt_w_u;
+      float eta_temp = eta_w_u;
       float m_temp = m_w_u; 
-    
+      bool pu_conta_temp = pu_conta_w_u;    
+
       bvsc_w_u = bvsc_w_d;
       cvsb_w_u = cvsb_w_d;
       cvsl_w_u = cvsl_w_d;
       pt_w_u = pt_w_d;
+      eta_w_u = eta_w_d;
       m_w_u = m_w_d;
+      pu_conta_w_u = pu_conta_w_d;
 
       bvsc_w_d = bvsc_temp;
       cvsb_w_d = cvsb_temp;
       cvsl_w_d = cvsl_temp;
       pt_w_d = pt_temp;
+      eta_w_d = eta_temp;
       m_w_d = m_temp; 
+      pu_conta_w_d = pu_conta_temp;
     }
 
   return chk_swap;

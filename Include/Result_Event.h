@@ -121,42 +121,60 @@ protected:
   float weight_top_pt;
 
   int n_vertex;
+
   float lepton_pt;
   float lepton_eta;
+
   int n_jets;
   int n_bjets;
   int n_cjets;
+
   float pt_leading_jet;
   float pt_subleading_jet;
+
   float eta_leading_jet;
   float eta_subleading_jet;
+
   float bvsc_leading_jet;
   float cvsb_leading_jet;
   float cvsl_leading_jet;
+
   float bvsc_subleading_jet;
   float cvsb_subleading_jet;
   float cvsl_subleading_jet;
+
   float met_pt;
   float met_phi;
+
   float best_mva_score_pre;
   float best_mva_score;
   float best_chi2;
+
   float mt;
+
   float mva_hf_score;
+
   float bvsc_had_t_b;
   float cvsb_had_t_b;
   float cvsl_had_t_b;
+
   float bvsc_lep_t_b;
   float cvsb_lep_t_b;
   float cvsl_lep_t_b;
+
   float pt_had_t_b;
   float pt_lep_t_b;
 
+  float eta_had_t_b;
+  float eta_lep_t_b;
+
   // For MC
   int decay_mode;
+
   bool chk_reco_correct;
   bool chk_included;
   bool chk_hf_contamination;
+
   bool pu_conta_had_t_b;
   bool pu_conta_lep_t_b;
 

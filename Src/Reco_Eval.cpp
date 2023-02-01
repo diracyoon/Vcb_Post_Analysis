@@ -8,7 +8,7 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 {
   cout << "[Reco_Eval::Reco_Eval]: Init analysis" << endl;
 
-  reduction = 100;
+  reduction = 1;
 
   era = a_era;
   channel = a_channel;
@@ -75,8 +75,6 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   n_fail_reason = sizeof(fail_reason) / sizeof(TString);
   n_histo_type = n_fail_reason + 1;
 
-  n_discriminators = sizeof(dv_histo_conf) / sizeof(DV_Histo_Conf);
-
   histo_mva_pre = new TH1D **[n_histo_sample];
   histo_mva = new TH1D **[n_histo_sample];
   histo_cutflow = new TH1D **[n_histo_sample];
@@ -123,6 +121,18 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     }
   }
 
+  dv_histo_conf = {{"MVA_Scores", 100, -1, 1},
+                   {"N_Jets", 20, 0, 20},
+                   {"N_BJets", 10, 0, 10},
+                   {"N_CJets", 10, 0, 10},
+                   {"BvsC_w_u", 100, 0, 1},
+                   {"CvsB_w_u", 100, 0, 1},
+                   {"CvsL_w_u", 100, 0, 1},
+                   {"BvsC_w_d", 100, 0, 1},
+                   {"CvsB_w_d", 100, 0, 1},
+                   {"CvsL_w_d", 100, 0, 1}};
+  n_discriminators = dv_histo_conf.size();
+
   histo_discriminator = new TH1D ***[n_histo_sample];
   for (int i = 0; i < n_histo_sample; i++)
   {
@@ -147,6 +157,7 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 
   gr_significance = new TGraphErrors();
 
+  // output tree for template maker training
   TString fout_name = "Vcb_" + channel + "_Reco_Tree.root";
   fout_tree = new TFile(fout_name, "RECREATE");
   for (int i = 0; i < 5; i++)
@@ -160,16 +171,29 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     out_tree[i]->Branch("n_bjets", &event.n_bjets);
     out_tree[i]->Branch("n_cjets", &event.n_cjets);
     out_tree[i]->Branch("best_mva_score", &event.best_mva_score);
+
     out_tree[i]->Branch("pt_had_t_b", &event.pt_had_t_b);
+    out_tree[i]->Branch("pt_w_u", &event.pt_w_u);
+    out_tree[i]->Branch("pt_w_d", &event.pt_w_d);
     out_tree[i]->Branch("pt_lep_t_b", &event.pt_lep_t_b);
+
+    out_tree[i]->Branch("eta_had_t_b", &event.eta_had_t_b);
+    out_tree[i]->Branch("eta_w_u", &event.eta_w_u);
+    out_tree[i]->Branch("eta_w_d", &event.eta_w_d);
+    out_tree[i]->Branch("eta_lep_t_b", &event.eta_lep_t_b);
+
     out_tree[i]->Branch("bvsc_had_t_b", &event.bvsc_had_t_b);
-    out_tree[i]->Branch("bvsc_lep_t_b", &event.bvsc_lep_t_b);
+
     out_tree[i]->Branch("bvsc_w_u", &event.bvsc_w_u);
     out_tree[i]->Branch("cvsb_w_u", &event.cvsb_w_u);
     out_tree[i]->Branch("cvsl_w_u", &event.cvsl_w_u);
+
     out_tree[i]->Branch("bvsc_w_d", &event.bvsc_w_d);
     out_tree[i]->Branch("cvsb_w_d", &event.cvsb_w_d);
     out_tree[i]->Branch("cvsl_w_d", &event.cvsl_w_d);
+
+    out_tree[i]->Branch("bvsc_lep_t_b", &event.bvsc_lep_t_b);
+
     out_tree[i]->Branch("m_w_u", &event.m_w_u);
     out_tree[i]->Branch("m_w_d", &event.m_w_d);
   }
@@ -195,8 +219,8 @@ void Reco_Eval::Run()
   Draw_Raw();
   // Draw_Sample_By_Sample();
   // Draw_Significance();
-  // Draw_Swap();
-  // Draw_DV();
+  Draw_Swap();
+  Draw_DV();
 } // void Reco_Eval::Run()
 
 //////////
@@ -612,11 +636,9 @@ void Reco_Eval::Fill_Histo_Discriminators(const TString &short_name, const int &
   histo_discriminator[index][4][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
   histo_discriminator[index][5][index_fail_reason]->Fill(event.cvsb_w_u, event.weight);
   histo_discriminator[index][6][index_fail_reason]->Fill(event.cvsl_w_u, event.weight);
-  histo_discriminator[index][7][index_fail_reason]->Fill(event.m_w_u, event.weight);
-  histo_discriminator[index][8][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
-  histo_discriminator[index][9][index_fail_reason]->Fill(event.cvsb_w_d, event.weight);
-  histo_discriminator[index][10][index_fail_reason]->Fill(event.cvsl_w_d, event.weight);
-  histo_discriminator[index][11][index_fail_reason]->Fill(event.m_w_d, event.weight);
+  histo_discriminator[index][7][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
+  histo_discriminator[index][8][index_fail_reason]->Fill(event.cvsb_w_d, event.weight);
+  histo_discriminator[index][9][index_fail_reason]->Fill(event.cvsl_w_d, event.weight);
 
   return;
 } // void Reco_Eval::Fill_Histo_Discriminators(const TString& short_name, const int& index_decay_mode, const int& index_fail_reason)
@@ -643,7 +665,14 @@ void Reco_Eval::Fill_Histo_Swap(const TString &short_name, const int &index_deca
 
 void Reco_Eval::Fill_Output_Tree(const TString &short_name, const int &index_decay_mode)
 {
-  int index = Get_Index(short_name, index_decay_mode);
+  for (int i = 0; i < 5; i++)
+  {
+    if (index_decay_mode == decay_modes[i])
+    {
+      out_tree[i]->Fill();
+      break;
+    }
+  }
 
   return;
 } // void Reco_Eval::Fill_Output_Tree(const TString& short_name, const int& index_decay_mode)
@@ -759,6 +788,13 @@ void Reco_Eval::Read_Tree()
 
       Fill_Histo(short_name, event.decay_mode, index_fail_reason);
 
+      if (index_fail_reason == 0)
+        Fill_Histo_Swap(short_name, event.decay_mode);
+
+      Fill_Histo_Count(short_name, event.decay_mode, index_fail_reason);
+      Fill_Histo_Discriminators(short_name, event.decay_mode, index_fail_reason);
+
+      /* Cut */
       // no cut
       int n_cut = 0;
       Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
@@ -798,11 +834,6 @@ void Reco_Eval::Read_Tree()
       n_cut++;
       Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
 
-      Fill_Histo_Count(short_name, event.decay_mode, index_fail_reason);
-      Fill_Histo_Discriminators(short_name, event.decay_mode, index_fail_reason);
-      if (index_fail_reason == 0)
-        Fill_Histo_Swap(short_name, event.decay_mode);
-
       // Fill_Output_Tree(short_name, event.decay_mode);
 
       // no additional b-tagging
@@ -810,6 +841,7 @@ void Reco_Eval::Read_Tree()
         continue;
       n_cut++;
       Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
+      /* Cut */
 
       // if(1000<j) break;
       // histo_mva_pre
