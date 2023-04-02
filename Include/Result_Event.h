@@ -174,6 +174,7 @@ protected:
   bool chk_reco_correct;
   bool chk_included;
   bool chk_hf_contamination;
+  bool chk_gentau_conta;
 
   bool pu_conta_had_t_b;
   bool pu_conta_lep_t_b;

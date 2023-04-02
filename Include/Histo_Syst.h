@@ -13,18 +13,19 @@
 #include <TObjArray.h>
 #include <TObjString.h>
 #include <TGraphErrors.h>
-// #include <THStack.h>
+#include <TMVA/Reader.h>
 
 #include <Const_Def.h>
 #include <Samples.h>
 #include <Result_Event.h>
+#include <Tagging_RF.h>
 
 using namespace std;
 
 class Histo_Syst : public TObject
 {
 public:
-  Histo_Syst(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_run_flag = "Central", const TString &a_swap_mode = "Permutation_MVA");
+  Histo_Syst(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_run_flag = "Central", const bool &a_chk_template_on = false, const TString &a_swap_mode = "Permutation_MVA");
   ~Histo_Syst();
 
   void Run();
@@ -42,40 +43,55 @@ protected:
   int index_split;
   int reduction;
 
+  bool chk_template_on;
+
   Samples samples;
   int n_sample_merge_mc;
   vector<TString> vec_short_name_mc;
+
+  Tagging_RF tagging_rf;
 
   TString era;
   TString channel;
   TString path_base;
   TString run_flag;
 
+  TString key_base;
+  TString tree_name;
+
   TString data_short_name;
 
   map<TString, TFile *> map_fin_mc;
   map<TString, TFile *> map_fin_mc_jec_down;
   map<TString, TFile *> map_fin_mc_jec_up;
-  map<TString, TFile *> map_fin_mc_jes_down;
-  map<TString, TFile *> map_fin_mc_jes_up;
+  map<TString, TFile *> map_fin_mc_jer_down;
+  map<TString, TFile *> map_fin_mc_jer_up;
   map<TString, TFile *> map_fin_mc_cp5_down;
   map<TString, TFile *> map_fin_mc_cp5_up;
   map<TString, TFile *> map_fin_mc_hdamp_down;
   map<TString, TFile *> map_fin_mc_hdamp_up;
   map<TString, TFile *> map_fin_mc_mtop_171p5;
   map<TString, TFile *> map_fin_mc_mtop_173p5;
+  map<TString, TFile *> map_fin_mc_eec_down;
+  map<TString, TFile *> map_fin_mc_eec_up;
+  map<TString, TFile *> map_fin_mc_eer_down;
+  map<TString, TFile *> map_fin_mc_eer_up;
 
   map<TString, TTree *> map_tree_mc;
   map<TString, TTree *> map_tree_mc_jec_down;
   map<TString, TTree *> map_tree_mc_jec_up;
-  map<TString, TTree *> map_tree_mc_jes_down;
-  map<TString, TTree *> map_tree_mc_jes_up;
+  map<TString, TTree *> map_tree_mc_jer_down;
+  map<TString, TTree *> map_tree_mc_jer_up;
   map<TString, TTree *> map_tree_mc_cp5_down;
   map<TString, TTree *> map_tree_mc_cp5_up;
   map<TString, TTree *> map_tree_mc_hdamp_down;
   map<TString, TTree *> map_tree_mc_hdamp_up;
   map<TString, TTree *> map_tree_mc_mtop_171p5;
   map<TString, TTree *> map_tree_mc_mtop_173p5;
+  map<TString, TTree *> map_tree_mc_eec_down;
+  map<TString, TTree *> map_tree_mc_eec_up;
+  map<TString, TTree *> map_tree_mc_eer_down;
+  map<TString, TTree *> map_tree_mc_eer_up;
 
   map<TString, map<TString, TFile *> *> map_map_fin_mc;
   map<TString, map<TString, TTree *> *> map_map_tree_mc;
@@ -94,17 +110,11 @@ protected:
   int n_variable;
   vector<Histo_Conf> variable_conf;
 
-  int n_syst_b;
-  vector<TString> name_syst_b;
-
-  int n_syst_c;
-  vector<TString> name_syst_c;
-
-  TH1D **histo_tagging_rf_b; // n_syst_b
-  TH1D **histo_tagging_rf_c; // n_syst_c
-
   float b_tag_rf;
   float c_tag_rf;
+
+  float n_bjets_f;
+  float n_cjets_f;
 
   TH1D *****histo_mc; // n_region, n_syst, n_sample, n_variable
   // TH1D ****histo_weight; // n_region, n_c_tag_weight, n_sample
@@ -117,13 +127,15 @@ protected:
   TFile *fin_tagging_rf;
   TFile *fout;
 
+  TString template_mva_name;
+  TMVA::Reader *reader_template;
+
   void Fill_Histo_Data(const int &region_index);
   void Fill_Histo_MC(const int &region_index, const int &sample_index, const TString &syst_fix = "None");
   inline int Get_Region_Index(const TString &region);
-  float Get_Tagging_RF(const TString &syst_name);
   void Read_Tree();
+  void Setup_Template_Reader();
   bool Set_Region();
-  void Set_Tagging_RF();
 
   ClassDef(Histo_Syst, 1);
 };

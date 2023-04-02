@@ -219,7 +219,8 @@ void Result_Event::Setup_Tree(TTree *tree, const bool &chk_syst)
   tree->SetBranchAddress("chk_reco_correct", &chk_reco_correct);
   tree->SetBranchAddress("chk_included", &chk_included);
   tree->SetBranchAddress("chk_hf_contamination", &chk_hf_contamination);
-
+  tree->SetBranchAddress("chk_gentau_conta", &chk_gentau_conta);
+  
   tree->SetBranchAddress("pu_conta_had_t_b", &pu_conta_had_t_b);
   tree->SetBranchAddress("pu_conta_w_u", &pu_conta_w_u);
   tree->SetBranchAddress("pu_conta_w_d", &pu_conta_w_d);

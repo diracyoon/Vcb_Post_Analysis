@@ -1,2 +1,2 @@
-export ERA="2017"
+export ERA="2016postVFP"
 export CHANNEL="El"

@@ -5,10 +5,11 @@ log = condor.log
 getenv     = True
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
-request_memory = 102410
+request_memory = 80*1024
 arguments  = $(Process)
 output = job_$(Process).log
 error = job_$(Process).err
+request_cpus = 5
 #preserve_relative_paths = True
 #transfer_output_files = TMVAClassification_BDTG.weights.xml
 

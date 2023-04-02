@@ -4,18 +4,22 @@ ClassImp(Histo_Syst);
 
 //////////
 
-Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TString &a_run_flag, const TString &a_swap_mode) : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode)
+Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TString &a_run_flag, const bool &a_chk_template_on, const TString &a_swap_mode)
+    : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
 {
   cout << "[Histo_Syst::Histo_Syst]: Init analysis" << endl;
 
   reduction = 1;
 
+  chk_template_on = a_chk_template_on;
+
   era = a_era;
   channel = a_channel;
   run_flag = a_run_flag;
+
+  // job splitting for central and syst_reweigt
   if (run_flag.Contains("Central"))
   {
-
     index_split = TString(run_flag[7]).Atoi();
     n_split = TString(run_flag[8]).Atoi();
     run_flag = "Central";
@@ -24,6 +28,9 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
   cout << "[Histo_Syst::Histo_Syst]: run_flag = " << run_flag << endl;
   if (run_flag == "Central")
     cout << "Index_Split = " << index_split << ", N_Split = " << n_split << endl;
+
+  if (channel == "Mu" && run_flag.Contains("Electron"))
+    throw "Input run_flag is not compatible with Mu channel. Abort process.";
 
   path_base = getenv("Vcb_Post_Analysis_WD");
 
@@ -35,132 +42,182 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
     exit(EXIT_FAILURE);
   }
 
+  if (channel == "Mu")
+    key_base = "POGTightWithTightIso_";
+  else if (channel = "El")
+    key_base = "passTightID_";
+
+  tree_name = "/Result_Tree";
+
   if (run_flag != "Data")
   {
     for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
     {
       cout << it->first << endl;
 
-      // central and syst weights
-      // cout << "Central_Syst" << endl;
-      map_fin_mc[it->first] = new TFile(result_path + "Central_Syst/" + it->second);
-      map_tree_mc[it->first] = (TTree *)map_fin_mc[it->first]->Get("POGTightWithTightIso_Central/Result_Tree");
+      if (run_flag == "Central" ||
+          run_flag == "CP5_Down" || run_flag == "CP5_Up" ||
+          run_flag == "hDamp_Down" || run_flag == "hDamp_Up" ||
+          run_flag == "mTop_171p5" || run_flag == "mTop_173p5" ||
+          run_flag == "All")
+      {
+        map_fin_mc[it->first] = new TFile(result_path + "Central_Syst/" + it->second);
+        map_tree_mc[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "Central" + tree_name);
 
-      event.Setup_Tree(map_tree_mc[it->first], true);
+        event.Setup_Tree(map_tree_mc[it->first], true);
+      }
 
-      // jec down
-      // cout << "Jec Down" << endl;
-      map_fin_mc_jec_down[it->first] = new TFile(result_path + "JetEnDown/" + it->second);
-      map_tree_mc_jec_down[it->first] = (TTree *)map_fin_mc_jec_down[it->first]->Get("POGTightWithTightIso_JetEnDown/Result_Tree");
+      if (run_flag == "Jet_En_Down" || run_flag == "All")
+      {
+        map_fin_mc_jec_down[it->first] = new TFile(result_path + "JetEnDown/" + it->second);
+        map_tree_mc_jec_down[it->first] = (TTree *)map_fin_mc_jec_down[it->first]->Get(key_base + "JetEnDown" + tree_name);
 
-      event.Setup_Tree(map_tree_mc_jec_down[it->first], false);
+        event.Setup_Tree(map_tree_mc_jec_down[it->first], false);
+      }
 
-      // jec up
-      // cout << "Jec Up" << endl;
-      map_fin_mc_jec_up[it->first] = new TFile(result_path + "JetEnUp/" + it->second);
-      map_tree_mc_jec_up[it->first] = (TTree *)map_fin_mc_jec_up[it->first]->Get("POGTightWithTightIso_JetEnUp/Result_Tree");
+      if (run_flag == "Jet_En_Up" || run_flag == "All")
+      {
+        map_fin_mc_jec_up[it->first] = new TFile(result_path + "JetEnUp/" + it->second);
+        map_tree_mc_jec_up[it->first] = (TTree *)map_fin_mc_jec_up[it->first]->Get(key_base + "JetEnUp" + tree_name);
 
-      event.Setup_Tree(map_tree_mc_jec_up[it->first], false);
+        event.Setup_Tree(map_tree_mc_jec_up[it->first], false);
+      }
 
-      // jes down
-      // cout << "Jes Down" << endl;
-      map_fin_mc_jes_down[it->first] = new TFile(result_path + "JesDown/" + it->second);
-      map_tree_mc_jes_down[it->first] = (TTree *)map_fin_mc_jes_down[it->first]->Get("POGTightWithTightIso_JetResDown/Result_Tree");
+      if (run_flag == "Jet_Res_Down" || run_flag == "All")
+      {
+        map_fin_mc_jer_down[it->first] = new TFile(result_path + "JetResDown/" + it->second);
+        map_tree_mc_jer_down[it->first] = (TTree *)map_fin_mc_jer_down[it->first]->Get(key_base + "JetResDown" + tree_name);
 
-      event.Setup_Tree(map_tree_mc_jes_down[it->first], false);
+        event.Setup_Tree(map_tree_mc_jer_down[it->first], false);
+      }
 
-      // jes up
-      // cout << "Jes Up" << endl;
-      map_fin_mc_jes_up[it->first] = new TFile(result_path + "JesUp/" + it->second);
-      map_tree_mc_jes_up[it->first] = (TTree *)map_fin_mc_jes_up[it->first]->Get("POGTightWithTightIso_JetResUp/Result_Tree");
+      if (run_flag == "Jet_Res_Up" || run_flag == "All")
+      {
+        map_fin_mc_jer_up[it->first] = new TFile(result_path + "JetResUp/" + it->second);
+        map_tree_mc_jer_up[it->first] = (TTree *)map_fin_mc_jer_up[it->first]->Get(key_base + "JetResUp" + tree_name);
 
-      event.Setup_Tree(map_tree_mc_jes_up[it->first], false);
+        event.Setup_Tree(map_tree_mc_jer_up[it->first], false);
+      }
+
+      if (channel == "El")
+      {
+        if (run_flag == "El_En_Down" || run_flag == "All")
+        {
+          map_fin_mc_eec_down[it->first] = new TFile(result_path + "ElectronEnDown/" + it->second);
+          map_tree_mc_eec_down[it->first] = (TTree *)map_fin_mc_eec_down[it->first]->Get(key_base + "ElectronEnDown" + tree_name);
+
+          event.Setup_Tree(map_tree_mc_eec_down[it->first], false);
+        }
+
+        if (run_flag == "El_En_Up" || run_flag == "All")
+        {
+          map_fin_mc_eec_up[it->first] = new TFile(result_path + "ElectronEnUp/" + it->second);
+          map_tree_mc_eec_up[it->first] = (TTree *)map_fin_mc_eec_up[it->first]->Get(key_base + "ElectronEnUp" + tree_name);
+
+          event.Setup_Tree(map_tree_mc_eec_up[it->first], false);
+        }
+
+        if (run_flag == "El_Res_Down")
+        {
+          map_fin_mc_eer_down[it->first] = new TFile(result_path + "ElectronResDown/" + it->second);
+          map_tree_mc_eer_down[it->first] = (TTree *)map_fin_mc_eer_down[it->first]->Get(key_base + "ElectronResDown" + tree_name);
+
+          event.Setup_Tree(map_tree_mc_eer_down[it->first], false);
+        }
+
+        if (run_flag == "El_Res_Up" || run_flag == "All")
+        {
+          map_fin_mc_eer_up[it->first] = new TFile(result_path + "ElectronResUp/" + it->second);
+          map_tree_mc_eer_up[it->first] = (TTree *)map_fin_mc_eer_up[it->first]->Get(key_base + "ElectronResUp" + tree_name);
+
+          event.Setup_Tree(map_tree_mc_eer_up[it->first], false);
+        }
+      }
     }
 
-    // Top Syst
-    // CP5 down
-    map_fin_mc_cp5_down = map_fin_mc;
-    map_fin_mc_cp5_down.erase("TTLJ_powheg");
-    map_fin_mc_cp5_down["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5down"]);
+    if (run_flag == "CP5_Down" || run_flag == "All")
+    {
+      map_fin_mc_cp5_down = map_fin_mc;
+      map_fin_mc_cp5_down.erase("TTLJ_powheg");
+      map_fin_mc_cp5_down["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5down"]);
 
-    map_tree_mc_cp5_down = map_tree_mc;
-    map_tree_mc_cp5_down.erase("TTLJ_powheg");
-    map_tree_mc_cp5_down["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_down["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+      map_tree_mc_cp5_down = map_tree_mc;
+      map_tree_mc_cp5_down.erase("TTLJ_powheg");
+      map_tree_mc_cp5_down["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_down["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
 
-    event.Setup_Tree(map_tree_mc_cp5_down["TTLJ_powheg"], false);
+      event.Setup_Tree(map_tree_mc_cp5_down["TTLJ_powheg"], false);
+    }
 
-    // CP5 up
-    map_fin_mc_cp5_up = map_fin_mc;
-    map_fin_mc_cp5_up.erase("TTLJ_powheg");
-    map_fin_mc_cp5_up["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5up"]);
+    if (run_flag == "CP5_Up" || run_flag == "All")
+    {
+      map_fin_mc_cp5_up = map_fin_mc;
+      map_fin_mc_cp5_up.erase("TTLJ_powheg");
+      map_fin_mc_cp5_up["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5up"]);
 
-    map_tree_mc_cp5_up = map_tree_mc;
-    map_tree_mc_cp5_up.erase("TTLJ_powheg");
-    map_tree_mc_cp5_up["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_up["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+      map_tree_mc_cp5_up = map_tree_mc;
+      map_tree_mc_cp5_up.erase("TTLJ_powheg");
+      map_tree_mc_cp5_up["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_up["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
 
-    event.Setup_Tree(map_tree_mc_cp5_up["TTLJ_powheg"], false);
+      event.Setup_Tree(map_tree_mc_cp5_up["TTLJ_powheg"], false);
+    }
 
-    // hdamp down
-    map_fin_mc_hdamp_down = map_fin_mc;
-    map_fin_mc_hdamp_down.erase("TTLJ_powheg");
-    map_fin_mc_hdamp_down["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampdown"]);
+    if (run_flag == "hDamp_Down" || run_flag == "All")
+    {
+      map_fin_mc_hdamp_down = map_fin_mc;
+      map_fin_mc_hdamp_down.erase("TTLJ_powheg");
+      map_fin_mc_hdamp_down["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampdown"]);
 
-    map_tree_mc_hdamp_down = map_tree_mc;
-    map_tree_mc_hdamp_down.erase("TTLJ_powheg");
-    map_tree_mc_hdamp_down["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_down["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+      map_tree_mc_hdamp_down = map_tree_mc;
+      map_tree_mc_hdamp_down.erase("TTLJ_powheg");
+      map_tree_mc_hdamp_down["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_down["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
 
-    event.Setup_Tree(map_tree_mc_hdamp_down["TTLJ_powheg"], false);
+      event.Setup_Tree(map_tree_mc_hdamp_down["TTLJ_powheg"], false);
+    }
 
-    // hdamp up
-    map_fin_mc_hdamp_up = map_fin_mc;
-    map_fin_mc_hdamp_up.erase("TTLJ_powheg");
-    map_fin_mc_hdamp_up["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampup"]);
+    if (run_flag == "hDamp_Up" || run_flag == "All")
+    {
+      map_fin_mc_hdamp_up = map_fin_mc;
+      map_fin_mc_hdamp_up.erase("TTLJ_powheg");
+      map_fin_mc_hdamp_up["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampup"]);
 
-    map_tree_mc_hdamp_up = map_tree_mc;
-    map_tree_mc_hdamp_up.erase("TTLJ_powheg");
-    map_tree_mc_hdamp_up["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_up["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+      map_tree_mc_hdamp_up = map_tree_mc;
+      map_tree_mc_hdamp_up.erase("TTLJ_powheg");
+      map_tree_mc_hdamp_up["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_up["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
 
-    event.Setup_Tree(map_tree_mc_hdamp_up["TTLJ_powheg"], false);
+      event.Setup_Tree(map_tree_mc_hdamp_up["TTLJ_powheg"], false);
+    }
 
-    // mTop 171p5
-    map_fin_mc_mtop_171p5 = map_fin_mc;
-    map_fin_mc_mtop_171p5.erase("TTLJ_powheg");
-    map_fin_mc_mtop_171p5["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_171p5"]);
+    if (run_flag == "mTop_171p5" || run_flag == "All")
+    {
+      map_fin_mc_mtop_171p5 = map_fin_mc;
+      map_fin_mc_mtop_171p5.erase("TTLJ_powheg");
+      map_fin_mc_mtop_171p5["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_171p5"]);
 
-    map_tree_mc_mtop_171p5 = map_tree_mc;
-    map_tree_mc_mtop_171p5.erase("TTLJ_powheg");
-    map_tree_mc_mtop_171p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_171p5["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+      map_tree_mc_mtop_171p5 = map_tree_mc;
+      map_tree_mc_mtop_171p5.erase("TTLJ_powheg");
+      map_tree_mc_mtop_171p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_171p5["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
 
-    event.Setup_Tree(map_tree_mc_mtop_171p5["TTLJ_powheg"], false);
+      event.Setup_Tree(map_tree_mc_mtop_171p5["TTLJ_powheg"], false);
+    }
 
-    // mTop 173p5
-    map_fin_mc_mtop_173p5 = map_fin_mc;
-    map_fin_mc_mtop_173p5.erase("TTLJ_powheg");
-    map_fin_mc_mtop_173p5["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_173p5"]);
+    if (run_flag == "mTop_173p5" || run_flag == "All")
+    {
+      map_fin_mc_mtop_173p5 = map_fin_mc;
+      map_fin_mc_mtop_173p5.erase("TTLJ_powheg");
+      map_fin_mc_mtop_173p5["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_173p5"]);
 
-    map_tree_mc_mtop_173p5 = map_tree_mc;
-    map_tree_mc_mtop_173p5.erase("TTLJ_powheg");
-    map_tree_mc_mtop_173p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_173p5["TTLJ_powheg"]->Get("POGTightWithTightIso_Central/Result_Tree");
+      map_tree_mc_mtop_173p5 = map_tree_mc;
+      map_tree_mc_mtop_173p5.erase("TTLJ_powheg");
+      map_tree_mc_mtop_173p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_173p5["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
 
-    event.Setup_Tree(map_tree_mc_mtop_173p5["TTLJ_powheg"], false);
+      event.Setup_Tree(map_tree_mc_mtop_173p5["TTLJ_powheg"], false);
+    }
 
     // TFile and TTree handlers
     if (run_flag == "Central" || run_flag == "All")
     {
       map_map_fin_mc["Central"] = &map_fin_mc;
       map_map_tree_mc["Central"] = &map_tree_mc;
-    }
-
-    if (run_flag == "Jes_Down" || run_flag == "All")
-    {
-      map_map_fin_mc["Jes_Down"] = &map_fin_mc_jes_down;
-      map_map_tree_mc["Jes_Down"] = &map_tree_mc_jes_down;
-    }
-
-    if (run_flag == "Jes_Up" || run_flag == "All")
-    {
-      map_map_fin_mc["Jes_Up"] = &map_fin_mc_jes_up;
-      map_map_tree_mc["Jes_Up"] = &map_tree_mc_jes_up;
     }
 
     if (run_flag == "Jet_En_Down" || run_flag == "All")
@@ -175,6 +232,17 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
       map_map_tree_mc["Jet_En_Up"] = &map_tree_mc_jec_up;
     }
 
+    if (run_flag == "Jet_Res_Down" || run_flag == "All")
+    {
+      map_map_fin_mc["Jet_Res_Down"] = &map_fin_mc_jer_down;
+      map_map_tree_mc["Jet_Res_Down"] = &map_tree_mc_jer_down;
+    }
+
+    if (run_flag == "Jet_Res_Up" || run_flag == "All")
+    {
+      map_map_fin_mc["Jet_Res_Up"] = &map_fin_mc_jer_up;
+      map_map_tree_mc["Jet_Res_Up"] = &map_tree_mc_jer_up;
+    }
     if (run_flag == "CP5_Down" || run_flag == "All")
     {
       map_map_fin_mc["CP5_Down"] = &map_fin_mc_cp5_down;
@@ -210,7 +278,34 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
       map_map_fin_mc["mTop_173p5"] = &map_fin_mc_mtop_173p5;
       map_map_tree_mc["mTop_173p5"] = &map_tree_mc_mtop_173p5;
     }
-  } // if (run_flag != "Data")
+
+    if (channel == "El")
+    {
+      if (run_flag == "El_En_Down" || run_flag == "All")
+      {
+        map_map_fin_mc["El_En_Down"] = &map_fin_mc_eec_down;
+        map_map_tree_mc["El_En_Down"] = &map_tree_mc_eec_down;
+      }
+
+      if (run_flag == "El_En_Up" || run_flag == "All")
+      {
+        map_map_fin_mc["El_En_Up"] = &map_fin_mc_eec_up;
+        map_map_tree_mc["El_En_Up"] = &map_tree_mc_eec_up;
+      }
+
+      if (run_flag == "El_Res_Down" || run_flag == "All")
+      {
+        map_map_fin_mc["El_Res_Down"] = &map_fin_mc_eer_down;
+        map_map_tree_mc["El_Res_Down"] = &map_tree_mc_eer_down;
+      }
+
+      if (run_flag == "El_Res_Up" || run_flag == "All")
+      {
+        map_map_fin_mc["El_Res_Up"] = &map_fin_mc_eer_up;
+        map_map_tree_mc["El_Res_Up"] = &map_tree_mc_eer_up;
+      }
+    } // if (channel == "El")
+  }   // if (run_flag != "Data")
 
   // data
   if (run_flag == "Data" || run_flag == "All")
@@ -223,8 +318,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
         data_short_name = samples.map_short_name_data[it->first];
 
       map_fin_data[it->first] = new TFile(result_path + it->second);
-      map_tree_data[it->first] = (TTree *)map_fin_data[it->first]->Get("POGTightWithTightIso_Central/Result_Tree");
-
+      map_tree_data[it->first] = (TTree *)map_fin_data[it->first]->Get(key_base + "Central" + tree_name);
       event.Setup_Tree(map_tree_data[it->first], false);
     }
   } // if (run_flag == "Data" || run_flag == "All")
@@ -249,10 +343,8 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
                "C_Tag_Extrap_Down", "C_Tag_Extrap_Up", "C_Tag_Interp_Down", "C_Tag_Interp_Up", "C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up", "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up", "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up", "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up", "C_Tag_PU_Down", "C_Tag_PU_Up", "C_Tag_Stat_Down", "C_Tag_Stat_Up",
                "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up", "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up", "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
                "C_Tag_JER_Down", "C_Tag_JER_Up", "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up",
-               "Jes_Down", "Jes_Up",
                "Jet_En_Down", "Jet_En_Up",
-               "Mu_Id_Down", "Mu_Id_Up",
-               "Mu_Iso_Down", "Mu_Iso_Up",
+               "Jet_Res_Down", "Jet_Res_Up",
                "Trig_Down", "Trig_Up",
                "PDF_Alternative", "PDF_As_Down", "PDF_As_Up",
                "Pileup_Down", "Pileup_Up",
@@ -263,6 +355,26 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
                "CP5_Down", "CP5_Up",
                "hDamp_Down", "hDamp_Up",
                "mTop_171p5", "mTop_173p5"};
+
+  if (channel == "Mu")
+  {
+    syst_name.push_back("Mu_Id_Down");
+    syst_name.push_back("Mu_Id_Up");
+    syst_name.push_back("Mu_Iso_Down");
+    syst_name.push_back("Mu_Iso_Up");
+  }
+  else if (channel == "El")
+  {
+    syst_name.push_back("El_Id_Down");
+    syst_name.push_back("El_Id_Up");
+    syst_name.push_back("El_Reco_Down");
+    syst_name.push_back("El_Reco_Up");
+    syst_name.push_back("El_En_Down");
+    syst_name.push_back("El_En_Up");
+    syst_name.push_back("El_Res_Down");
+    syst_name.push_back("El_Res_Up");
+  }
+
   for (int i = 0; i < sizeof(event.weight_pdf_error_set) / sizeof(float); i++)
   {
     TString pdf_error_set = "PDF_Error_Set_" + to_string(i);
@@ -271,33 +383,6 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
 
   n_syst = syst_name.size();
   cout << "N_Syst = " << n_syst << endl;
-
-  // for b-tag rf
-  name_syst_b.push_back("B_Tag_Nominal");
-  for (int i = 0; i < n_syst; i++)
-  {
-    if (syst_name[i].Contains("B_Tag"))
-    {
-      name_syst_b.push_back(syst_name[i]);
-    }
-  }
-  n_syst_b = name_syst_b.size();
-  cout << "N_Syst_B = " << n_syst_b << endl;
-
-  // for c-tag rf
-  name_syst_c.push_back("C_Tag_Nominal");
-  for (int i = 0; i < n_syst; i++)
-  {
-    if (syst_name[i].Contains("C_Tag"))
-    {
-      name_syst_c.push_back(syst_name[i]);
-    }
-  }
-  n_syst_c = name_syst_c.size();
-  cout << "N_Syst_C = " << n_syst_c << endl;
-
-  // Tagging Renormalization Factor
-  Set_Tagging_RF();
 
   // variable Config.
   variable_conf = {{"N_Vertex", 80, 0, 80},
@@ -319,6 +404,11 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
                    {"Met_Pt", 50, 0, 300},
                    {"Met_Phi", 80, -4, 4},
                    {"Best_MVA_Score", 100, -1, 1}};
+  if (chk_template_on)
+  {
+    Setup_Template_Reader();
+    variable_conf.push_back({"Template", 100, -1, 1});
+  }
   n_variable = variable_conf.size();
 
   // histo for MC
@@ -340,24 +430,6 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
       }   // loop over n_sample_merge_mc
     }     // loop over n_syst
   }       // loop over n_region
-
-  /*
-    // histo for c-tagging weight
-    histo_weight = new TH1D ***[n_region];
-    for (int i = 0; i < n_region; i++)
-    {
-      histo_weight[i] = new TH1D **[n_c_tag_weight];
-      for (int j = 0; j < n_c_tag_weight; j++)
-      {
-        histo_weight[i][j] = new TH1D *[n_sample_merge_mc];
-        for (int k = 0; k < n_sample_merge_mc; k++)
-        {
-          TString histo_name = region_name[i] + "_" + name_c_tag_weight[j] + "_" + vec_short_name_mc[k];
-          histo_weight[i][j][k] = new TH1D(histo_name, histo_name, 1000, 0, 10);
-        } // loop over n_sample_merge_mc
-      }   // loop over n_syst
-    }     // loop over n_regions
-  */
 
   // histo for data
   histo_data = new TH1D **[n_region];
@@ -414,11 +486,6 @@ Histo_Syst::~Histo_Syst()
       {
         TDirectory *dir_sample = dir_syst->mkdir(vec_short_name_mc[k]);
 
-        // dir_sample->cd();
-        // histo_weight[i][j][k]->SetTitle("Weight_" + vec_short_name_mc[k]);
-        // histo_weight[i][j][k]->SetName("Weight_" + vec_short_name_mc[k]);
-        // histo_weight[i][j][k]->Write();
-
         for (int l = 0; l < n_variable; l++)
         {
           dir_sample->cd();
@@ -428,27 +495,7 @@ Histo_Syst::~Histo_Syst()
         } // loop over variable
       }   // loop over sample
     }     // loop over syst
-
-    /*
-        // for c-tagging weight
-        if (run_flag == "Central")
-        {
-          TDirectory *dir_weight = dir_region->mkdir("Weight");
-          for (int j = 0; j < n_c_tag_weight; j++)
-          {
-            TDirectory *dir_name_c_tag_weight = dir_weight->mkdir(name_c_tag_weight[j]);
-            for (int k = 0; k < n_sample_merge_mc; k++)
-            {
-              dir_name_c_tag_weight->cd();
-
-              histo_weight[i][j][k]->SetTitle(vec_short_name_mc[k]);
-              histo_weight[i][j][k]->SetName(vec_short_name_mc[k]);
-              histo_weight[i][j][k]->Write();
-            } // loop over n_sample
-          }   // loop over n_c_tag_weight
-        }     // if
-    */
-  } // loop over region
+  }       // loop over region
 
   fout->Close();
 } // Histo_Syst::~Histo_Syst()
@@ -487,6 +534,17 @@ void Histo_Syst::Fill_Histo_Data(const int &region_index)
   histo_data[region_index][17]->Fill(event.met_phi, 1.);
   histo_data[region_index][18]->Fill(event.best_mva_score, 1.);
 
+  if (chk_template_on)
+  {
+    // type change. I don't like this part but chose ugly and easy way
+    n_bjets_f = event.n_bjets;
+    n_cjets_f = event.n_cjets;
+
+    float template_mva_score = reader_template->EvaluateMVA("Classification_BDTB");
+
+    histo_data[region_index][19]->Fill(template_mva_score, 1);
+  }
+
   return;
 } // void Histo_Syst::Fill_Histo_Data()
 
@@ -500,8 +558,10 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
 
     // for central tree, don't consider the following syst
     if (syst_fix == "None" &&
-        (syst_type == "Jes_Down" || syst_type == "Jes_Up" ||
-         syst_type == "Jet_En_Down" || syst_type == "Jet_En_Up" ||
+        (syst_type == "Jet_En_Down" || syst_type == "Jet_En_Up" ||
+         syst_type == "Jet_Res_Down" || syst_type == "Jet_Res_Up" ||
+         syst_type == "El_En_Down" || syst_type == "El_En_Up" ||
+         syst_type == "El_Res_Down" || syst_type == "El_Res_Up" ||
          syst_type == "CP5_Down" || syst_type == "CP5_Up" ||
          syst_type == "hDamp_Down" || syst_type == "hDamp_Up" ||
          syst_type == "mTop_171p5" || syst_type == "mTop_173p5"))
@@ -519,13 +579,6 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
       event.weight *= event.weight_pdf_alternative;
     else if (syst_type.Contains("PDF_Error_Set_"))
     {
-      // TObjArray *arr = syst_type.Tokenize('_');
-      // TString index = ((TObjString *)arr->At(3))->CopyString();
-      // event.weight *= event.weight_pdf_error_set[index.Atoi()];
-
-      // arr->Delete();
-      // it caused memory leak
-
       TString temp = syst_type;
 
       int first = temp.First('_');
@@ -569,6 +622,7 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
       event.weight *= event.sf_sl_trig_up;
     else
       event.weight *= event.sf_sl_trig;
+    // event.weight *= 1;
 
     if (syst_type == "Mu_Id_Down")
       event.weight *= event.sf_mu_id_down;
@@ -583,6 +637,20 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
       event.weight *= event.sf_mu_iso_up;
     else
       event.weight *= event.sf_mu_iso;
+
+    if (syst_type == "El_Id_Down")
+      event.weight *= event.sf_el_id_down;
+    else if (syst_type == "El_Id_Up")
+      event.weight *= event.sf_el_id_up;
+    else
+      event.weight *= event.sf_el_id;
+
+    if (syst_type == "El_Reco_Down")
+      event.weight *= event.sf_el_reco_down;
+    else if (syst_type == "El_Reco_Up")
+      event.weight *= event.sf_el_reco_up;
+    else
+      event.weight *= event.sf_el_reco;
 
     // event.weight *= event.weight_pujet_veto;
 
@@ -680,19 +748,19 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
 
     // b-tag renormalization factor
     b_tag_rf = 1;
-    if (syst_type.Contains("B_Tag"))
-      b_tag_rf = Get_Tagging_RF(syst_type);
-    else
-      b_tag_rf = Get_Tagging_RF("B_Tag_Nominal");
+    // if (syst_type.Contains("B_Tag"))
+    //   b_tag_rf = tagging_rf.Get_Tagging_RF(syst_type, event.n_jets);
+    // else
+    //   b_tag_rf = tagging_rf.Get_Tagging_RF("B_Tag_Nominal", event.n_jets);
 
     event.weight *= b_tag_rf;
 
     // c-tag renormalization factor
     c_tag_rf = 1;
-    if (syst_type.Contains("C_Tag"))
-      c_tag_rf = Get_Tagging_RF(syst_type);
-    else
-      c_tag_rf = Get_Tagging_RF("C_Tag_Nominal");
+    // if (syst_type.Contains("C_Tag"))
+    //   c_tag_rf = tagging_rf.Get_Tagging_RF(syst_type, event.n_jets);
+    // else
+    //   c_tag_rf = tagging_rf.Get_Tagging_RF("C_Tag_Nominal", event.n_jets);
 
     event.weight *= c_tag_rf;
 
@@ -716,6 +784,17 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
     histo_mc[region_index][i][sample_index][16]->Fill(event.met_pt, event.weight);
     histo_mc[region_index][i][sample_index][17]->Fill(event.met_phi, event.weight);
     histo_mc[region_index][i][sample_index][18]->Fill(event.best_mva_score, event.weight);
+
+    if (chk_template_on)
+    {
+      // type change. I don't like this part but chose ugly and easy way
+      n_bjets_f = event.n_bjets;
+      n_cjets_f = event.n_cjets;
+
+      float template_mva_score = reader_template->EvaluateMVA("Classification_BDTB");
+
+      histo_mc[region_index][i][sample_index][19]->Fill(template_mva_score, event.weight);
+    }
   } // loop over n_syst
 
   return;
@@ -727,32 +806,6 @@ int Histo_Syst::Get_Region_Index(const TString &region)
 {
   return find(region_name.begin(), region_name.end(), region) - region_name.begin();
 } // int Histo_Syst::Get_Region_Index(const TString& region)
-
-//////////
-
-float Histo_Syst::Get_Tagging_RF(const TString &syst_name)
-{
-  if (syst_name.Contains("B_Tag"))
-  {
-    for (int i = 0; i < n_syst_b; i++)
-    {
-      if (syst_name == name_syst_b[i])
-        return histo_tagging_rf_b[i]->GetBinContent(event.n_jets + 1);
-    }
-  }
-  else if (syst_name.Contains("C_Tag"))
-  {
-    for (int i = 0; i < n_syst_c; i++)
-    {
-      if (syst_name == name_syst_c[i])
-        return histo_tagging_rf_c[i]->GetBinContent(event.n_jets + 1);
-    }
-  }
-  else
-    return -1;
-
-  return -1;
-} // float Get_Taggging_RF(const TString& syst_name)
 
 //////////
 
@@ -795,7 +848,7 @@ void Histo_Syst::Read_Tree()
         if (index_split + 1 == n_split)
           end = n_entries;
 
-        cout << "Test N_Entries:" << n_entries << " N_Split:" << n_split << " Index_Split:" << index_split << " Step:" << step << " Init:" << init << " End:" << end << endl;
+        cout << "N_Entries:" << n_entries << " N_Split:" << n_split << " Index_Split:" << index_split << " Step:" << step << " Init:" << init << " End:" << end << endl;
         cout << endl;
       }
       else
@@ -873,6 +926,37 @@ void Histo_Syst::Read_Tree()
 
 //////////
 
+void Histo_Syst::Setup_Template_Reader()
+{
+  reader_template = new TMVA::Reader("!Color:!Silent");
+  reader_template->AddVariable("best_mva_score", &event.best_mva_score);
+  reader_template->AddVariable("n_bjets", &n_bjets_f);
+  reader_template->AddVariable("n_cjets", &n_cjets_f);
+  reader_template->AddVariable("bvsc_w_u", &event.bvsc_w_u);
+  reader_template->AddVariable("cvsb_w_u", &event.cvsb_w_u);
+  reader_template->AddVariable("cvsl_w_u", &event.cvsl_w_u);
+  reader_template->AddVariable("bvsc_w_d", &event.bvsc_w_d);
+  reader_template->AddVariable("cvsb_w_d", &event.cvsb_w_d);
+  reader_template->AddVariable("cvsl_w_d", &event.cvsl_w_d);
+
+  template_mva_name = "Classification_BDTB";
+
+  TString weight_file = getenv("Vcb_Post_Analysis_WD");
+  weight_file += "/Macro/Template/";
+  weight_file += era;
+  weight_file += "/";
+  weight_file += channel;
+  weight_file += "/weights/TMVA";
+  weight_file += template_mva_name;
+  weight_file += ".weights.xml";
+
+  reader_template->BookMVA(template_mva_name, weight_file);
+
+  return;
+} // void Histo_Syst::Setup_Template_Reader()
+
+//////////
+
 bool Histo_Syst::Set_Region()
 {
   bool chk_b_tagged_had_t_b = bvsc_wp_m_2018 < event.bvsc_had_t_b ? true : false;
@@ -913,30 +997,5 @@ bool Histo_Syst::Set_Region()
 
   return true;
 } // void Histo_Syst::Set_Region()
-
-//////////
-
-void Histo_Syst::Set_Tagging_RF()
-{
-  cout << "[Histo_Syst::Set_Tagging_RF]" << endl;
-
-  fin_tagging_rf = new TFile(path_base + "/Corrections/Vcb_Tagging_RF_" + era + ".root");
-
-  histo_tagging_rf_b = new TH1D *[n_syst_b];
-  for (int i = 0; i < n_syst_b; i++)
-  {
-    TString ratio_name = "Ratio_" + name_syst_b[i];
-    histo_tagging_rf_b[i] = (TH1D *)fin_tagging_rf->Get(ratio_name);
-  }
-
-  histo_tagging_rf_c = new TH1D *[n_syst_c];
-  for (int i = 0; i < n_syst_c; i++)
-  {
-    TString ratio_name = "Ratio_" + name_syst_c[i];
-    histo_tagging_rf_c[i] = (TH1D *)fin_tagging_rf->Get(ratio_name);
-  }
-
-  return;
-} // void Histo_Syst::Set_Tagging_RF()
 
 //////////

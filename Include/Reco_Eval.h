@@ -101,6 +101,8 @@ protected:
 
   TLegend *legend;
 
+  THStack*** stack_dv;
+
   void Calculate_Significance();
   void Calculate_Prob();
   void Draw_DV();

@@ -6,6 +6,8 @@ ClassImp(Permutation_TMVA);
 
 Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channel, const int &a_n_jet, const bool &a_chk_pre_cut, const bool &a_chk_final_kin)
 {
+ ROOT::EnableImplicitMT(4);
+
   cout << "[Permutation_TMVA::Permutation_TMVA]: Init analysis" << endl;
 
   reduction = 1;
@@ -19,6 +21,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   cout << "Era = " << era << ", Channel = " << channel << ", N_Jets = " << n_jet << ", Chk_Pre_Cut = " << chk_pre_cut << ", Chk_Final_Kin = " << chk_final_kin << endl;
 
   TMVA::gConfig().GetVariablePlotting().fNbins1D = 500;
+  TMVA::gConfig().GetVariablePlotting().fMaxNumOfAllowedVariablesForScatterPlots = 1;
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
   path_base += "/Sample/" + era + "/" + channel + "/RunPermutationTree/";
@@ -42,11 +45,15 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
 
   data_loader = new TMVA::DataLoader("dataset");
   // data_loader->AddVariable( "weight",       "weight",       "units", 'F');
-  // data_loader->AddVariable( "n_jets",       "n_jets",       "units", 'I');
+  // data_loader->AddVariable("n_jets", "n_jets", "units", 'I');
   data_loader->AddSpectator("n_jets", "n_jets", "units", 'I');
 
   // data_loader->AddVariable("n_bjets",       "n_bjets",       "units", 'I');
   // data_loader->AddVariable("n_cjets",       "n_cjets",       "units", 'I');
+
+  // data_loader->AddVariable("lepton_pt", "lepton_pt", 'F');
+  // data_loader->AddVariable("met_pt", "met_pt", "units", 'F');
+  data_loader->AddVariable("pt_ratio", "pt_ratio", 'F');
 
   data_loader->AddVariable("pt_had_t_b", "pt_had_t_b", "units", 'F');
   data_loader->AddVariable("pt_w_u", "pt_w_u", "units", 'F');
@@ -130,15 +137,23 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   data_loader->AddSignalTree(tree_correct, 1.0);
   data_loader->AddBackgroundTree(tree_wrong, 1.0);
 
+  TCut cut_base = Form("%d==n_jets&&pt_had_t_b<350&&pt_w_u<300&&pt_lep_t_b<350&&had_t_mass<600&&had_w_mass<300&&lep_t_mass<600&&lep_t_partial_mass<400", n_jet);
+
+  if (!chk_pre_cut)
+  {
+    cut_base += "chi2_jet_had_t_b<200&&chi2_jet_w_u<200&&chi2_jet_w_d<200&&chi2_jet_lep_t_b<200&&chi2_constraint_had_t<50&&chi2_constraint_had_w<150&&chi2_constraint_lep_t<20&&chi2_constraint_lep_w<50";
+    if (n_jet != 4)
+      cut_base += "chi2_jet_extra<50";
+  }
+
+  cut_s = cut_base;
+  cut_b = cut_base;
+
+  // to save time
   if (7 == n_jet)
   {
-    cut_s = Form("%d<=n_jets&&0<n_matched_jets", n_jet);
-    cut_b = Form("%d<=n_jets&&0<n_matched_jets", n_jet);
-  }
-  else
-  {
-    cut_s = Form("n_jets==%d", n_jet);
-    cut_b = Form("n_jets==%d", n_jet);
+    cut_s += "0<n_matched_jets";
+    cut_b += "0<n_matched_jets";
   }
 
   n_train_signal = tree_correct->GetEntries(cut_s) / 2 / reduction;
@@ -157,7 +172,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
 
   // Gradient Boost
   factory->BookMethod(data_loader, TMVA::Types::kBDT, "BDTG",
-                      "!H:!V:NTrees=1000:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.5:nCuts=100:MaxDepth=2");
+                      "!H:!V:NTrees=1000:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.5:nCuts=200:MaxDepth=2");
 
   // Fisher
   // factory->BookMethod(data_loader, TMVA::Types::kFisher, "Fisher", "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=100:NsmoothMVAPdf=10" );

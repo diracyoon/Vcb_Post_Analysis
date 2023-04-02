@@ -158,7 +158,7 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   gr_significance = new TGraphErrors();
 
   // output tree for template maker training
-  TString fout_name = "Vcb_" + channel + "_Reco_Tree.root";
+  TString fout_name = "Vcb_" + era + "_" + channel + "_Reco_Tree.root";
   fout_tree = new TFile(fout_name, "RECREATE");
   for (int i = 0; i < 5; i++)
   {
@@ -204,8 +204,18 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 Reco_Eval::~Reco_Eval()
 {
   fout_tree->cd();
+  for (int i = 0; i < n_histo_sample; i++)
+  {
+    for (int j = 0; j < n_discriminators; j++)
+    {
+      stack_dv[i][j]->Write();
+    }
+  }
+
+  fout_tree->cd();
   for (int i = 0; i < 5; i++)
     out_tree[i]->Write();
+
   fout_tree->Close();
 } // Reco_Eval::~Reco_Eval()
 
@@ -296,7 +306,7 @@ void Reco_Eval::Draw_DV()
 
   /* discriminating variables */
   TCanvas *canvas_dv[n_histo_sample];
-  THStack *stack_dv[n_histo_sample][n_discriminators];
+  stack_dv = new THStack **[n_histo_sample];
   for (int i = 0; i < n_histo_sample; i++)
   {
     TString name = vec_histo_sample[i] + "_DV";
@@ -305,6 +315,7 @@ void Reco_Eval::Draw_DV()
     canvas_dv[i]->Divide(4, 3);
     canvas_dv[i]->Draw();
 
+    stack_dv[i] = new THStack *[n_discriminators];
     for (int j = 0; j < n_discriminators; j++)
     {
       name = vec_histo_sample[i] + "_" + dv_histo_conf[j].discriminator;
@@ -780,9 +791,12 @@ void Reco_Eval::Read_Tree()
         event.weight *= event.sf_el_reco;
       }
 
-      event.weight *= tagging_rf.Get_Tagging_RF("Ratio_B_Tag_Nominal", event.n_jets);
-      event.weight *= tagging_rf.Get_Tagging_RF("Ratio_C_Tag_Nominal", event.n_jets);
-      event.weight *= event.weight_c_tag;
+      // event.weight *= tagging_rf.Get_Tagging_RF("B_Tag_Nominal", event.n_jets);
+      // event.weight *= tagging_rf.Get_Tagging_RF("C_Tag_Nominal", event.n_jets);
+      // event.weight *= event.weight_c_tag;
+
+      // if (event.chk_gentau_conta == true)
+      //   continue;
 
       Fill_Output_Tree(short_name, event.decay_mode);
 

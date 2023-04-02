@@ -9,4 +9,4 @@ when_to_transfer_output = ON_EXIT
 output = job_Vcb_Histo_Syst_$(Process).log
 error = job_Vcb_Histo_Syst_$(Process).err
 
-queue 20
+queue 24

@@ -28,12 +28,6 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   Setup_Name(list_region, region_name);
   n_region = region_name.size();
 
-  /*
-    // get c-tag weight
-    TList *list_c_tag_weight = ((TDirectory *)fin->Get(region_name[0] + "/Weight"))->GetListOfKeys();
-    Setup_C_Tag_Weight_Name(list_c_tag_weight);
-  */
-
   // get syst_name
   TList *list_syst = ((TDirectory *)fin->Get(region_name[0]))->GetListOfKeys();
   // n_pdf_error_set = Setup_Name(list_syst, syst_name, true);
@@ -156,7 +150,6 @@ void Data_MC_Comparison::Run()
 {
   cout << "Data_MC_Comparison::Run" << endl;
 
-  // Get_C_Tag_Renormalization_Factor();
   // Apply_C_Tag_Renormalization_Factor();
   Stack_MC();
   Envelope();
@@ -446,30 +439,6 @@ void Data_MC_Comparison::Envelope()
 } // void Data_MC_Comparison::Envelope()
 
 //////////
-/*
-void Data_MC_Comparison::Get_C_Tag_Renormalization_Factor()
-{
-  cout << "Data_MC_Comparison::C_Tag_Weight" << endl;
-
-  Stack_C_Tag_Weight();
-
-  map<TString, float> weights;
-  for (int i = 0; i < n_region; i++)
-  {
-    for (int j = 0; j < n_c_tag_weight; j++)
-    {
-      TH1D *stacked_histo = (TH1D *)(stack_c_tag_weight[i][j]->GetStack()->Last());
-      float mean = stacked_histo->GetMean();
-
-      weights.insert({c_tag_weight_name[j], mean});
-    } // loop over n_c_tag_weight
-    c_tag_rf.push_back(weights);
-  } // loop over n_region
-
-  return;
-} // void Data_MC_Comparison::Get_C_Tag_Renormalization_Factor()
-*/
-//////////
 
 void Data_MC_Comparison::Merge_PDF_Error_Set()
 {
@@ -591,45 +560,6 @@ void Data_MC_Comparison::Save()
 } // void Data_MC_Comparison::Save()
 
 //////////
-/*
-void Data_MC_Comparison::Setup_C_Tag_Weight_Name(const TList *list)
-{
-  int n_entries = list->GetEntries();
-
-  for (int i = 0; i < n_entries; i++)
-  {
-    TDirectory *dir = (TDirectory *)list->At(i);
-    TString name = dir->GetName();
-
-    c_tag_weight_name.push_back(name);
-  }
-  n_c_tag_weight = c_tag_weight_name.size();
-
-  return;
-} // void Data_MC_Comparison::Setup_C_Tag_Weight_Name(const TList *list)
-*/
-//////////
-/*
-void Data_MC_Comparison::Setup_Histo_C_Tag_Weight()
-{
-  histo_c_tag_weight = new TH1D ***[n_region];
-  for (int i = 0; i < n_region; i++)
-  {
-    histo_c_tag_weight[i] = new TH1D **[n_c_tag_weight];
-    for (int j = 0; j < n_c_tag_weight; j++)
-    {
-      histo_c_tag_weight[i][j] = new TH1D *[n_sample];
-      for (int k = 0; k < n_sample; k++)
-      {
-        histo_c_tag_weight[i][j][k] = (TH1D *)fin->Get(region_name[i] + "/Weight/" + c_tag_weight_name[j] + "/" + sample_name[k]);
-      } // loop over n_sample
-    }   // loop over n_c_tag_weight
-  }     // loop over n_region
-
-  return;
-} // void Data_MC_Comparison::Setup_Histo_C_Tag_Weight()
-*/
-//////////
 
 void Data_MC_Comparison::Setup_Histo_Data()
 {
@@ -745,31 +675,6 @@ int Data_MC_Comparison::Setup_Name(const TList *list, vector<TString> &vec_name,
   return n_pdf_error_set;
 } // int Data_MC_Comparison::Setup_Name(const TList* list, TString* name)
 
-//////////
-/*
-void Data_MC_Comparison::Stack_C_Tag_Weight()
-{
-  stack_c_tag_weight = new THStack **[n_region];
-  for (int i = 0; i < n_region; i++)
-  {
-    stack_c_tag_weight[i] = new THStack *[n_c_tag_weight];
-    for (int j = 0; j < n_c_tag_weight; j++)
-    {
-      cout << c_tag_weight_name[j] << endl;
-      TString stack_name = region_name[i] + "_" + c_tag_weight_name[j];
-      stack_c_tag_weight[i][j] = new THStack(stack_name, stack_name);
-
-      for (int k = 0; k < n_sample; k++)
-      {
-        histo_c_tag_weight[i][j][k]->SetFillColorAlpha(color[k], .2);
-        stack_c_tag_weight[i][j]->Add(histo_c_tag_weight[i][j][k]);
-      } // loop over n_sample
-    }   // loop over n_c_tag_weight
-  }     // loop over n_region
-
-  return;
-} // void Data_MC_Comparison::Stack_C_Tag_Weight()
-*/
 //////////
 
 void Data_MC_Comparison::Stack_MC()
