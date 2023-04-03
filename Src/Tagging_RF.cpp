@@ -338,6 +338,13 @@ void Tagging_RF::Draw()
 
 //////////
 
+void Tagging_RF::Draw_Validation()
+{
+  return;
+}
+
+//////////
+
 void Tagging_RF::Fill_Histo_MC(const int &sample_index)
 {
   float weight = 1;
@@ -594,6 +601,7 @@ void Tagging_RF::Run_Validation()
   Setup_Binning();
   Setup_Histo_Validation();
   Read_Tree();
+  Draw_Validation();
 
   return;
 } // void Tagging_RF::Run_Validation()

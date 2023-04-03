@@ -182,6 +182,7 @@ protected:
 
   void Combine();
   void Draw();
+  void Draw_Validation();
   void Fill_Histo_MC(const int &sample_index);
   void Fill_Histo_Validation_MC(const int &sample_index);
   void Ratio();
