@@ -778,17 +778,17 @@ void Reco_Eval::Read_Tree()
       event.weight *= event.weight_pileup;
       event.weight *= event.weight_prefire;
       event.weight *= event.weight_top_pt;
-      event.weight *= event.sf_sl_trig;
+      event.weight *= event.weight_sl_trig;
 
       if (channel == "Mu")
       {
-        event.weight *= event.sf_mu_id;
-        event.weight *= event.sf_mu_iso;
+        event.weight *= event.weight_mu_id;
+        event.weight *= event.weight_mu_iso;
       }
       else if (channel == "El")
       {
-        event.weight *= event.sf_el_id;
-        event.weight *= event.sf_el_reco;
+        event.weight *= event.weight_el_id;
+        event.weight *= event.weight_el_reco;
       }
 
       // event.weight *= tagging_rf.Get_Tagging_RF("B_Tag_Nominal", event.n_jets);

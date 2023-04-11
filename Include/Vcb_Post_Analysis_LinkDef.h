@@ -14,5 +14,7 @@
 #pragma link C++ class Reco_Eval+;
 #pragma link C++ class Template+;
 #pragma link C++ class Tagging_RF+;
+#pragma link C++ class CR_DL+;
+#pragma link C++ class Result_Event_CR_DL+;
 
 #endif /* __ROOTCLING__ */

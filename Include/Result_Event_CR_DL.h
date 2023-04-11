@@ -1,46 +1,35 @@
-#ifndef __Result_Event_H__
-#define __Result_Event_H__
+#ifndef __Result_Event_CR_DL_H__
+#define __Result_Event_CR_DL_H__
 
-#include <TString.h>
-#include <TTree.h>
-#include <TH1D.h>
+#include "TObject.h"
+#include "TTree.h"
 
-#include "W_Event.h"
-
-class Data_MC_Comparison;
-
-class Result_Event : public W_Event
+class Result_Event_CR_DL : public TObject
 {
-  friend class Template;
-  friend class Histo_Syst;
-  friend class Reco_Eval;
+  friend class CR_DL;
 
 public:
-  Result_Event(const TString &a_era, const TString &a_channel, const TString &a_swap_mode);
-  virtual ~Result_Event();
+  Result_Event_CR_DL();
+  ~Result_Event_CR_DL();
 
   void Setup_Tree(TTree *tree, const bool &chk_syst);
 
 protected:
-  float weight_mu_id;
-  float weight_mu_id_down;
-  float weight_mu_id_up;
+  int n_jet;
+  int n_pv;
+  int process;
 
-  float weight_mu_iso;
-  float weight_mu_iso_down;
-  float weight_mu_iso_up;
+  float dilepton_mass;
+  float ht;
 
-  float weight_el_id;
-  float weight_el_id_down;
-  float weight_el_id_up;
+  float bvsc_third;
+  float bvsc_fourth;
 
-  float weight_el_reco;
-  float weight_el_reco_down;
-  float weight_el_reco_up;
+  float flavor_third;
+  float flavor_fourth;
 
-  float weight_sl_trig;
-  float weight_sl_trig_down;
-  float weight_sl_trig_up;
+  float origin_third;
+  float origin_fourth;
 
   float weight;
 
@@ -90,8 +79,24 @@ protected:
   float weight_c_tag_jes_total_down;
   float weight_c_tag_jes_total_up;
 
+  float weight_el_id;
+  float weight_el_id_down;
+  float weight_el_id_up;
+
+  float weight_el_reco;
+  float weight_el_reco_down;
+  float weight_el_reco_up;
+
   float weight_lumi;
   float weight_mc;
+
+  float weight_mu_id;
+  float weight_mu_id_down;
+  float weight_mu_id_up;
+
+  float weight_mu_iso;
+  float weight_mu_iso_down;
+  float weight_mu_iso_up;
 
   float weight_pdf_alternative;
   float weight_pdf_error_set[100];
@@ -116,68 +121,16 @@ protected:
   float weight_scale_variation_4;
   float weight_scale_variation_6;
   float weight_scale_variation_8;
+
+  float weight_sl_trig;
+  float weight_sl_trig_el_down;
+  float weight_sl_trig_el_up;
+  float weight_sl_trig_mu_down;
+  float weight_sl_trig_mu_up;
+
   float weight_top_pt;
 
-  int n_pv;
-
-  float lepton_pt;
-  float lepton_eta;
-
-  int n_jets;
-  int n_bjets;
-  int n_cjets;
-
-  float pt_leading_jet;
-  float pt_subleading_jet;
-
-  float eta_leading_jet;
-  float eta_subleading_jet;
-
-  float bvsc_leading_jet;
-  float cvsb_leading_jet;
-  float cvsl_leading_jet;
-
-  float bvsc_subleading_jet;
-  float cvsb_subleading_jet;
-  float cvsl_subleading_jet;
-
-  float met_pt;
-  float met_phi;
-
-  float best_mva_score_pre;
-  float best_mva_score;
-  float best_chi2;
-
-  float mt;
-
-  float mva_hf_score;
-
-  float bvsc_had_t_b;
-  float cvsb_had_t_b;
-  float cvsl_had_t_b;
-
-  float bvsc_lep_t_b;
-  float cvsb_lep_t_b;
-  float cvsl_lep_t_b;
-
-  float pt_had_t_b;
-  float pt_lep_t_b;
-
-  float eta_had_t_b;
-  float eta_lep_t_b;
-
-  // For MC
-  int decay_mode;
-
-  bool chk_reco_correct;
-  bool chk_included;
-  bool chk_hf_contamination;
-  bool chk_gentau_conta;
-
-  bool pu_conta_had_t_b;
-  bool pu_conta_lep_t_b;
-
-  ClassDef(Result_Event, 1);
+  ClassDef(Result_Event_CR_DL, 1);
 };
 
-#endif /* __Result_Event_H__  */
+#endif /* __Result_Event_CR_DL_H__ */

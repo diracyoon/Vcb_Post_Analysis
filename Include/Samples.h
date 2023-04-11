@@ -11,7 +11,7 @@ using namespace std;
 class Samples : public TObject
 {
 public:
-  Samples(const TString &a_era, const TString &a_channel);
+  Samples(const TString &a_era, const TString &a_channel, const TString &a_analyser = "Vcb");
   ~Samples();
 
   map<TString, TString> map_mc;
@@ -25,6 +25,7 @@ public:
 protected:
   TString era;
   TString channel;
+  TString analyser;
 
   ClassDef(Samples, 1);
 };

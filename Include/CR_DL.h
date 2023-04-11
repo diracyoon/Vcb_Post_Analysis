@@ -1,36 +1,34 @@
-#ifndef __Histo_Syst_H__
-#define __Histo_Syst_H__
+#ifndef __CR_DL_H__
+#define __CR_DL_H__
 
 #include <iostream>
-#include <map>
 #include <vector>
+#include <map>
 
-#include <TObject.h>
-#include <TString.h>
-#include <TTree.h>
-#include <TH1D.h>
-#include <TDirectory.h>
-#include <TObjArray.h>
-#include <TObjString.h>
-#include <TGraphErrors.h>
-#include <TMVA/Reader.h>
+#include "TObject.h"
+#include "TString.h"
+#include "TH1D.h"
+#include "TH2D.h"
+#include "TFile.h"
+#include "TTree.h"
 #include "TROOT.h"
+#include "TDirectory.h"
+#include "THStack.h"
 
 #include <Const_Def.h>
 #include <Samples.h>
-#include <Result_Event.h>
+#include <Result_Event_CR_DL.h>
 #include <Tagging_RF.h>
 
 using namespace std;
 
-class Histo_Syst : public TObject
+class CR_DL : public TObject
 {
 public:
-  Histo_Syst(const TString &a_era = "2018", const TString &a_channel = "Mu", const bool &a_chk_merge = false, const TString &a_run_flag = "Central", const bool &a_chk_template_on = false, const TString &a_swap_mode = "Permutation_MVA");
-  ~Histo_Syst();
+  CR_DL(const TString &a_era = "2018", const TString &a_channel = "MM", const TString &a_run_flag = "All");
+  ~CR_DL();
 
   void Run();
-  void Run_Merge();
 
   typedef struct _Histo_Conf
   {
@@ -41,28 +39,23 @@ public:
   } Histo_Conf;
 
 protected:
-  int n_split;
-  int index_split;
   int reduction;
 
   TString era;
   TString channel;
-  bool chk_merge;
-  TString run_flag;
-  bool chk_template_on;
-
   TString path_base;
+  TString run_flag;
+
+  bool chk_merge_pdf_error_set = false;
 
   Samples samples;
   int n_sample_merge_mc;
   vector<TString> vec_short_name_mc;
 
-  TString key_base;
-  TString tree_name;
-
   Tagging_RF tagging_rf;
 
-  TString data_short_name;
+  TString key_base;
+  TString tree_name;
 
   map<TString, TFile *> map_fin_mc;
   map<TString, TFile *> map_fin_mc_jec_down;
@@ -102,52 +95,41 @@ protected:
   map<TString, TFile *> map_fin_data;
   map<TString, TTree *> map_tree_data;
 
-  Result_Event event;
-
-  int n_region;
-  vector<TString> region_name;
-
-  int n_syst;
-  vector<TString> syst_name;
-
-  int n_variable;
-  vector<Histo_Conf> variable_conf;
+  Result_Event_CR_DL event;
 
   float b_tag_rf;
   float c_tag_rf;
 
-  float n_bjets_f;
-  float n_cjets_f;
+  int n_syst;
+  vector<TString> syst_name;
 
-  TH1D *****histo_mc; // n_region, n_syst, n_sample, n_variable
-  // THStack ****stack_mc;  // n_region, n_syst, n_variable
+  vector<float> bin_bvsc;
 
-  TH1D ***histo_data; // n_region, n_variable
+  int n_variable;
+  vector<Histo_Conf> variable_conf;
 
-  TString region;
+  TH1D ****histo_mc; // n_syst, n_sample, n_variable
+  // TH2D ****histo_mc_2d; // n_sample, n_variable
 
-  TFile *fin_tagging_rf;
+  TH1D ***histo_mc_pdf_error_set_down; // n_sample, n_variable
+  TH1D ***histo_mc_pdf_error_set_up;   // n_sample, n_variable
+
+  TH1D **histo_data; // n_variable
+  // TH2D **histo_data_2d; // n_variable
+
+  int n_pdf_error_set = 100;
+  THStack ***stack_pdf_error_set; // n_pdf_error_set, n_variable
+
   TFile *fout;
 
-  bool chk_merge_pdf_error_set = false;
-  int n_pdf_error_set = 100;
-  TH1D ****histo_mc_pdf_error_set_down; // n_region, n_sample, n_variable
-  TH1D ****histo_mc_pdf_error_set_up;   // n_region, n_sample, n_variable
-
-  TString template_mva_name;
-  TMVA::Reader *reader_template;
-
-  void Fill_Histo_Data(const int &region_index);
-  void Fill_Histo_MC(const int &region_index, const int &sample_index, const TString &syst_fix = "None");
-  inline int Get_Region_Index(const TString &region);
-  void Init_Histo_Syst();
-  void Init_Merge_PDF_Error_Set();
+  void Fill_Histo_Data();
+  void Fill_Histo_MC(const TString &sample_name, const TString &syst_fix);
+  int Histo_Index(const TString &sample_name);
   void Merge_PDF_Error_Set();
   void Read_Tree();
-  void Setup_Template_Reader();
-  bool Set_Region();
+  int Unroller(const float &bvsc_third, const float &bvsc_fourth);
 
-  ClassDef(Histo_Syst, 1);
+  ClassDef(CR_DL, 1);
 };
 
-#endif /* __Histo_Syst_H__ */
+#endif /* __CR_DL_H__ */
