@@ -18,21 +18,33 @@ Result_Event_CR_DL::~Result_Event_CR_DL()
 
 void Result_Event_CR_DL::Setup_Tree(TTree *tree, const bool &chk_syst)
 {
-  tree->SetBranchAddress("n_jet", &n_jet);
   tree->SetBranchAddress("n_pv", &n_pv);
-  tree->SetBranchAddress("process", &process);
+
+  tree->SetBranchAddress("leading_lepton_eta", &leading_lepton_eta);
+  tree->SetBranchAddress("leading_lepton_pt", &leading_lepton_pt);
+
+  tree->SetBranchAddress("subleading_lepton_eta", &subleading_lepton_eta);
+  tree->SetBranchAddress("subleading_lepton_pt", &subleading_lepton_pt);
 
   tree->SetBranchAddress("dilepton_mass", &dilepton_mass);
+
+  tree->SetBranchAddress("n_jet", &n_jet);
+  tree->SetBranchAddress("n_b_jet", &n_b_jet);
   tree->SetBranchAddress("ht", &ht);
+
+  tree->SetBranchAddress("leading_jet_bvsc", &leading_jet_bvsc);
+  tree->SetBranchAddress("subleading_jet_bvsc", &subleading_jet_bvsc);
+
+  tree->SetBranchAddress("met_pt", &met_pt);
+  tree->SetBranchAddress("met_phi", &met_phi);
+
+  tree->SetBranchAddress("process", &process);
 
   tree->SetBranchAddress("bvsc_third", &bvsc_third);
   tree->SetBranchAddress("bvsc_fourth", &bvsc_fourth);
 
-  tree->SetBranchAddress("flavor_third", &flavor_third);
-  tree->SetBranchAddress("flavor_fourth", &flavor_fourth);
-
-  tree->SetBranchAddress("origin_third", &origin_third);
-  tree->SetBranchAddress("origin_fourth", &origin_fourth);
+  tree->SetBranchAddress("Gen_HF_Flavour", &vec_gen_hf_flavour);
+  tree->SetBranchAddress("Gen_HF_Origin", &vec_gen_hf_origin);
 
   tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
   if (chk_syst)

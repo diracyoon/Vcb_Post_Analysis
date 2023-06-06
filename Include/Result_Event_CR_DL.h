@@ -1,8 +1,12 @@
 #ifndef __Result_Event_CR_DL_H__
 #define __Result_Event_CR_DL_H__
 
+#include <vector>
+
 #include "TObject.h"
 #include "TTree.h"
+
+using namespace std;
 
 class Result_Event_CR_DL : public TObject
 {
@@ -15,21 +19,31 @@ public:
   void Setup_Tree(TTree *tree, const bool &chk_syst);
 
 protected:
-  int n_jet;
   int n_pv;
+
+  float leading_lepton_eta;
+  float leading_lepton_pt;
+  float subleading_lepton_eta;
+  float subleading_lepton_pt;
+  float dilepton_mass;
+
+  int n_jet;
+  int n_b_jet;
+  float ht;
+
+  float leading_jet_bvsc;
+  float subleading_jet_bvsc;
+
+  float met_pt;
+  float met_phi;
+
   int process;
 
-  float dilepton_mass;
-  float ht;
+  vector<int> *vec_gen_hf_flavour = NULL;
+  vector<int> *vec_gen_hf_origin = NULL;
 
   float bvsc_third;
   float bvsc_fourth;
-
-  float flavor_third;
-  float flavor_fourth;
-
-  float origin_third;
-  float origin_fourth;
 
   float weight;
 

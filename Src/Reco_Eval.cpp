@@ -6,6 +6,8 @@ ClassImp(Reco_Eval);
 
 Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TString &a_swap_mode, const TString &a_draw_extension) : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
 {
+  ROOT::EnableImplicitMT(4);
+
   cout << "[Reco_Eval::Reco_Eval]: Init analysis" << endl;
 
   reduction = 1;
@@ -78,6 +80,11 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   histo_mva_pre = new TH1D **[n_histo_sample];
   histo_mva = new TH1D **[n_histo_sample];
   histo_cutflow = new TH1D **[n_histo_sample];
+  histo_had_w = new TH1D **[n_histo_sample];
+  histo_had_t = new TH1D **[n_histo_sample];
+  histo_lep_w = new TH1D **[n_histo_sample];
+  histo_lep_t = new TH1D **[n_histo_sample];
+  histo_template = new TH1D **[n_histo_sample];
   histo_count = new TH2D **[n_histo_sample];
   histo_prob = new TH2D *[n_histo_sample];
   histo_swap = new TH1D *[n_histo_sample];
@@ -88,6 +95,12 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     histo_mva_pre[i] = new TH1D *[n_histo_type];
     histo_mva[i] = new TH1D *[n_histo_type];
     histo_cutflow[i] = new TH1D *[n_histo_type];
+    histo_had_w[i] = new TH1D *[n_histo_type];
+    histo_had_t[i] = new TH1D *[n_histo_type];
+    histo_lep_w[i] = new TH1D *[n_histo_type];
+    histo_lep_t[i] = new TH1D *[n_histo_type];
+    histo_template[i] = new TH1D *[n_histo_type];
+
     histo_count[i] = new TH2D *[n_histo_type];
 
     TString name_base = vec_histo_sample[i];
@@ -116,13 +129,28 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
       name = name_base + "_Cutflow";
       histo_cutflow[i][j] = new TH1D(name, name, 10, 0, 10);
 
+      name = name_base + "_Had_W";
+      histo_had_w[i][j] = new TH1D(name, name, 60, 20, 140);
+
+      name = name_base + "_Had_T";
+      histo_had_t[i][j] = new TH1D(name, name, 100, 70, 270);
+
+      name = name_base + "_Lep_W";
+      histo_lep_w[i][j] = new TH1D(name, name, 60, 20, 140);
+
+      name = name_base + "_Lep_T";
+      histo_lep_t[i][j] = new TH1D(name, name, 100, 70, 270);
+
+      name = name_base + "_Template";
+      histo_template[i][j] = new TH1D(name, name, 100, 0, 1);
+
       name = name_base + "_Count";
       histo_count[i][j] = new TH2D(name, name, 12, 0, 12, 8, 0, 8);
     }
   }
 
   dv_histo_conf = {{"MVA_Scores", 100, -1, 1},
-                   {"N_Jets", 20, 0, 20},
+                   //{"N_Jets", 20, 0, 20},
                    {"N_BJets", 10, 0, 10},
                    {"N_CJets", 10, 0, 10},
                    {"BvsC_w_u", 100, 0, 1},
@@ -160,6 +188,7 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   // output tree for template maker training
   TString fout_name = "Vcb_" + era + "_" + channel + "_Reco_Tree.root";
   fout_tree = new TFile(fout_name, "RECREATE");
+
   for (int i = 0; i < 5; i++)
   {
     TString name = "Reco_";
@@ -197,6 +226,57 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     out_tree[i]->Branch("m_w_u", &event.m_w_u);
     out_tree[i]->Branch("m_w_d", &event.m_w_d);
   }
+  /*
+  for (int i = 0; i < 5; i++)
+  {
+    for (int j = 0; j < 5; j++)
+    {
+      TString name = "Reco_";
+      name += to_string(decay_modes[i]);
+      name += "_";
+
+      if (j == 0)
+        name += "Correct";
+      else
+        name += "Fail_" + fail_reason[j - 1];
+
+      cout << name << endl;
+
+      out_tree[i][j] = new TTree(name, name);
+
+      out_tree[i][j]->Branch("weight", &event.weight);
+      out_tree[i][j]->Branch("n_jets", &event.n_jets);
+      out_tree[i][j]->Branch("n_bjets", &event.n_bjets);
+      out_tree[i][j]->Branch("n_cjets", &event.n_cjets);
+      out_tree[i][j]->Branch("best_mva_score", &event.best_mva_score);
+
+      out_tree[i][j]->Branch("pt_had_t_b", &event.pt_had_t_b);
+      out_tree[i][j]->Branch("pt_w_u", &event.pt_w_u);
+      out_tree[i][j]->Branch("pt_w_d", &event.pt_w_d);
+      out_tree[i][j]->Branch("pt_lep_t_b", &event.pt_lep_t_b);
+
+      out_tree[i][j]->Branch("eta_had_t_b", &event.eta_had_t_b);
+      out_tree[i][j]->Branch("eta_w_u", &event.eta_w_u);
+      out_tree[i][j]->Branch("eta_w_d", &event.eta_w_d);
+      out_tree[i][j]->Branch("eta_lep_t_b", &event.eta_lep_t_b);
+
+      out_tree[i][j]->Branch("bvsc_had_t_b", &event.bvsc_had_t_b);
+
+      out_tree[i][j]->Branch("bvsc_w_u", &event.bvsc_w_u);
+      out_tree[i][j]->Branch("cvsb_w_u", &event.cvsb_w_u);
+      out_tree[i][j]->Branch("cvsl_w_u", &event.cvsl_w_u);
+
+      out_tree[i][j]->Branch("bvsc_w_d", &event.bvsc_w_d);
+      out_tree[i][j]->Branch("cvsb_w_d", &event.cvsb_w_d);
+      out_tree[i][j]->Branch("cvsl_w_d", &event.cvsl_w_d);
+
+      out_tree[i][j]->Branch("bvsc_lep_t_b", &event.bvsc_lep_t_b);
+
+      out_tree[i][j]->Branch("m_w_u", &event.m_w_u);
+      out_tree[i][j]->Branch("m_w_d", &event.m_w_d);
+    } // loop over reco category
+  }   // loop over decay modes
+  */
 } // Reco_Eval::Reco_Eval(const TString& a_era="2018", const TString& a_channel="Mu")
 
 //////////
@@ -214,7 +294,15 @@ Reco_Eval::~Reco_Eval()
 
   fout_tree->cd();
   for (int i = 0; i < 5; i++)
+  {
     out_tree[i]->Write();
+    /*
+    for (int j = 0; j < 5; j++)
+    {
+      out_tree[i][j]->Write();
+    }
+    */
+  }
 
   fout_tree->Close();
 } // Reco_Eval::~Reco_Eval()
@@ -227,8 +315,8 @@ void Reco_Eval::Run()
   Calculate_Significance();
   Calculate_Prob();
   Draw_Raw();
-  // Draw_Sample_By_Sample();
-  // Draw_Significance();
+  Draw_Sample_By_Sample();
+  Draw_Significance();
   Draw_Swap();
   Draw_DV();
 } // void Reco_Eval::Run()
@@ -312,7 +400,7 @@ void Reco_Eval::Draw_DV()
     TString name = vec_histo_sample[i] + "_DV";
 
     canvas_dv[i] = new TCanvas(name, name, 1300, 800);
-    canvas_dv[i]->Divide(4, 3);
+    canvas_dv[i]->Divide(3, 3);
     canvas_dv[i]->Draw();
 
     stack_dv[i] = new THStack *[n_discriminators];
@@ -329,10 +417,14 @@ void Reco_Eval::Draw_DV()
       } // loop over correct or wrong
 
       canvas_dv[i]->cd(j + 1);
+      // canvas_dv[i]->cd(j + 1);
+
       stack_dv[i][j]->Draw("BAR");
     } // loop over # of disriminating variables
 
     canvas_dv[i]->Print(vec_histo_sample[i] + "_DV." + draw_extension, draw_extension);
+
+    // canvas_dv[i]->SaveAs(vec_histo_sample[i] + "_DV.cpp");
   } // loop over samples
 
   return;
@@ -347,34 +439,74 @@ void Reco_Eval::Draw_Raw()
   /* Raw distributions */
   TCanvas *canvas_mva_pre[2];
   TCanvas *canvas_mva[2];
+  TCanvas *canvas_had_w[2];
+  TCanvas *canvas_had_t[2];
+  TCanvas *canvas_lep_w[2];
+  TCanvas *canvas_lep_t[2];
+  TCanvas *canvas_template[2];
   for (int i = 0; i < 2; i++)
   {
     TString name = "Permutation_MVA_Pre_" + to_string(i);
-
     canvas_mva_pre[i] = new TCanvas(name, name, 1300, 800);
     canvas_mva_pre[i]->Divide(3, 2);
     canvas_mva_pre[i]->Draw();
 
     name = "Permutation_MVA_" + to_string(i);
-
     canvas_mva[i] = new TCanvas(name, name, 1300, 800);
     canvas_mva[i]->Divide(3, 2);
     canvas_mva[i]->Draw();
+
+    name = "Had_W_" + to_string(i);
+    canvas_had_w[i] = new TCanvas(name, name, 1300, 800);
+    canvas_had_w[i]->Divide(3, 2);
+    canvas_had_w[i]->Draw();
+
+    name = "Had_T_" + to_string(i);
+    canvas_had_t[i] = new TCanvas(name, name, 1300, 800);
+    canvas_had_t[i]->Divide(3, 2);
+    canvas_had_t[i]->Draw();
+
+    name = "Lep_W_" + to_string(i);
+    canvas_lep_w[i] = new TCanvas(name, name, 1300, 800);
+    canvas_lep_w[i]->Divide(3, 2);
+    canvas_lep_w[i]->Draw();
+
+    name = "Lep_T_" + to_string(i);
+    canvas_lep_t[i] = new TCanvas(name, name, 1300, 800);
+    canvas_lep_t[i]->Divide(3, 2);
+    canvas_lep_t[i]->Draw();
+
+    name = "Template_" + to_string(i);
+    canvas_template[i] = new TCanvas(name, name, 1300, 800);
+    canvas_template[i]->Divide(3, 2);
+    canvas_template[i]->Draw();
   }
 
   float ttlj_correct = 0;
   float ttlj_wrong = 0;
+  float ttlj_wrong_not_sel = 0;
   float ttlj_cb_correct = 0;
   float ttlj_cb_wrong = 0;
+  float ttlj_cb_wrong_not_sel = 0;
 
   THStack *stack_mva_pre[n_histo_sample];
   THStack *stack_mva[n_histo_sample];
+  THStack *stack_had_w[n_histo_sample];
+  THStack *stack_had_t[n_histo_sample];
+  THStack *stack_lep_w[n_histo_sample];
+  THStack *stack_lep_t[n_histo_sample];
+  THStack *stack_template[n_histo_sample];
   for (unsigned int i = 0; i < n_histo_sample; i++)
   {
     TString name = vec_histo_sample[i];
 
     stack_mva_pre[i] = new THStack(name, name);
     stack_mva[i] = new THStack(name, name);
+    stack_had_w[i] = new THStack(name, name);
+    stack_had_t[i] = new THStack(name, name);
+    stack_lep_w[i] = new THStack(name, name);
+    stack_lep_t[i] = new THStack(name, name);
+    stack_template[i] = new THStack(name, name);
 
     for (int j = 0; j < 5; j++)
     {
@@ -384,6 +516,21 @@ void Reco_Eval::Draw_Raw()
       histo_mva[i][j]->SetFillColorAlpha(color[j], 0.2);
       stack_mva[i]->Add(histo_mva[i][j]);
 
+      histo_had_w[i][j]->SetFillColorAlpha(color[j], 0.2);
+      stack_had_w[i]->Add(histo_had_w[i][j]);
+
+      histo_had_t[i][j]->SetFillColorAlpha(color[j], 0.2);
+      stack_had_t[i]->Add(histo_had_t[i][j]);
+
+      histo_lep_w[i][j]->SetFillColorAlpha(color[j], 0.2);
+      stack_lep_w[i]->Add(histo_lep_w[i][j]);
+
+      histo_lep_t[i][j]->SetFillColorAlpha(color[j], 0.2);
+      stack_lep_t[i]->Add(histo_lep_t[i][j]);
+
+      histo_template[i][j]->SetFillColorAlpha(color[j], 0.2);
+      stack_template[i]->Add(histo_template[i][j]);
+
       // cout << histo_mva[i][j]->Integral() << endl;
       if (name.Contains("TTLJ") && !name.Contains("cb"))
       {
@@ -391,6 +538,8 @@ void Reco_Eval::Draw_Raw()
           ttlj_correct += histo_mva[i][j]->Integral();
         else if (j == 1 || j == 3)
           ttlj_wrong += histo_mva[i][j]->Integral();
+        else if (j == 2 || j == 4)
+          ttlj_wrong_not_sel += histo_mva[i][j]->Integral();
       }
       else if (name == "TTLJ_cb")
       {
@@ -398,6 +547,8 @@ void Reco_Eval::Draw_Raw()
           ttlj_cb_correct += histo_mva[i][j]->Integral();
         else if (j == 1 || j == 3)
           ttlj_cb_wrong += histo_mva[i][j]->Integral();
+        else if (j == 2 || j == 4)
+          ttlj_cb_wrong_not_sel += histo_mva[i][j]->Integral();
       }
     }
 
@@ -438,6 +589,21 @@ void Reco_Eval::Draw_Raw()
 
     canvas_mva[canvas_index]->cd(subpad_index);
     stack_mva[i]->Draw("BAR");
+
+    canvas_had_w[canvas_index]->cd(subpad_index);
+    stack_had_w[i]->Draw("BAR");
+
+    canvas_had_t[canvas_index]->cd(subpad_index);
+    stack_had_t[i]->Draw("BAR");
+
+    canvas_lep_w[canvas_index]->cd(subpad_index);
+    stack_lep_w[i]->Draw("BAR");
+
+    canvas_lep_t[canvas_index]->cd(subpad_index);
+    stack_lep_t[i]->Draw("BAR");
+
+    canvas_template[canvas_index]->cd(subpad_index);
+    stack_template[i]->Draw("BAR");
   }
 
   legend = new TLegend(0.2, 0.2, 0.8, 0.8);
@@ -447,13 +613,60 @@ void Reco_Eval::Draw_Raw()
   legend->AddEntry(histo_mva[0][1], "F., Selected, !HF Conta.", "f");
   legend->AddEntry(histo_mva[0][2], "F., !Selected, !HF Conta.", "f");
   legend->AddEntry(histo_mva[0][4], "F., !Selected, HF Conta.", "f");
+
+  TLatex *latex = new TLatex();
+
+  float lumi = lumi_2018;
+  if (era == "2017")
+    lumi = lumi_2017;
+
   for (int i = 0; i < 2; i++)
   {
     canvas_mva_pre[i]->cd(3);
+    latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
+    latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
     legend->Draw("SAME");
 
     canvas_mva[i]->cd(3);
+    latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
+    latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
     legend->Draw("SAME");
+
+    canvas_had_w[i]->cd(3);
+    latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
+    latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
+    legend->Draw("SAME");
+
+    canvas_had_t[i]->cd(3);
+    latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
+    latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
+    legend->Draw("SAME");
+
+    canvas_lep_w[i]->cd(3);
+    latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
+    latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
+    legend->Draw("SAME");
+
+    canvas_lep_t[i]->cd(3);
+    latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
+    latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
+    legend->Draw("SAME");
+
+    canvas_template[i]->cd(3);
+    latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
+    latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
+    legend->Draw("SAME");
+  }
+
+  for (int i = 0; i < 2; i++)
+  {
+    canvas_mva_pre[i]->Update();
+    canvas_mva[i]->Update();
+    canvas_had_w[i]->Update();
+    canvas_had_t[i]->Update();
+    canvas_lep_w[i]->Update();
+    canvas_lep_t[i]->Update();
+    canvas_template[i]->Update();
   }
 
   for (int i = 0; i < 2; i++)
@@ -463,12 +676,29 @@ void Reco_Eval::Draw_Raw()
 
     name = "Permutation_MVA_" + to_string(i) + "." + draw_extension;
     canvas_mva[i]->Print(name, draw_extension);
+
+    name = "Had_W_" + to_string(i) + "." + draw_extension;
+    canvas_had_w[i]->Print(name, draw_extension);
+
+    name = "Had_T_" + to_string(i) + "." + draw_extension;
+    canvas_had_t[i]->Print(name, draw_extension);
+
+    name = "Lep_W_" + to_string(i) + "." + draw_extension;
+    canvas_lep_w[i]->Print(name, draw_extension);
+
+    name = "Lep_T_" + to_string(i) + "." + draw_extension;
+    canvas_lep_t[i]->Print(name, draw_extension);
+
+    name = "Template_" + to_string(i) + "." + draw_extension;
+    canvas_template[i]->Print(name, draw_extension);
   }
 
-  cout << ttlj_correct << " " << ttlj_wrong << " " << ttlj_cb_correct << " " << ttlj_cb_wrong << endl;
+  cout << ttlj_correct << " " << ttlj_wrong << " " << ttlj_wrong_not_sel << " " << ttlj_cb_correct << " " << ttlj_cb_wrong << " " << ttlj_cb_wrong_not_sel << endl;
 
   return;
 } // void Reco_Eval::Draw_Raw
+
+//////////
 
 void Reco_Eval::Draw_Sample_By_Sample()
 {
@@ -617,6 +847,14 @@ void Reco_Eval::Fill_Histo(const TString &short_name, const int &index_decay_mod
   histo_mva_pre[index][index_fail_reason]->Fill(event.best_mva_score_pre, event.weight);
   histo_mva[index][index_fail_reason]->Fill(event.best_mva_score, event.weight);
 
+  histo_had_w[index][index_fail_reason]->Fill(event.m_had_w, event.weight);
+  histo_had_t[index][index_fail_reason]->Fill(event.m_had_t, event.weight);
+
+  histo_lep_w[index][index_fail_reason]->Fill(event.m_lep_w, event.weight);
+  histo_lep_t[index][index_fail_reason]->Fill(event.m_lep_t, event.weight);
+
+  histo_template[index][index_fail_reason]->Fill(event.template_mva_score, event.weight);
+
   // histo_mva_pre[index][index_fail_reason]->Fill(event.best_mva_score_pre, 1);
   // histo_mva[index][index_fail_reason]->Fill(event.best_mva_score, 1);
 
@@ -641,15 +879,15 @@ void Reco_Eval::Fill_Histo_Discriminators(const TString &short_name, const int &
   int index = Get_Index(short_name, index_decay_mode);
 
   histo_discriminator[index][0][index_fail_reason]->Fill(event.best_mva_score, event.weight);
-  histo_discriminator[index][1][index_fail_reason]->Fill(event.n_jets, event.weight);
-  histo_discriminator[index][2][index_fail_reason]->Fill(event.n_bjets, event.weight);
-  histo_discriminator[index][3][index_fail_reason]->Fill(event.n_cjets, event.weight);
-  histo_discriminator[index][4][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
-  histo_discriminator[index][5][index_fail_reason]->Fill(event.cvsb_w_u, event.weight);
-  histo_discriminator[index][6][index_fail_reason]->Fill(event.cvsl_w_u, event.weight);
-  histo_discriminator[index][7][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
-  histo_discriminator[index][8][index_fail_reason]->Fill(event.cvsb_w_d, event.weight);
-  histo_discriminator[index][9][index_fail_reason]->Fill(event.cvsl_w_d, event.weight);
+  // histo_discriminator[index][1][index_fail_reason]->Fill(event.n_jets, event.weight);
+  histo_discriminator[index][1][index_fail_reason]->Fill(event.n_bjets, event.weight);
+  histo_discriminator[index][2][index_fail_reason]->Fill(event.n_cjets, event.weight);
+  histo_discriminator[index][3][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
+  histo_discriminator[index][4][index_fail_reason]->Fill(event.cvsb_w_u, event.weight);
+  histo_discriminator[index][5][index_fail_reason]->Fill(event.cvsl_w_u, event.weight);
+  histo_discriminator[index][6][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
+  histo_discriminator[index][7][index_fail_reason]->Fill(event.cvsb_w_d, event.weight);
+  histo_discriminator[index][8][index_fail_reason]->Fill(event.cvsl_w_d, event.weight);
 
   return;
 } // void Reco_Eval::Fill_Histo_Discriminators(const TString& short_name, const int& index_decay_mode, const int& index_fail_reason)
@@ -674,13 +912,15 @@ void Reco_Eval::Fill_Histo_Swap(const TString &short_name, const int &index_deca
 
 //////////
 
-void Reco_Eval::Fill_Output_Tree(const TString &short_name, const int &index_decay_mode)
+void Reco_Eval::Fill_Output_Tree(const TString &short_name, const int &index_decay_mode, const int &index_fail_reason)
 {
   for (int i = 0; i < 5; i++)
   {
     if (index_decay_mode == decay_modes[i])
     {
       out_tree[i]->Fill();
+      // out_tree[i][index_fail_reason]->Fill();
+
       break;
     }
   }
@@ -755,6 +995,9 @@ void Reco_Eval::Read_Tree()
 
       tree->GetEntry(j);
 
+      // if (20 < event.met_pt)
+      //   continue;
+
       chk_swap = event.Swap();
 
       int index_fail_reason = -1;
@@ -791,14 +1034,18 @@ void Reco_Eval::Read_Tree()
         event.weight *= event.weight_el_reco;
       }
 
+      event.weight *= event.weight_c_tag;
+
       // event.weight *= tagging_rf.Get_Tagging_RF("B_Tag_Nominal", event.n_jets);
-      // event.weight *= tagging_rf.Get_Tagging_RF("C_Tag_Nominal", event.n_jets);
-      // event.weight *= event.weight_c_tag;
+      event.weight *= tagging_rf.Get_Tagging_RF_C_Tag(short_name, "C_Tag_Nominal", event.n_pv, event.ht);
 
       // if (event.chk_gentau_conta == true)
       //   continue;
 
-      Fill_Output_Tree(short_name, event.decay_mode);
+      if (event.n_bjets == 2)
+        continue;
+
+      Fill_Output_Tree(short_name, event.decay_mode, index_fail_reason);
 
       Fill_Histo(short_name, event.decay_mode, index_fail_reason);
 

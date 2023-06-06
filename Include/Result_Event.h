@@ -127,6 +127,8 @@ protected:
   int n_bjets;
   int n_cjets;
 
+  float ht;
+
   float pt_leading_jet;
   float pt_subleading_jet;
 
@@ -150,6 +152,11 @@ protected:
 
   float mt;
 
+  float m_had_t;
+  float m_had_w;
+  float m_lep_t;
+  float m_lep_w;
+
   float mva_hf_score;
 
   float bvsc_had_t_b;
@@ -165,6 +172,8 @@ protected:
 
   float eta_had_t_b;
   float eta_lep_t_b;
+
+  float template_mva_score;
 
   // For MC
   int decay_mode;

@@ -11,7 +11,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const boo
 
   cout << "[Histo_Syst::Histo_Syst]: Init analysis" << endl;
 
-  reduction = 1000;
+  reduction = 10;
 
   era = a_era;
   channel = a_channel;
@@ -37,12 +37,12 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const boo
 
   // Systs
   syst_name = {"Nominal",
-               "B_Tag_HF_Down", "B_Tag_HF_Up", "B_Tag_JES_Down", "B_Tag_JES_Up", "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up", "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up", "B_Tag_CFErr1_Down", "B_Tag_CFErr1_Up", "B_Tag_CFErr2_Down", "B_Tag_CFErr2_Up", "B_Tag_HFStats1_Down", "B_Tag_HFStats1_Up", "B_Tag_HFStats2_Down", "B_Tag_HFStats2_Up",
+               //"B_Tag_HF_Down", "B_Tag_HF_Up", "B_Tag_JES_Down", "B_Tag_JES_Up", "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up", "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up", "B_Tag_CFErr1_Down", "B_Tag_CFErr1_Up", "B_Tag_CFErr2_Down", "B_Tag_CFErr2_Up", "B_Tag_HFStats1_Down", "B_Tag_HFStats1_Up", "B_Tag_HFStats2_Down", "B_Tag_HFStats2_Up",
                "C_Tag_Extrap_Down", "C_Tag_Extrap_Up", "C_Tag_Interp_Down", "C_Tag_Interp_Up", "C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up", "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up", "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up", "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up", "C_Tag_PU_Down", "C_Tag_PU_Up", "C_Tag_Stat_Down", "C_Tag_Stat_Up",
                "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up", "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up", "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
                "C_Tag_JER_Down", "C_Tag_JER_Up", "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up",
-               "Jet_En_Down", "Jet_En_Up",
-               "Jet_Res_Down", "Jet_Res_Up",
+               //"Jet_En_Down", "Jet_En_Up",
+               //"Jet_Res_Down", "Jet_Res_Up",
                "Trig_Down", "Trig_Up",
                "PDF_Alternative", "PDF_As_Down", "PDF_As_Up",
                "Pileup_Down", "Pileup_Up",
@@ -83,25 +83,27 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const boo
   cout << "N_Syst = " << n_syst << endl;
 
   // variable Config.
-  variable_conf = {{"N_Vertex", 80, 0, 80},
-                   {"Lepton_Pt", 50, 0, 300},
-                   {"Lepton_Eta", 50, -3, 3},
-                   {"N_Jets", 30, 0, 30},
-                   {"N_BJets", 30, 0, 30},
-                   {"N_CJets", 30, 0, 30},
-                   {"Pt_Leading_Jet", 50, 0, 300},
-                   {"Pt_Subleading_Jet", 50, 0, 300},
-                   {"Eta_Leading_Jet", 50, -3, 3},
-                   {"Eta_Subleading_jet", 50, -3, 3},
-                   {"BvsC_Leading_Jet", 50, 0, 1},
-                   {"CvsB_Leading_Jet", 50, 0, 1},
-                   {"CvsL_Leading_Jet", 50, 0, 1},
-                   {"BvsC_Subleading_Jet", 50, 0, 1},
-                   {"CvsB_Subleading_Jet", 50, 0, 1},
-                   {"CvsL_Subleading_Jet", 50, 0, 1},
-                   {"Met_Pt", 50, 0, 300},
-                   {"Met_Phi", 80, -4, 4},
-                   {"Best_MVA_Score", 100, -1, 1}};
+  variable_conf = { {"N_Vertex", 80, 0, 80},
+                    {"Lepton_Pt", 50, 0, 300},
+                    {"Lepton_Eta", 50, -3, 3},
+                    {"N_Jets", 30, 0, 30},
+                    {"N_BJets", 30, 0, 30},
+                    {"N_CJets", 30, 0, 30},
+                    {"Pt_Leading_Jet", 50, 0, 300},
+                    {"Pt_Subleading_Jet", 50, 0, 300},
+                    {"Eta_Leading_Jet", 50, -3, 3},
+                    {"Eta_Subleading_jet", 50, -3, 3},
+                    {"BvsC_Leading_Jet", 50, 0, 1},
+                    {"CvsB_Leading_Jet", 50, 0, 1},
+                    {"CvsL_Leading_Jet", 50, 0, 1},
+                    {"BvsC_Subleading_Jet", 50, 0, 1},
+                    {"CvsB_Subleading_Jet", 50, 0, 1},
+                    {"CvsL_Subleading_Jet", 50, 0, 1},
+                    {"Met_Pt", 50, 0, 300},
+                    {"Met_Phi", 80, -4, 4},
+                    {"Best_MVA_Score", 100, -1, 1}};
+                    //{"Had_W_Mass", 60, 60, 120},
+                    //{"Had_T_Mass", 80, 130, 210}};
   if (chk_template_on)
   {
     Setup_Template_Reader();
@@ -242,6 +244,7 @@ void Histo_Syst::Fill_Histo_Data(const int &region_index)
   histo_data[region_index][16]->Fill(event.met_pt, 1.);
   histo_data[region_index][17]->Fill(event.met_phi, 1.);
   histo_data[region_index][18]->Fill(event.best_mva_score, 1.);
+  //histo_data[region_index][19]->Fill(event.)
 
   if (chk_template_on)
   {
@@ -472,7 +475,7 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const int &sample_index,
     else
       c_tag_syst_name = "C_Tag_Nominal";
 
-    c_tag_rf = tagging_rf.Get_Tagging_RF(short_name_mc, c_tag_syst_name, event.n_pv);
+    c_tag_rf = tagging_rf.Get_Tagging_RF_C_Tag(short_name_mc, c_tag_syst_name, event.n_pv, event.ht);
     event.weight *= c_tag_rf;
 
     // this part is not satisfactory, but don't waste time

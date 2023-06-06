@@ -15,6 +15,10 @@
 #include <TGraphAsymmErrors.h>
 #include <TMath.h>
 #include <TLegend.h>
+#include <TSystem.h>
+#include <TLatex.h>
+
+#include <Const_Def.h>
 
 using namespace std;
 
@@ -40,6 +44,8 @@ protected:
   TString analyser;
   TString extension;
 
+  float lumi;
+
   int n_region;
   vector<TString> region_name;
 
@@ -50,6 +56,9 @@ protected:
   int n_syst;
   vector<TString> syst_name;
 
+  int n_syst_name_short;
+  vector<TString> syst_name_short;
+
   int n_sample;
   vector<TString> sample_name;
 
@@ -59,7 +68,7 @@ protected:
   vector<Histo_Conf> variable_conf;
 
   vector<int> color;
-  
+
   TH1D *****histo_mc;   // n_region, n_syst, n_sample, n_variable
   THStack ****stack_mc; // n_region, n_syst, n_variable
 
@@ -75,16 +84,19 @@ protected:
   TCanvas ***canvas; // n_region, n_variable
   TPad ****pad;      // n_region, n_variable, 2
 
-  TCanvas ****canvas_each; // n_region, n_syst, n_variable
+  // TCanvas ***canvas_each; // n_region, n_variable
+  // TPad ****pad_each;      // n_region, n_variable, 2
+
+  TDirectory ***dir_variable; // n_region, n_varaiable
 
   TFile *fin;
   TFile *fout;
 
-  TLegend* tl;
+  TLegend *tl;
 
   void Compare();
   void Draw();
-  void Draw_Each();
+  void Draw_Each(const TString &a_syst_name);
   void Envelope();
   void Save();
   void Setup_Histo_Data();

@@ -188,9 +188,9 @@ void Template::Classification_DNN()
   data_loader->AddVariable("cvsl_w_d", "cvsl_w_d", "units", 'F');
 
   data_loader->AddSignalTree(tree[0]);
-  data_loader->AddBackgroundTree(tree[1]);
-  data_loader->AddBackgroundTree(tree[2]);
-  data_loader->AddBackgroundTree(tree[3]);
+  // data_loader->AddBackgroundTree(tree[1]);
+  // data_loader->AddBackgroundTree(tree[2]);
+  // data_loader->AddBackgroundTree(tree[3]);
   data_loader->AddBackgroundTree(tree[4]);
 
   data_loader->SetSignalWeightExpression("weight");
@@ -200,10 +200,10 @@ void Template::Classification_DNN()
   TCut cut_b = "";
 
   Long64_t n_train_signal = tree[0]->GetEntries() / 2 / reduction;
-  Long64_t n_train_back = tree[1]->GetEntries() / 2 / reduction;
-  n_train_back += tree[2]->GetEntries() / 2 / reduction;
-  n_train_back += tree[3]->GetEntries() / 2 / reduction;
-  n_train_back += tree[4]->GetEntries() / 2 / reduction;
+  // Long64_t n_train_back = tree[1]->GetEntries() / 2 / reduction;
+  // n_train_back += tree[2]->GetEntries() / 2 / reduction;
+  // n_train_back += tree[3]->GetEntries() / 2 / reduction;
+  Long64_t n_train_back = tree[4]->GetEntries() / 2 / reduction;
 
   data_loader->PrepareTrainingAndTestTree(cut_s, cut_b,
                                           Form("nTrain_Signal=%d:nTrain_Background=%d:nTest_Signal=%d:nTest_Background=%d:SplitMode=Random:NormMode=NumEvents:V", n_train_signal, n_train_back, n_train_signal, n_train_back));

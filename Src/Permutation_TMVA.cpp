@@ -6,7 +6,7 @@ ClassImp(Permutation_TMVA);
 
 Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channel, const int &a_n_jet, const bool &a_chk_pre_cut, const bool &a_chk_final_kin)
 {
- ROOT::EnableImplicitMT(4);
+  ROOT::EnableImplicitMT(20);
 
   cout << "[Permutation_TMVA::Permutation_TMVA]: Init analysis" << endl;
 
@@ -52,7 +52,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   // data_loader->AddVariable("n_cjets",       "n_cjets",       "units", 'I');
 
   // data_loader->AddVariable("lepton_pt", "lepton_pt", 'F');
-  // data_loader->AddVariable("met_pt", "met_pt", "units", 'F');
+  data_loader->AddVariable("met_pt", "met_pt", "units", 'F');
   data_loader->AddVariable("pt_ratio", "pt_ratio", 'F');
 
   data_loader->AddVariable("pt_had_t_b", "pt_had_t_b", "units", 'F');
@@ -104,7 +104,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   // data_loader->AddVariable("del_r_lep_w_lep_t_b", "del_r_lep_w_lep_t_b", "units", 'F');
   data_loader->AddVariable("theta_lep_w_lep_t_b", "theta_lep_w_lep_t_b", "units", 'F');
 
-  // data_loader->AddVariable("del_phi_had_t_lep_t", "del_phi_had_t_lep_t", "units", 'F');
+  data_loader->AddVariable("del_phi_had_t_lep_t", "del_phi_had_t_lep_t", "units", 'F');
   // data_loader->AddVariable("del_eta_had_t_lep_t", "del_eta_had_t_lep_t", "units", 'F');
   // data_loader->AddVariable("del_r_had_t_lep_t", "del_r_had_t_lep_t", "units", 'F');
   // data_loader->AddVariable("theta_had_t_lep_t", "theta_had_t_lep_t", "units", 'F');
@@ -139,13 +139,16 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
 
   TCut cut_base = Form("%d==n_jets&&pt_had_t_b<350&&pt_w_u<300&&pt_lep_t_b<350&&had_t_mass<600&&had_w_mass<300&&lep_t_mass<600&&lep_t_partial_mass<400", n_jet);
 
-  if (!chk_pre_cut)
-  {
-    cut_base += "chi2_jet_had_t_b<200&&chi2_jet_w_u<200&&chi2_jet_w_d<200&&chi2_jet_lep_t_b<200&&chi2_constraint_had_t<50&&chi2_constraint_had_w<150&&chi2_constraint_lep_t<20&&chi2_constraint_lep_w<50";
-    if (n_jet != 4)
-      cut_base += "chi2_jet_extra<50";
-  }
-
+  /*
+    if (!chk_pre_cut)
+    {
+      cut_base += "chi2_jet_had_t_b<30&&chi2_jet_w_u<30&&chi2_jet_w_d<30&&chi2_jet_lep_t_b<30&&chi2_constraint_had_t<30";
+      cut_base += "chi2_constraint_had_w<30&&chi2_constraint_lep_t<30&&chi2_constraint_lep_w<30";
+      if (n_jet != 4)
+        cut_base += "chi2_jet_extra<30";
+    }
+  */
+ 
   cut_s = cut_base;
   cut_b = cut_base;
 
@@ -172,7 +175,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
 
   // Gradient Boost
   factory->BookMethod(data_loader, TMVA::Types::kBDT, "BDTG",
-                      "!H:!V:NTrees=1000:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.5:nCuts=200:MaxDepth=2");
+                      "!H:!V:NTrees=800:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost:BaggedSampleFraction=0.5:nCuts=200:MaxDepth=2");
 
   // Fisher
   // factory->BookMethod(data_loader, TMVA::Types::kFisher, "Fisher", "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=100:NsmoothMVAPdf=10" );

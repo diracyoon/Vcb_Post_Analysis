@@ -18,7 +18,7 @@
 #include <Const_Def.h>
 #include <Samples.h>
 #include <Result_Event_CR_DL.h>
-#include <Tagging_RF.h>
+#include <Tagging_RF_DL.h>
 
 using namespace std;
 
@@ -52,7 +52,7 @@ protected:
   int n_sample_merge_mc;
   vector<TString> vec_short_name_mc;
 
-  Tagging_RF tagging_rf;
+  Tagging_RF_DL tagging_rf_dl;
 
   TString key_base;
   TString tree_name;
@@ -124,7 +124,7 @@ protected:
 
   void Fill_Histo_Data();
   void Fill_Histo_MC(const TString &sample_name, const TString &syst_fix);
-  int Histo_Index(const TString &sample_name);
+  int Histo_Index(const TString &sample_name, TString& sample_name_short);
   void Merge_PDF_Error_Set();
   void Read_Tree();
   int Unroller(const float &bvsc_third, const float &bvsc_fourth);

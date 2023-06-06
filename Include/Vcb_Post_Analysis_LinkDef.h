@@ -16,5 +16,6 @@
 #pragma link C++ class Tagging_RF+;
 #pragma link C++ class CR_DL+;
 #pragma link C++ class Result_Event_CR_DL+;
+#pragma link C++ class Tagging_RF_DL+; 
 
 #endif /* __ROOTCLING__ */

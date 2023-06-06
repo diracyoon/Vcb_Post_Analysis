@@ -16,6 +16,8 @@
 #include <TGraphErrors.h>
 #include <TMath.h>
 #include <TLegend.h>
+#include <TROOT.h>
+#include <TLatex.h>
 
 #include <Samples.h>
 #include <Result_Event.h>
@@ -73,7 +75,7 @@ protected:
 
   int color[5] = {2, 4, 5, 1, 6}; // this index should be index of fail reason + 1
 
-  vector<DV_Histo_Conf> dv_histo_conf; 
+  vector<DV_Histo_Conf> dv_histo_conf;
   int n_discriminators;
 
   float bvsc_wp_m;
@@ -84,10 +86,16 @@ protected:
 
   TFile *fout_tree;
   TTree *out_tree[5];
+  // TTree *out_tree[5][5];
 
   TH1D ***histo_mva_pre;
   TH1D ***histo_mva;
   TH1D ***histo_cutflow;
+  TH1D ***histo_had_w;
+  TH1D ***histo_had_t;
+  TH1D ***histo_lep_w;
+  TH1D ***histo_lep_t;
+  TH1D ***histo_template;
 
   TH2D ***histo_count;
   TH2D **histo_prob;
@@ -101,7 +109,7 @@ protected:
 
   TLegend *legend;
 
-  THStack*** stack_dv;
+  THStack ***stack_dv;
 
   void Calculate_Significance();
   void Calculate_Prob();
@@ -115,7 +123,7 @@ protected:
   void Fill_Histo_Count(const TString &short_name, const int &index_decay_mode, const int &index_fail_reason);
   void Fill_Histo_Discriminators(const TString &short_name, const int &index_decay_mode, const int &index_fail_reason);
   void Fill_Histo_Swap(const TString &short_name, const int &index_decay_mode);
-  void Fill_Output_Tree(const TString &short_name, const int &index_decay_mode);
+  void Fill_Output_Tree(const TString &short_name, const int &index_decay_mode, const int &index_fail_reason);
   int Get_Index(const TString &name);
   int Get_Index(const TString &short_name, const int &index_decay_mode);
   void Read_Tree();

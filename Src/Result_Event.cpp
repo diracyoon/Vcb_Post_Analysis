@@ -33,18 +33,18 @@ void Result_Event::Setup_Tree(TTree *tree, const bool &chk_syst)
   }
 
   tree->SetBranchAddress("weight_el_id", &weight_el_id);
-  if( chk_syst)
-    {
-      tree->SetBranchAddress("weight_el_id_down", &weight_el_id_down);
-      tree->SetBranchAddress("weight_el_id_up", &weight_el_id_up);
-    }
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("weight_el_id_down", &weight_el_id_down);
+    tree->SetBranchAddress("weight_el_id_up", &weight_el_id_up);
+  }
 
   tree->SetBranchAddress("weight_el_reco", &weight_el_reco);
-  if( chk_syst)
-    {
-      tree->SetBranchAddress("weight_el_reco_down", &weight_el_reco_down);
-      tree->SetBranchAddress("weight_el_reco_up", &weight_el_reco_up);
-    }
+  if (chk_syst)
+  {
+    tree->SetBranchAddress("weight_el_reco_down", &weight_el_reco_down);
+    tree->SetBranchAddress("weight_el_reco_up", &weight_el_reco_up);
+  }
 
   tree->SetBranchAddress("weight_sl_trig", &weight_sl_trig);
   if (chk_syst)
@@ -158,6 +158,13 @@ void Result_Event::Setup_Tree(TTree *tree, const bool &chk_syst)
   tree->SetBranchAddress("n_bjets", &n_bjets);
   tree->SetBranchAddress("n_cjets", &n_cjets);
 
+  tree->SetBranchAddress("ht", &ht);
+
+  tree->SetBranchAddress("m_had_t", &m_had_t);
+  tree->SetBranchAddress("m_had_w", &m_had_w);
+  tree->SetBranchAddress("m_lep_t", &m_lep_t);
+  tree->SetBranchAddress("m_lep_w", &m_lep_w);
+
   tree->SetBranchAddress("pt_leading_jet", &pt_leading_jet);
   tree->SetBranchAddress("pt_subleading_jet", &pt_subleading_jet);
 
@@ -198,20 +205,22 @@ void Result_Event::Setup_Tree(TTree *tree, const bool &chk_syst)
   tree->SetBranchAddress("bvsc_lep_t_b", &bvsc_lep_t_b);
   tree->SetBranchAddress("cvsb_lep_t_b", &cvsb_lep_t_b);
   tree->SetBranchAddress("cvsl_lep_t_b", &cvsl_lep_t_b);
-  
+
   tree->SetBranchAddress("pt_had_t_b", &pt_had_t_b);
   tree->SetBranchAddress("pt_w_u", &pt_w_u);
   tree->SetBranchAddress("pt_w_d", &pt_w_d);
   tree->SetBranchAddress("pt_lep_t_b", &pt_lep_t_b);
-  
+
   tree->SetBranchAddress("eta_had_t_b", &eta_had_t_b);
   tree->SetBranchAddress("eta_w_u", &eta_w_u);
   tree->SetBranchAddress("eta_w_d", &eta_w_d);
   tree->SetBranchAddress("eta_lep_t_b", &eta_lep_t_b);
-   
+
   tree->SetBranchAddress("swapped_mva", &swapped_mva);
-  
-  //for MC
+
+  tree->SetBranchAddress("template_MVA_score", &template_mva_score);
+
+  // for MC
   tree->SetBranchAddress("decay_mode", &decay_mode);
 
   tree->SetBranchAddress("swapped_truth", &swapped_truth);
@@ -220,12 +229,12 @@ void Result_Event::Setup_Tree(TTree *tree, const bool &chk_syst)
   tree->SetBranchAddress("chk_included", &chk_included);
   tree->SetBranchAddress("chk_hf_contamination", &chk_hf_contamination);
   tree->SetBranchAddress("chk_gentau_conta", &chk_gentau_conta);
-  
+
   tree->SetBranchAddress("pu_conta_had_t_b", &pu_conta_had_t_b);
   tree->SetBranchAddress("pu_conta_w_u", &pu_conta_w_u);
   tree->SetBranchAddress("pu_conta_w_d", &pu_conta_w_d);
   tree->SetBranchAddress("pu_conta_lep_t_b", &pu_conta_lep_t_b);
-  
+
   return;
 } // void Result_Event::Setup_Tree(TTree* tree)
 

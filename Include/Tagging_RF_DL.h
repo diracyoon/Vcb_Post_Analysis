@@ -1,5 +1,5 @@
-#ifndef __Tagging_RF_H__
-#define __Tagging_RF_H__
+#ifndef __Tagging_RF_DL_H__
+#define __Tagging_RF_DL_H__
 
 #include <iostream>
 #include <map>
@@ -17,20 +17,22 @@
 #include <TROOT.h>
 #include <TDirectory.h>
 #include <TList.h>
-#include <TMath.h>
+#include <TBranch.h>
+#include "TROOT.h"
+#include "TRegexp.h"
 
 #include <Samples.h>
 
 using namespace std;
 
-class Tagging_RF : public TObject
+class Tagging_RF_DL : public TObject
 {
 public:
-  Tagging_RF(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString &a_extension = "png");
-  ~Tagging_RF();
+  Tagging_RF_DL(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString &a_extension = "png");
+  ~Tagging_RF_DL();
 
-  float Get_Tagging_RF_B_Tag(const TString &sample, const TString &syst, const int &n_jet, const float &ht);
-  float Get_Tagging_RF_C_Tag(const TString &sample, const TString &syst, const int &n_pv, const float& ht);
+  float Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const int &n_jet, const float &ht);
+  float Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const int &n_pv, const float &ht);
 
 protected:
   int reduction;
@@ -66,6 +68,8 @@ protected:
   TH2D **histo_mc_before_b; // n_sample
   TH2D ***histo_mc_after_b; // n_sample, n_syst_b
 
+  // TH1D **histo_mc_before_c; // n_sample
+  // TH1D ***histo_mc_after_c; // n_sample, n_syst_c
   TH2D **histo_mc_before_c; // n_sample
   TH2D ***histo_mc_after_c; // n_sample, n_syst_c
 
@@ -85,6 +89,7 @@ protected:
   THStack **stack_mc_after_c; // n_syst_c
 
   TH2D ***ratio_b; // n_sample, n_syst_b
+  // TH1D ***ratio_c; // n_sample, n_syst_c
   TH2D ***ratio_c; // n_sample, n_syst_c
 
   TCanvas **canvas_before_b; // n_sample
@@ -115,13 +120,13 @@ protected:
   float subleading_jet_eta;
   float subleading_jet_pt;
 
-  float sf_mu_id;
-  float sf_mu_iso;
+  float weight_mu_id;
+  float weight_mu_iso;
 
-  float sf_el_id;
-  float sf_el_reco;
+  float weight_el_id;
+  float weight_el_reco;
 
-  float sf_sl_trig;
+  float weight_sl_trig;
 
   float weight_lumi;
   float weight_mc;
@@ -176,16 +181,22 @@ protected:
   float weight_c_tag_jes_total_down;
   float weight_c_tag_jes_total_up;
 
+  vector<int> *gen_hf_flavour = NULL;
+  vector<int> *gen_hf_origin = NULL;
+
   TFile *fin;
-  TFile *fin_mu;
-  TFile *fin_el;
+  TFile *fin_mm;
+  TFile *fin_me;
+  TFile *fin_ee;
   TFile *fout;
 
   void Combine();
+  void Combine_TT();
   void Draw();
   void Draw_Validation();
-  void Fill_Histo_MC(const int &sample_index);
+  void Fill_Histo_MC(const TString &sample_name);
   void Fill_Histo_Validation_MC(const int &sample_index);
+  int Histo_Index(const TString &sample_name);
   void Ratio();
   void Read_Tree();
   void Run_Analysis();
@@ -201,7 +212,7 @@ protected:
 private:
   bool chk_draw_called = false;
 
-  ClassDef(Tagging_RF, 1);
+  ClassDef(Tagging_RF_DL, 1);
 };
 
-#endif /* __Tagging_RF_H__ */
+#endif /* __Tagging_RF_DL_H__ */

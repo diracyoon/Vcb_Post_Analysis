@@ -13,12 +13,17 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   analyser = a_analyser;
   extension = a_extension;
 
+  if (era == "2018")
+    lumi = lumi_2018;
+  else if (era == "2017")
+    lumi = lumi_2017;
+
   TString path_base = getenv("Vcb_Post_Analysis_WD");
 
   TString fin_name = path_base;
   if (analyser == "Vcb")
   {
-    fin_name = "Vcb_Histos_" + era + "_" + channel + "All.root";
+    fin_name = "Vcb_Histos_" + era + "_" + channel + "_All.root";
     color = {2, 3, 4, 5, 6, 7, 8};
   }
   else if (analyser == "Vcb_DL")
@@ -123,6 +128,31 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   n_syst = syst_name.size();
   cout << "n_syst = " << n_syst << endl;
 
+  // syst_name_short for Draw_Each()
+  for (unsigned int i = 0; i < n_syst; i++)
+  {
+    TString temp = syst_name[i];
+    if (temp.Contains("_Up"))
+      temp = temp.ReplaceAll("_Up", "");
+    else if (temp.Contains("_Down"))
+      temp = temp.ReplaceAll("_Down", "");
+    else if (temp.Contains("mTop"))
+    {
+      temp = temp.ReplaceAll("_173p5", "");
+      temp = temp.ReplaceAll("_171p5", "");
+    }
+    else if (temp.Contains("Scale_Variation"))
+    {
+      int pos = temp.Last('_');
+      temp = temp.Remove(pos, 2);
+    }
+
+    if (temp != "Nominal")
+      syst_name_short.push_back(temp);
+  }
+  syst_name_short.erase(unique(syst_name_short.begin(), syst_name_short.end()), syst_name_short.end());
+  n_syst_name_short = syst_name_short.size();
+
   // get sample_name
   TList *list_sample = ((TDirectory *)fin->Get(region_name[0] + "/" + syst_name[0]))->GetListOfKeys();
   Setup_Name(list_sample, sample_name);
@@ -132,9 +162,10 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   // get variable_name
   TList *list_variable = ((TDirectory *)fin->Get(region_name[0] + "/" + syst_name[0] + "/" + sample_name[0]))->GetListOfKeys();
   Setup_Name(list_variable, variable_name);
+  // variable_name = {"Subleading_Lepton_Pt"};
   n_variable = variable_name.size();
 
-  tl = new TLegend(0.7, 0.4, 0.9, 0.8);
+  tl = new TLegend(0.78, 0.53, 0.88, 0.88);
   tl->SetBorderSize(0);
 
   // setup histo_mc
@@ -163,6 +194,9 @@ void Data_MC_Comparison::Run()
   Compare();
   Draw();
   Save();
+
+  // for (int i = 0; i < n_syst_name_short; i++)
+  //   Draw_Each(syst_name_short[i]);
 
   return;
 } // void Data_MC_Comparison::Run()
@@ -222,7 +256,7 @@ void Data_MC_Comparison::Draw()
 
     for (int j = 0; j < n_variable; j++)
     {
-      TString canvas_name = region_name[i] + "_" + variable_name[j];
+      TString canvas_name = region_name[i] + "_" + era + "_" + channel + "_" + variable_name[j];
       // cout << canvas_name << endl;
 
       canvas[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
@@ -238,14 +272,17 @@ void Data_MC_Comparison::Draw()
 
       pad[i][j][0]->cd();
 
-      stack_mc[i][0][j]->SetTitle(variable_conf[j].variable_title);
-
       stack_mc[i][0][j]->Draw("BAR");
+
+      stack_mc[i][0][j]->SetTitle("");
+      stack_mc[i][0][j]->GetXaxis()->SetTitle(variable_conf[j].variable_title);
+
       float max = stack_mc[i][0][j]->GetMaximum();
       stack_mc[i][0][j]->SetMaximum(1.7 * max);
 
       pad[i][j][0]->cd();
-      tl->Draw("SAME");
+      TLegend *legend = (TLegend *)tl->Clone();
+      legend->Draw("SAME");
 
       gr_variation_merged[i][j]->SetFillColor(1);
       gr_variation_merged[i][j]->SetFillStyle(3001);
@@ -255,19 +292,27 @@ void Data_MC_Comparison::Draw()
       histo_data[i][j]->SetMarkerStyle(8);
       histo_data[i][j]->Draw("SAME");
 
+      TLatex *latex = new TLatex();
+      latex->SetTextSize(0.04);
+      latex->DrawLatexNDC(0.1, 0.91, "#bf{CMS} work in progress");
+      latex->DrawLatexNDC(0.84, 0.91, Form("%.2f fb^{-1}", lumi));
+
       pad[i][j][1] = new TPad(pad_name + "Ratio", pad_name + "Ratio", 0, 0, 1, 0.4);
       canvas[i][j]->cd();
       pad[i][j][1]->Draw();
       pad[i][j][1]->cd();
       histo_ratio[i][j]->Draw();
 
+      histo_ratio[i][j]->GetXaxis()->SetTitle(variable_conf[j].variable_title);
       histo_ratio[i][j]->GetYaxis()->SetTitle("Data/MC");
-      histo_ratio[i][j]->GetYaxis()->SetRangeUser(0, 2);
+      histo_ratio[i][j]->GetYaxis()->SetRangeUser(0.6, 1.4);
 
       gr_ratio[i][j]->SetFillColor(1);
       gr_ratio[i][j]->SetFillStyle(3001);
       gr_ratio[i][j]->Draw("SAME3");
 
+      canvas[i][j]->Update();
+      canvas[i][j]->Modified();
       canvas[i][j]->Print(canvas_name + "." + extension, extension);
     } // loop over n_variable
   }   // loop over_n_region
@@ -277,32 +322,113 @@ void Data_MC_Comparison::Draw()
 
 //////////
 
-void Data_MC_Comparison::Draw_Each()
+void Data_MC_Comparison::Draw_Each(const TString &a_syst_name)
 {
-  /*
-  canvas_each = new TCanvas ***[n_region];
+  // canvas_each = new TCanvas **[n_region];
   for (int i = 0; i < n_region; i++)
   {
-    canvas_each[i] = new TCanvas **[n_syst];
-    for (int j = 0; j < n_syst; j++)
+    // canvas_each[i] = new TCanvas *[n_variable];
+
+    for (int j = 0; j < n_variable; j++)
+    // for (int j = 0; j < 1; j++)
     {
-      cout << syst_name[j] << endl;
+      TString can_name = "Canvas_Each_" + region_name[i] + "_" + a_syst_name + "_" + variable_name[j];
+      // canvas_each[i][j] = new TCanvas(can_name, can_name, 800, 500);
+      // canvas_each[i][j]->Draw();
+      TCanvas *canvas_each = new TCanvas(can_name, can_name, 800, 500);
+      canvas_each->Draw();
 
-      canvas_each[i][j] = new TCanvas *[n_variable];
-      for (int k = 0; k < n_variable; k++)
+      TString pad_name = region_name[i] + "_" + variable_name[j] + "_";
+      TPad *pad_each[2];
+
+      pad_each[0] = new TPad(pad_name + "Comp", pad_name + "Comp", 0, 0.4, 1, 1);
+      canvas_each->cd();
+      pad_each[0]->Draw();
+      pad_each[0]->cd();
+
+      // nominal
+      TH1D *histo_nominal = (TH1D *)(stack_mc[i][0][j]->GetStack()->Last());
+      histo_nominal->SetLineColor(1);
+      histo_nominal->Draw();
+
+      vector<TH1D *> vec_histo_ratio;
+
+      // data
+      // histo_data[i][j]->Sumw2();
+      histo_data[i][j]->SetMarkerStyle(8);
+      histo_data[i][j]->SetMarkerColor(1);
+      histo_data[i][j]->Draw("SAMEP");
+
+      TString histo_name = "Ratio_" + region_name[i] + "_" + variable_name[j] + "_Data";
+      TH1D *histo_ratio = new TH1D(histo_name, histo_name, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up);
+      histo_ratio->Divide(histo_data[i][j], histo_nominal);
+
+      vec_histo_ratio.push_back(histo_ratio);
+
+      // systs
+      int n_syst_target = 0; // only to tweak line color
+      for (int k = 0; k < n_syst; k++)
       {
-        TString can_name = region_name[i] + "_" + syst_name[j] + "_" + variable_name[k];
+        if (syst_name[k].Contains(a_syst_name))
+        {
+          TH1D *histo_syst = (TH1D *)(stack_mc[i][k][j]->GetStack()->Last());
+          histo_syst->SetLineColor(n_syst_target + 2);
+          histo_syst->Draw("SAME");
 
-        canvas_each[i][j][k] = new TCanvas(can_name, can_name, 800, 500);
+          TString histo_name = "Ratio_" + region_name[i] + "_" + variable_name[j] + "_" + syst_name[k];
+          TH1D *histo_ratio = new TH1D(histo_name, histo_name, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up);
+          histo_ratio->Divide(histo_syst, histo_nominal);
 
-        canvas_each[i][j][k]->Draw();
-        stack_mc[i][j][k]->Draw("BAR");
-      } // loop over n_syst
-    }   // loop over n_variable
-  }     // loop over n_region
-*/
+          vec_histo_ratio.push_back(histo_ratio);
+
+          n_syst_target++;
+        }
+      }
+
+      canvas_each->cd();
+      pad_each[1] = new TPad(pad_name + "Ratio", pad_name + "Ratio", 0, 0, 1, 0.4);
+      pad_each[1]->Draw();
+      pad_each[1]->cd();
+
+      // i==0 is data, the highers are systs
+      for (unsigned int i = 0; i < vec_histo_ratio.size(); i++)
+      {
+        TH1D *histo_ratio = vec_histo_ratio[i];
+        histo_ratio->SetLineColor(i + 1);
+
+        if (i == 0)
+        {
+          histo_ratio->GetYaxis()->SetRangeUser(0.6, 1.4);
+          histo_ratio->Draw();
+        }
+        else
+          histo_ratio->Draw("SAME");
+      } // loop over systs + data
+
+      canvas_each->Update();
+      canvas_each->Print(can_name + "." + extension, extension);
+
+      // clear
+      for (unsigned int i = 0; i < vec_histo_ratio.size(); i++)
+      {
+        delete vec_histo_ratio[i];
+      }
+      vec_histo_ratio.clear();
+
+      pad_each[0]->Close();
+      pad_each[1]->Close();
+      canvas_each->Close();
+
+      gSystem->ProcessEvents();
+
+      delete pad_each[0];
+      delete pad_each[1];
+      delete canvas_each;
+    } // loop over n_variable
+  }   // loop over n_region
+
   return;
-} // void Data_MC_Comparison::Draw_Each()
+} // void Data_MC_Comparison::Draw_Each(const TString& variable_name)
 
 //////////
 
@@ -348,8 +474,7 @@ void Data_MC_Comparison::Envelope()
 
           float diff = content_syst - content_nominal;
 
-          // if (variable_conf[j].variable_title.Contains("N_Vertex"))
-          //   cout << bin_center << " " << content_nominal << " " << content_syst << " " << diff << endl;
+          // cout << "l= " << l << ", bin_center= " << bin_center << ", bin_width= " << bin_width << ", nominal= " << content_nominal << ", syst= " << content_syst << ", diff=" << diff << endl;
 
           // to mimic histogram for better display
           for (int m = -1; m < 2; m++)
@@ -361,6 +486,7 @@ void Data_MC_Comparison::Envelope()
               gr_variation[i][k][j]->SetPointError(n_point, 0, 0, 0, diff);
             else
               gr_variation[i][k][j]->SetPointError(n_point, 0, 0, TMath::Abs(diff), 0);
+
           } // loop over 3
         }   // loop over n_bin
       }     // loop over n_syst
@@ -371,11 +497,10 @@ void Data_MC_Comparison::Envelope()
   gr_variation_merged = new TGraphAsymmErrors **[n_region];
   for (int i = 0; i < n_region; i++)
   {
-    cout << region_name[i] << endl;
     gr_variation_merged[i] = new TGraphAsymmErrors *[n_variable];
     for (int j = 0; j < n_variable; j++)
     {
-      cout << variable_name[j] << endl;
+      // cout << variable_name[j] << endl;
 
       gr_variation_merged[i][j] = new TGraphAsymmErrors();
 
@@ -387,17 +512,19 @@ void Data_MC_Comparison::Envelope()
         float x = gr_variation[i][0][j]->GetPointX(k);
 
         int bin = histo->FindBin(x);
-        float stat_error = TMath::Sqrt(histo->GetBinContent(bin));
+        float stat_error = histo->GetBinError(bin);
 
         float variation_up = 0;
         float variation_down = 0;
 
-        for (int l = 0; l < n_syst; l++)
+        for (int l = 0; l < n_syst - 1; l++)
         {
           // cout << syst_name[l + 1] << endl;
 
           float ey_h = gr_variation[i][l][j]->GetErrorYhigh(k);
           float ey_l = gr_variation[i][l][j]->GetErrorYlow(k);
+
+          // cout << "l= " << l << ", ey_h= " << ey_h << ", ey_l= " << ey_l << endl;
 
           variation_up = TMath::Sqrt(TMath::Power(variation_up, 2.) + TMath::Power(ey_h, 2.));
           variation_down = TMath::Sqrt(TMath::Power(variation_down, 2.) + TMath::Power(ey_l, 2.));
@@ -406,10 +533,11 @@ void Data_MC_Comparison::Envelope()
           //   cout << l << ", x = " << x << ", ey_h = " << ey_h << ", variation_up = " << variation_up << ", ey_l = " << ey_l << ", variation_down = " << variation_down << endl;
         } // loop over n_syst -1
           // if (variable_conf[j].variable_title.Contains("N_Vertex"))
-        // cout << "x = " << x << ", stat = " << stat_error << ", down = " << variation_down << ", up = " << variation_up << endl;
-
+          // cout << "x = " << x << ", stat = " << stat_error << ", down = " << variation_down << ", up = " << variation_up << endl;
         variation_up = TMath::Sqrt(TMath::Power(stat_error, 2.) + TMath::Power(variation_up, 2.));
         variation_down = TMath::Sqrt(TMath::Power(stat_error, 2.) + TMath::Power(variation_down, 2.));
+
+        // cout << "k= " << k << ", x=" << x << ", content= " << histo->GetBinContent(bin) << ", variation_down=" << variation_down << ", variation_up=" << variation_up << endl;
 
         gr_variation_merged[i][j]->SetPoint(k, x, histo->GetBinContent(bin));
         gr_variation_merged[i][j]->SetPointError(k, 0, 0, variation_down, variation_up);
@@ -428,23 +556,44 @@ void Data_MC_Comparison::Save()
   TString fout_name = "Vcb_Data_MC_Comparison_" + era + "_" + channel + ".root";
   fout = new TFile(fout_name, "RECREATE");
 
+  dir_variable = new TDirectory **[n_region];
+  for (int i = 0; i < n_region; i++)
+    dir_variable[i] = new TDirectory *[n_variable];
+
   for (int i = 0; i < n_region; i++)
   {
     TDirectory *dir_region = fout->mkdir(region_name[i]);
 
     for (int j = 0; j < n_variable; j++)
     {
-      TDirectory *dir_variable = dir_region->mkdir(variable_name[j]);
+      dir_variable[i][j] = dir_region->mkdir(variable_name[j]);
 
-      canvas[i][j]->SetName(variable_name[j]);
-      canvas[i][j]->SetTitle(variable_name[j]);
+      canvas[i][j]->SetName("Canvas_" + variable_name[j]);
+      canvas[i][j]->SetTitle("Canvas_" + variable_name[j]);
 
-      dir_variable->cd();
+      dir_variable[i][j]->cd();
       canvas[i][j]->Write();
 
-      canvas[i][j]->SaveAs(variable_name[j] + ".cpp");
+      // canvas[i][j]->SaveAs(variable_name[j] + ".cpp");
     } // loop over n_variable
   }   // loop over n_region
+
+  for (int i = 0; i < n_region; i++)
+  {
+    for (int j = 0; j < n_variable; j++)
+    {
+      dir_variable[i][j]->cd();
+
+      for (int k = 0; k < n_syst - 1; k++)
+      {
+        TString gr_name = region_name[i] + "_" + variable_name[j] + "_" + syst_name[k + 1];
+        gr_variation[i][k][j]->SetTitle(gr_name);
+        gr_variation[i][k][j]->SetName(gr_name);
+
+        gr_variation[i][k][j]->Write();
+      } // loop over n_syst-1
+    }   // loop over n_variable
+  }     // loop over n_region
 
   fout->Close();
 
