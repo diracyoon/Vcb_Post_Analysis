@@ -20,8 +20,12 @@
 #include <TBranch.h>
 #include "TROOT.h"
 #include "TRegexp.h"
+#include "TStyle.h"
+#include <TPad.h>
+#include <TLatex.h>
 
 #include <Samples.h>
+#include "Const_Def.h"
 
 using namespace std;
 
@@ -30,6 +34,14 @@ class Tagging_RF_DL : public TObject
 public:
   Tagging_RF_DL(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString &a_extension = "png");
   ~Tagging_RF_DL();
+
+  inline static bool Comparing_TString(const TString &str1, const TString &str2)
+  {
+    if (str1.CompareTo(str2) > 0)
+      return true;
+    else
+      return false;
+  } // bool Comparing_TString(const TString &str1, const TString &str2)
 
   float Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const int &n_jet, const float &ht);
   float Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const int &n_pv, const float &ht);
@@ -57,6 +69,12 @@ protected:
 
   map<TString, TFile *> map_fin_mc;
   map<TString, TTree *> map_tree_mc;
+  map<TString, TTree *> map_tree_mc_jec_down;
+  map<TString, TTree *> map_tree_mc_jec_up;
+  map<TString, TTree *> map_tree_mc_jer_down;
+  map<TString, TTree *> map_tree_mc_jer_up;
+
+  map<TString, map<TString, TTree *> *> map_map_tree_mc;
 
   vector<TString> sample_name;
   vector<TString> syst_name_b;
@@ -65,31 +83,28 @@ protected:
   int n_syst_b;
   int n_syst_c;
 
-  TH2D **histo_mc_before_b; // n_sample
-  TH2D ***histo_mc_after_b; // n_sample, n_syst_b
+  TH2D ***histo_mc_before_b; // n_sample, n_syst_b
+  TH2D ***histo_mc_after_b;  // n_sample, n_syst_b
 
-  // TH1D **histo_mc_before_c; // n_sample
-  // TH1D ***histo_mc_after_c; // n_sample, n_syst_c
-  TH2D **histo_mc_before_c; // n_sample
-  TH2D ***histo_mc_after_c; // n_sample, n_syst_c
+  TH2D ***histo_mc_before_c; // n_sample, n_syst_c
+  TH2D ***histo_mc_after_c;  // n_sample, n_syst_c
 
-  TH1D ***histo_closure_n_jet; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D ***histo_closure_ht;    // n_sample, 3
-  TH1D ***histo_closure_n_pv;  // n_sample, 3
+  TH1D ****histo_closure_n_jet; // n_sample, n_syst_c, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ****histo_closure_ht;    // n_sample, n_syst_c, 3
+  TH1D ****histo_closure_n_pv;  // n_sample, n_syst_c, 3
 
-  TH1D ***histo_closure_bvsc; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D ***histo_closure_cvsb; // n_sample,
-  TH1D ***histo_closure_cvsl; // n_sample,
+  TH1D ****histo_closure_bvsc; // n_sample, n_syst_c, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ****histo_closure_cvsb; // n_sample, n_syst_c, 3
+  TH1D ****histo_closure_cvsl; // n_sample, n_syst_c, 3
 
-  TH1D ***histo_closure_eta; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D ***histo_closure_pt;
+  TH1D ****histo_closure_eta; // n_sample, n_syst_c, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ****histo_closure_pt;  // n_sample, n_syst_c, 3 
 
   THStack *stack_mc_before;
   THStack **stack_mc_after_b; // n_syst_b
   THStack **stack_mc_after_c; // n_syst_c
 
   TH2D ***ratio_b; // n_sample, n_syst_b
-  // TH1D ***ratio_c; // n_sample, n_syst_c
   TH2D ***ratio_c; // n_sample, n_syst_c
 
   TCanvas **canvas_before_b; // n_sample
@@ -128,12 +143,26 @@ protected:
 
   float weight_sl_trig;
 
+  float weight_hem_veto;
   float weight_lumi;
   float weight_mc;
+
   float weight_pileup;
+  float weight_pileup_down;
+  float weight_pileup_up;
+
+  float weight_ps[4];
+
   float weight_prefire;
   float weight_top_pt;
   float weight_pujet_veto;
+
+  float weight_scale_variation_1;
+  float weight_scale_variation_2;
+  float weight_scale_variation_3;
+  float weight_scale_variation_4;
+  float weight_scale_variation_6;
+  float weight_scale_variation_8;
 
   float weight_b_tag;
   float weight_b_tag_hf_down;
@@ -192,21 +221,22 @@ protected:
 
   void Combine();
   void Combine_TT();
-  void Draw();
+  void Draw_Result();
   void Draw_Validation();
-  void Fill_Histo_MC(const TString &sample_name);
-  void Fill_Histo_Validation_MC(const int &sample_index);
+  void Fill_Histo_MC(const TString &sample_name, const TString &syst_type);
+  void Fill_Histo_Validation_MC(const TString &sample_name, const TString &syst_type);
   int Histo_Index(const TString &sample_name);
   void Ratio();
   void Read_Tree();
   void Run_Analysis();
+  void Run_Combine();
   void Run_Validation();
   void Setup_Analysis();
   void Setup_Application();
   void Setup_Binning();
   void Setup_Histo();
   void Setup_Histo_Validation();
-  void Setup_Tree(TTree *tree);
+  void Setup_Tree(TTree *tree, const TString &syst);
   // void Stack_MC();
 
 private:

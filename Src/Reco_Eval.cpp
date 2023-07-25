@@ -32,23 +32,22 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     exit(EXIT_FAILURE);
   }
 
-  cout << samples.map_mc.size() << endl;
+  cout << "Number of MC = " << samples.map_mc.size() << endl;
   for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
   {
     cout << it->first << endl;
     // if (it->first != "TTLJ_WtoCB_powheg" && it->first != "TTLJ_powheg")
     //  continue;
-
+    
     map_fin[it->first] = new TFile(path_base + it->second);
-
+  
     TString key;
     if (channel == "Mu")
       key = "POGTightWithTightIso_Central/Result_Tree";
     else if (channel == "El")
-      key = "passTightID_Central/Result_Tree";
+      key = "passMVAID_iso_WP80_Central/Result_Tree";
 
     map_tree[it->first] = (TTree *)map_fin[it->first]->Get(key);
-
     event.Setup_Tree(map_tree[it->first], false);
   }
 
@@ -57,6 +56,9 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     cout << it->first << endl;
     vec_short_name_mc.push_back(it->second);
   }
+
+  // remove redundancy
+  sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
   vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
   n_sample_merge_mc = vec_short_name_mc.size();
 
@@ -288,7 +290,7 @@ Reco_Eval::~Reco_Eval()
   {
     for (int j = 0; j < n_discriminators; j++)
     {
-      stack_dv[i][j]->Write();
+      // stack_dv[i][j]->Write();
     }
   }
 
@@ -315,8 +317,8 @@ void Reco_Eval::Run()
   Calculate_Significance();
   Calculate_Prob();
   Draw_Raw();
-  Draw_Sample_By_Sample();
-  Draw_Significance();
+  //  Draw_Sample_By_Sample();
+  //  Draw_Significance();
   Draw_Swap();
   Draw_DV();
 } // void Reco_Eval::Run()
@@ -417,12 +419,10 @@ void Reco_Eval::Draw_DV()
       } // loop over correct or wrong
 
       canvas_dv[i]->cd(j + 1);
-      // canvas_dv[i]->cd(j + 1);
-
       stack_dv[i][j]->Draw("BAR");
     } // loop over # of disriminating variables
 
-    canvas_dv[i]->Print(vec_histo_sample[i] + "_DV." + draw_extension, draw_extension);
+    canvas_dv[i]->Print(vec_histo_sample[i] + "_DV_" + era + "_" + channel + "." + draw_extension, draw_extension);
 
     // canvas_dv[i]->SaveAs(vec_histo_sample[i] + "_DV.cpp");
   } // loop over samples
@@ -499,6 +499,7 @@ void Reco_Eval::Draw_Raw()
   for (unsigned int i = 0; i < n_histo_sample; i++)
   {
     TString name = vec_histo_sample[i];
+    cout << name << endl;
 
     stack_mva_pre[i] = new THStack(name, name);
     stack_mva[i] = new THStack(name, name);
@@ -550,7 +551,7 @@ void Reco_Eval::Draw_Raw()
         else if (j == 2 || j == 4)
           ttlj_cb_wrong_not_sel += histo_mva[i][j]->Integral();
       }
-    }
+    } // loop over reco type
 
     // indexing for position
     int canvas_index;
@@ -576,9 +577,11 @@ void Reco_Eval::Draw_Raw()
         subpad_index = 1;
       else if (name.Contains("ST"))
         subpad_index = 2;
-      else if (name.Contains("DY"))
+      else if (name.Contains("VJets"))
+        subpad_index = 3;
+      else if (name.Contains("ttV"))
         subpad_index = 4;
-      else if (name.Contains("WJet"))
+      else if (name.Contains("VV"))
         subpad_index = 5;
       else if (name.Contains("QCD"))
         subpad_index = 6;
@@ -620,7 +623,7 @@ void Reco_Eval::Draw_Raw()
   if (era == "2017")
     lumi = lumi_2017;
 
-  for (int i = 0; i < 2; i++)
+  for (int i = 0; i < 1; i++)
   {
     canvas_mva_pre[i]->cd(3);
     latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
@@ -671,25 +674,25 @@ void Reco_Eval::Draw_Raw()
 
   for (int i = 0; i < 2; i++)
   {
-    TString name = "Permutation_MVA_Pre_" + to_string(i) + "." + draw_extension;
+    TString name = "Permutation_MVA_Pre_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_mva_pre[i]->Print(name, draw_extension);
 
-    name = "Permutation_MVA_" + to_string(i) + "." + draw_extension;
+    name = "Permutation_MVA_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_mva[i]->Print(name, draw_extension);
 
-    name = "Had_W_" + to_string(i) + "." + draw_extension;
+    name = "Had_W_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_had_w[i]->Print(name, draw_extension);
 
-    name = "Had_T_" + to_string(i) + "." + draw_extension;
+    name = "Had_T_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_had_t[i]->Print(name, draw_extension);
 
-    name = "Lep_W_" + to_string(i) + "." + draw_extension;
+    name = "Lep_W_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_lep_w[i]->Print(name, draw_extension);
 
-    name = "Lep_T_" + to_string(i) + "." + draw_extension;
+    name = "Lep_T_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_lep_t[i]->Print(name, draw_extension);
 
-    name = "Template_" + to_string(i) + "." + draw_extension;
+    name = "Template_" + to_string(i) + "_" + era + "_" + channel + "_" + era + "_" + channel + "." + draw_extension;
     canvas_template[i]->Print(name, draw_extension);
   }
 
@@ -798,7 +801,7 @@ void Reco_Eval::Draw_Swap()
     }
   }
 
-  canvas_swap->Print("Swap." + draw_extension, draw_extension);
+  canvas_swap->Print("Swap_" + era + "_" + channel + "." + draw_extension, draw_extension);
 
   /* swap_fixed */
   TCanvas *canvas_swap_fixed = new TCanvas("Swap_Fixed", "Swap_Fixed", 1300, 800);
@@ -821,7 +824,7 @@ void Reco_Eval::Draw_Swap()
     }
   }
 
-  canvas_swap_fixed->Print("Swap_Fixed." + draw_extension, draw_extension);
+  canvas_swap_fixed->Print("Swap_Fixed_" + era + "_" + channel + "." + draw_extension, draw_extension);
 
   return;
 } // void Reco_Eval::Draw_Swap()
@@ -1042,8 +1045,8 @@ void Reco_Eval::Read_Tree()
       // if (event.chk_gentau_conta == true)
       //   continue;
 
-      if (event.n_bjets == 2)
-        continue;
+      //if (event.n_bjets == 2)
+      //  continue;
 
       Fill_Output_Tree(short_name, event.decay_mode, index_fail_reason);
 

@@ -16,7 +16,7 @@ Tagging_RF::Tagging_RF(const TString &a_era, const TString &a_mode, const TStrin
   if (mode == "Analysis")
     Run_Analysis();
   else if (mode == "Combine")
-    Combine();
+    Run_Combine();
   else if (mode == "Validation")
     Run_Validation();
   else if (mode == "Application")
@@ -157,7 +157,7 @@ float Tagging_RF::Get_Tagging_RF_B_Tag(const TString &sample, const TString &sys
 
 //////////
 
-float Tagging_RF::Get_Tagging_RF_C_Tag(const TString &sample, const TString &syst, const int &n_pv, const float& ht)
+float Tagging_RF::Get_Tagging_RF_C_Tag(const TString &sample, const TString &syst, const int &n_pv, const float &ht)
 {
   if (!syst.Contains("C_Tag"))
   {
@@ -252,96 +252,173 @@ void Tagging_RF::Combine()
         ratio_averaged->Write();
       }
     }
-  }
+  } // loop over mc_merged
 
   return;
 } // void Tagging_RF::Combine()
 
 //////////
 
-void Tagging_RF::Draw()
+void Tagging_RF::Draw_Result()
 {
-  cout << "[Tagging_RF::Draw]: Init" << endl;
-  chk_draw_called = true;
+  cout << "[Tagging_RF::Draw_Result]: Init" << endl;
 
-  // legend = new TLegend(0.65, 0.65, 0.85, 0.85);
-  // for (int i = 0; i < n_sample_merge_mc; i++)
-  // {
-  //   legend->AddEntry(histo_mc_before_b[i], vec_short_name_mc[i], "f");
-  // }
-  // legend->SetBorderSize(0);
+  gStyle->SetPaintTextFormat("0.3f");
+  gStyle->SetOptStat(0);
 
-  canvas_before_b = new TCanvas *[n_sample_merge_mc];
-  canvas_before_c = new TCanvas *[n_sample_merge_mc];
-  canvas_after_b = new TCanvas **[n_sample_merge_mc];
-  canvas_after_c = new TCanvas **[n_sample_merge_mc];
-  canvas_ratio_b = new TCanvas **[n_sample_merge_mc];
-  canvas_ratio_c = new TCanvas **[n_sample_merge_mc];
+  // draw results
+  vector<TString> sample_to_draw = {"TTLJ", "TTLL"};
+  vector<TString> syst_to_draw = {
+      "C_Tag_Nominal",
+      "C_Tag_Extrap_Down", "C_Tag_Extrap_Up",
+      "C_Tag_Interp_Down", "C_Tag_Interp_Up",
+      "C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up",
+      "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up",
+      "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up",
+      "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up",
+      "C_Tag_PU_Down", "C_Tag_PU_Up",
+      "C_Tag_Stat_Down", "C_Tag_Stat_Up",
+      "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up",
+      "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up",
+      "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
+      "C_Tag_JER_Down", "C_Tag_JER_Up",
+      "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up"
+  };
 
-  for (int i = 0; i < n_sample_merge_mc; i++)
+  for (unsigned int i = 0; i < sample_to_draw.size(); i++)
   {
-    TString canvas_name = "Canvas_Before_B_Tag_" + vec_short_name_mc[i];
-    canvas_before_b[i] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
-    canvas_before_b[i]->Draw();
-    histo_mc_before_b[i]->Draw("COLZ Texte");
-    canvas_before_b[i]->Print(canvas_name + "." + extension, extension);
-
-    canvas_name = "Canvas_Before_C_Tag" + vec_short_name_mc[i];
-    canvas_before_c[i] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
-    canvas_before_c[i]->Draw();
-    histo_mc_before_c[i]->Draw();
-    canvas_before_c[i]->Print(canvas_name + "." + extension, extension);
-
-    canvas_after_b[i] = new TCanvas *[n_syst_b];
-    for (int j = 0; j < n_syst_b; j++)
+    for (unsigned int j = 0; j < syst_to_draw.size(); j++)
     {
-      canvas_name = "Canvas_After_" + vec_short_name_mc[i] + "_" + syst_name_b[j];
-      canvas_after_b[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
-      canvas_after_b[i][j]->Draw();
-      histo_mc_after_b[i][j]->Draw("COLZ Texte");
-      canvas_after_b[i][j]->Print(canvas_name + "." + extension, extension);
-    }
+      TH2D *histo = (TH2D *)fout->Get(Form("%s/Ratio_%s_%s", sample_to_draw[i].Data(), sample_to_draw[i].Data(), syst_to_draw[j].Data()));
 
-    canvas_after_c[i] = new TCanvas *[n_syst_c];
-    for (int j = 0; j < n_syst_c; j++)
-    {
-      canvas_name = "Canvas_After_" + vec_short_name_mc[i] + "_" + syst_name_c[j];
-      canvas_after_c[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
-      canvas_after_c[i][j]->Draw();
-      histo_mc_after_c[i][j]->Draw();
-      canvas_after_c[i][j]->Print(canvas_name + "." + extension, extension);
-    }
+      TString can_name = Form("Tagging_RF_%s_%s_%s", sample_to_draw[i].Data(), syst_to_draw[j].Data(), era.Data());
+      TCanvas *canvas = new TCanvas(can_name, can_name, 1600, 1000);
+      canvas->Draw();
 
-    canvas_ratio_b[i] = new TCanvas *[n_syst_b];
-    for (int j = 0; j < n_syst_b; j++)
-    {
-      canvas_name = "Canvas_Ratio_" + vec_short_name_mc[i] + "_" + syst_name_b[j];
-      canvas_ratio_b[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
-      canvas_ratio_b[i][j]->Draw();
-      ratio_b[i][j]->Draw("COLZ texte");
-      canvas_ratio_b[i][j]->Print(canvas_name + "." + extension, extension);
-    }
+      histo->GetXaxis()->SetTitle("Number of Primary Vertex");
+      histo->GetYaxis()->SetTitle("HT [GeV]");
+      histo->Draw("COLZ texte");
 
-    canvas_ratio_c[i] = new TCanvas *[n_syst_c];
-    for (int j = 0; j < n_syst_c; j++)
-    {
-      canvas_name = "Canvas_Ratio_" + vec_short_name_mc[i] + "_" + syst_name_c[j];
-      canvas_ratio_c[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
-      canvas_ratio_c[i][j]->Draw();
-      ratio_c[i][j]->Draw();
-      canvas_ratio_c[i][j]->Print(canvas_name + "." + extension, extension);
+      canvas->Print(can_name + "." + extension, extension);
     }
   }
 
+  // compare TTbar syst
+  for (unsigned int i = 0; i < sample_to_draw.size(); i++)
+  {
+    TH2D *histo[7];
+    histo[0] = (TH2D *)fout->Get(Form("%s/Ratio_%s_C_Tag_Nominal", sample_to_draw[i].Data(), sample_to_draw[i].Data()));
+    histo[1] = (TH2D *)fout->Get(Form("%s_hdampDown/Ratio_%s_hdampDown_C_Tag_Nominal", sample_to_draw[i].Data(), sample_to_draw[i].Data()));
+    histo[2] = (TH2D *)fout->Get(Form("%s_hdampUp/Ratio_%s_hdampUp_C_Tag_Nominal", sample_to_draw[i].Data(), sample_to_draw[i].Data()));
+    histo[3] = (TH2D *)fout->Get(Form("%s_CP5Down/Ratio_%s_CP5Down_C_Tag_Nominal", sample_to_draw[i].Data(), sample_to_draw[i].Data()));
+    histo[4] = (TH2D *)fout->Get(Form("%s_CP5Up/Ratio_%s_CP5Up_C_Tag_Nominal", sample_to_draw[i].Data(), sample_to_draw[i].Data()));
+    histo[5] = (TH2D *)fout->Get(Form("%s_mtop171p5/Ratio_%s_mtop171p5_C_Tag_Nominal", sample_to_draw[i].Data(), sample_to_draw[i].Data()));
+    histo[6] = (TH2D *)fout->Get(Form("%s_mtop173p5/Ratio_%s_mtop173p5_C_Tag_Nominal", sample_to_draw[i].Data(), sample_to_draw[i].Data()));
+
+    TString can_name = Form("Comp_Tagging_RF_%s_Syst_%s", sample_to_draw[i].Data(), era.Data());
+    TCanvas *canvas = new TCanvas(can_name, can_name, 1600, 1000);
+    canvas->Divide(2, 1);
+    canvas->Draw();
+
+    TH1D *histo_proj_x[7];
+    TH1D *histo_proj_y[7];
+    for (unsigned int j = 0; j < 7; j++)
+    {
+      histo_proj_x[j] = (TH1D *)histo[j]->ProjectionX()->Clone();
+      histo_proj_x[j]->Scale(1. / histo[j]->GetNbinsY());
+      histo_proj_x[j]->SetLineColor(j + 1);
+
+      histo_proj_y[j] = (TH1D *)histo[j]->ProjectionY()->Clone();
+      histo_proj_y[j]->Scale(1. / histo[j]->GetNbinsX());
+      histo_proj_y[j]->SetLineColor(j + 1);
+
+      canvas->cd(1);
+      if (j == 0)
+      {
+        histo_proj_x[j]->SetTitle(Form("%s Tagging Patch Projection X", sample_to_draw[i].Data()));
+        histo_proj_x[j]->GetXaxis()->SetTitle("Number of Primary Vertex");
+        histo_proj_x[j]->GetYaxis()->SetTitle("r");
+
+        histo_proj_x[j]->Draw();
+      }
+      else
+        histo_proj_x[j]->Draw("SAME");
+
+      canvas->cd(2);
+      if (j == 0)
+      {
+        histo_proj_y[j]->SetTitle(Form("%s Tagging Patch Projection Y", sample_to_draw[i].Data()));
+        histo_proj_y[j]->GetXaxis()->SetTitle("HT [GeV]");
+        histo_proj_y[j]->GetYaxis()->SetTitle("r");
+
+        histo_proj_y[j]->Draw();
+      }
+      else
+        histo_proj_y[j]->Draw("SAME");
+    }
+
+    TLegend *tl = new TLegend(0.65, 0.66, 0.85, 0.85);
+    tl->SetBorderSize(0);
+    tl->AddEntry(histo_proj_x[0], "Nominal", "lep");
+    tl->AddEntry(histo_proj_x[1], "hdampDown", "lep");
+    tl->AddEntry(histo_proj_x[2], "hdampUp", "lep");
+    tl->AddEntry(histo_proj_x[3], "CP5Down", "lep");
+    tl->AddEntry(histo_proj_x[4], "CP5up", "lep");
+    tl->AddEntry(histo_proj_x[5], "mTop171p5", "lep");
+    tl->AddEntry(histo_proj_x[6], "mTop173p5", "lep");
+
+    canvas->cd(1);
+    tl->Draw();
+
+    canvas->Print(can_name + "." + extension, extension);
+  } // TTLJ or TTLL
+
+  /*
+    canvas_ratio_b = new TCanvas **[n_sample_merge_mc];
+    canvas_ratio_c = new TCanvas **[n_sample_merge_mc];
+
+    for (int i = 0; i < n_sample_merge_mc; i++)
+    {
+      canvas_ratio_b[i] = new TCanvas *[n_syst_b];
+      for (int j = 0; j < n_syst_b; j++)
+      {
+        TString canvas_name = "Canvas_Ratio_" + vec_short_name_mc[i] + "_" + syst_name_b[j] + "_" + era;
+        canvas_ratio_b[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
+        canvas_ratio_b[i][j]->Draw();
+
+        ratio_b[i][j]->GetXaxis()->SetTitle("Number of Jets");
+        ratio_b[i][j]->GetYaxis()->SetTitle("HT");
+        ratio_b[i][j]->Draw("COLZ texte");
+
+        canvas_ratio_b[i][j]->Print(canvas_name + "." + extension, extension);
+      }
+
+      canvas_ratio_c[i] = new TCanvas *[n_syst_c];
+      for (int j = 0; j < n_syst_c; j++)
+      {
+        TString canvas_name = "Canvas_Ratio_" + vec_short_name_mc[i] + "_" + syst_name_c[j] + "_" + era;
+        canvas_ratio_c[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
+        canvas_ratio_c[i][j]->Draw();
+
+        ratio_c[i][j]->GetXaxis()->SetTitle("Number of Primary Vertext");
+        ratio_c[i][j]->GetYaxis()->SetTitle("HT");
+        ratio_c[i][j]->Draw();
+
+        canvas_ratio_c[i][j]->Print(canvas_name + "." + extension, extension);
+      }
+    }
+  */
   return;
-} // void Tagging_RF::Draw()
+} // void Tagging_RF::Draw_Result()
 
 //////////
 
 void Tagging_RF::Draw_Validation()
 {
+  cout << "Tagging_RF::Draw_Validation" << endl;
+
   return;
-}
+} // void Tagging_RF::Draw_Validation()
 
 //////////
 
@@ -368,10 +445,10 @@ void Tagging_RF::Fill_Histo_MC(const int &sample_index)
     weight *= sf_el_reco;
   }
 
-  //cout << weight_lumi << " " << weight_mc << " " << weight_pileup << " " << weight_prefire << " " << weight_top_pt << " " << sf_sl_trig << " " << sf_el_id << " " << sf_el_reco << endl;
-  if(TMath::IsNaN(weight))
+  // cout << weight_lumi << " " << weight_mc << " " << weight_pileup << " " << weight_prefire << " " << weight_top_pt << " " << sf_sl_trig << " " << sf_el_id << " " << sf_el_reco << endl;
+  if (TMath::IsNaN(weight))
   {
-    cout << "Nan detected" << weight_lumi << " " << weight_mc << " " << weight_pileup << " "  << weight_prefire << " " << weight_top_pt << " " << sf_sl_trig << " " << sf_el_id << " " << sf_el_reco << endl;
+    cout << "Nan detected" << weight_lumi << " " << weight_mc << " " << weight_pileup << " " << weight_prefire << " " << weight_top_pt << " " << sf_sl_trig << " " << sf_el_id << " " << sf_el_reco << endl;
   }
 
   histo_mc_before_b[sample_index]->Fill(n_jets, ht, weight);
@@ -589,10 +666,19 @@ void Tagging_RF::Run_Analysis()
   Read_Tree();
   // Stack_MC();
   Ratio();
-  // Draw();
 
   return;
 } // void Tagging_RF::Run_Analysis()
+
+//////////
+
+void Tagging_RF::Run_Combine()
+{
+  Combine();
+  Draw_Result();
+
+  return;
+} // void Tagging_RF::Run_Combine()
 
 //////////
 
@@ -618,7 +704,7 @@ void Tagging_RF::Setup_Analysis()
 {
   cout << "[Tagging_RF::Setup_Analysis]: Init analysis" << endl;
 
-  reduction = 1;
+  reduction = 1000;
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
   path_base += "/Sample/" + era + "/" + channel + "/Tagging_RF/";
@@ -673,6 +759,9 @@ void Tagging_RF::Setup_Analysis()
     cout << it->second << endl;
     vec_short_name_mc.push_back(it->second);
   }
+
+  // remove redundancy
+  sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
   vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
   n_sample_merge_mc = vec_short_name_mc.size();
   cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;

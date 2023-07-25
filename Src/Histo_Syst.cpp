@@ -7,17 +7,42 @@ ClassImp(Histo_Syst);
 Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const bool &a_chk_merge, const TString &a_run_flag, const bool &a_chk_template_on, const TString &a_swap_mode)
     : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
 {
-  ROOT::EnableImplicitMT(4);
+  ROOT::EnableImplicitMT(5);
 
   cout << "[Histo_Syst::Histo_Syst]: Init analysis" << endl;
 
-  reduction = 10;
+  reduction = 1;
 
   era = a_era;
   channel = a_channel;
   chk_merge = a_chk_merge;
   run_flag = a_run_flag;
   chk_template_on = a_chk_template_on;
+
+  if (era == "2016preVFP")
+  {
+    bvsc_wp_m = bvsc_wp_m_2016preVFP;
+    cvsb_wp_m = cvsb_wp_m_2016preVFP;
+    cvsl_wp_m = cvsl_wp_m_2016preVFP;
+  }
+  else if (era == "2016postVFP")
+  {
+    bvsc_wp_m = bvsc_wp_m_2016postVFP;
+    cvsb_wp_m = cvsb_wp_m_2016postVFP;
+    cvsl_wp_m = cvsl_wp_m_2016postVFP;
+  }
+  else if (era == "2017")
+  {
+    bvsc_wp_m = bvsc_wp_m_2017;
+    cvsb_wp_m = cvsb_wp_m_2017;
+    cvsl_wp_m = cvsl_wp_m_2017;
+  }
+  else if (era == "2018")
+  {
+    bvsc_wp_m = bvsc_wp_m_2018;
+    cvsb_wp_m = cvsb_wp_m_2018;
+    cvsl_wp_m = cvsl_wp_m_2018;
+  }
 
   path_base = getenv("Vcb_Post_Analysis_WD");
 
@@ -31,6 +56,9 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const boo
     // cout << it->second << endl;
     vec_short_name_mc.push_back(it->second);
   }
+
+  // remove redundancy
+  sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
   vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
   n_sample_merge_mc = vec_short_name_mc.size();
   // cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
@@ -41,7 +69,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const boo
                "C_Tag_Extrap_Down", "C_Tag_Extrap_Up", "C_Tag_Interp_Down", "C_Tag_Interp_Up", "C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up", "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up", "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up", "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up", "C_Tag_PU_Down", "C_Tag_PU_Up", "C_Tag_Stat_Down", "C_Tag_Stat_Up",
                "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up", "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up", "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
                "C_Tag_JER_Down", "C_Tag_JER_Up", "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up",
-               //"Jet_En_Down", "Jet_En_Up",
+               "Jet_En_Down", "Jet_En_Up",
                //"Jet_Res_Down", "Jet_Res_Up",
                "Trig_Down", "Trig_Up",
                "PDF_Alternative", "PDF_As_Down", "PDF_As_Up",
@@ -83,27 +111,27 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const boo
   cout << "N_Syst = " << n_syst << endl;
 
   // variable Config.
-  variable_conf = { {"N_Vertex", 80, 0, 80},
-                    {"Lepton_Pt", 50, 0, 300},
-                    {"Lepton_Eta", 50, -3, 3},
-                    {"N_Jets", 30, 0, 30},
-                    {"N_BJets", 30, 0, 30},
-                    {"N_CJets", 30, 0, 30},
-                    {"Pt_Leading_Jet", 50, 0, 300},
-                    {"Pt_Subleading_Jet", 50, 0, 300},
-                    {"Eta_Leading_Jet", 50, -3, 3},
-                    {"Eta_Subleading_jet", 50, -3, 3},
-                    {"BvsC_Leading_Jet", 50, 0, 1},
-                    {"CvsB_Leading_Jet", 50, 0, 1},
-                    {"CvsL_Leading_Jet", 50, 0, 1},
-                    {"BvsC_Subleading_Jet", 50, 0, 1},
-                    {"CvsB_Subleading_Jet", 50, 0, 1},
-                    {"CvsL_Subleading_Jet", 50, 0, 1},
-                    {"Met_Pt", 50, 0, 300},
-                    {"Met_Phi", 80, -4, 4},
-                    {"Best_MVA_Score", 100, -1, 1}};
-                    //{"Had_W_Mass", 60, 60, 120},
-                    //{"Had_T_Mass", 80, 130, 210}};
+  variable_conf = {{"N_Vertex", 80, 0, 80},
+                   {"Lepton_Pt", 50, 0, 300},
+                   {"Lepton_Eta", 50, -3, 3},
+                   {"N_Jets", 30, 0, 30},
+                   {"N_BJets", 30, 0, 30},
+                   {"N_CJets", 30, 0, 30},
+                   {"Pt_Leading_Jet", 50, 0, 300},
+                   {"Pt_Subleading_Jet", 50, 0, 300},
+                   {"Eta_Leading_Jet", 50, -3, 3},
+                   {"Eta_Subleading_jet", 50, -3, 3},
+                   {"BvsC_Leading_Jet", 50, 0, 1},
+                   {"CvsB_Leading_Jet", 50, 0, 1},
+                   {"CvsL_Leading_Jet", 50, 0, 1},
+                   {"BvsC_Subleading_Jet", 50, 0, 1},
+                   {"CvsB_Subleading_Jet", 50, 0, 1},
+                   {"CvsL_Subleading_Jet", 50, 0, 1},
+                   {"Met_Pt", 50, 0, 300},
+                   {"Met_Phi", 80, -4, 4},
+                   {"Best_MVA_Score", 100, -1, 1}};
+  //{"Had_W_Mass", 60, 60, 120},
+  //{"Had_T_Mass", 80, 130, 210}};
   if (chk_template_on)
   {
     Setup_Template_Reader();
@@ -244,7 +272,7 @@ void Histo_Syst::Fill_Histo_Data(const int &region_index)
   histo_data[region_index][16]->Fill(event.met_pt, 1.);
   histo_data[region_index][17]->Fill(event.met_phi, 1.);
   histo_data[region_index][18]->Fill(event.best_mva_score, 1.);
-  //histo_data[region_index][19]->Fill(event.)
+  // histo_data[region_index][19]->Fill(event.)
 
   if (chk_template_on)
   {
@@ -553,7 +581,8 @@ void Histo_Syst::Init_Histo_Syst()
   if (channel == "Mu")
     key_base = "POGTightWithTightIso_";
   else if (channel = "El")
-    key_base = "passTightID_";
+    // key_base = "passTightID_";
+    key_base = "passMVAID_iso_WP80_";
 
   tree_name = "/Result_Tree";
 
@@ -591,6 +620,7 @@ void Histo_Syst::Init_Histo_Syst()
         event.Setup_Tree(map_tree_mc_jec_up[it->first], false);
       }
 
+      /*
       if (run_flag == "Jet_Res_Down" || run_flag == "All")
       {
         map_fin_mc_jer_down[it->first] = new TFile(result_path + "JetResDown/" + it->second);
@@ -606,6 +636,7 @@ void Histo_Syst::Init_Histo_Syst()
 
         event.Setup_Tree(map_tree_mc_jer_up[it->first], false);
       }
+      */
 
       if (channel == "El")
       {
@@ -739,7 +770,7 @@ void Histo_Syst::Init_Histo_Syst()
       map_map_fin_mc["Jet_En_Up"] = &map_fin_mc_jec_up;
       map_map_tree_mc["Jet_En_Up"] = &map_tree_mc_jec_up;
     }
-
+    /*
     if (run_flag == "Jet_Res_Down" || run_flag == "All")
     {
       map_map_fin_mc["Jet_Res_Down"] = &map_fin_mc_jer_down;
@@ -751,6 +782,8 @@ void Histo_Syst::Init_Histo_Syst()
       map_map_fin_mc["Jet_Res_Up"] = &map_fin_mc_jer_up;
       map_map_tree_mc["Jet_Res_Up"] = &map_tree_mc_jer_up;
     }
+    */
+
     if (run_flag == "CP5_Down" || run_flag == "All")
     {
       map_map_fin_mc["CP5_Down"] = &map_fin_mc_cp5_down;
@@ -944,8 +977,8 @@ void Histo_Syst::Merge_PDF_Error_Set()
       {
         for (int l = 0; l < variable_conf[k].n_bin; l++)
         {
-          float max = -99999;
-          float min = 99999;
+          float max = -999999999999999999;
+          float min = 999999999999999999;
           for (int m = 0; m < n_pdf_error_set; m++)
           {
             int index;
@@ -960,10 +993,13 @@ void Histo_Syst::Merge_PDF_Error_Set()
 
             float content = histo_mc[i][index][j][k]->GetBinContent(l + 1);
 
+            // if(variable_conf[k].variable_title=="N_BJets" && content!=0) cout << content << " " << min << " " << max << endl;
+
             if (content < min)
               min = content;
             if (max < content)
               max = content;
+
           } // loop over n_pdf_error_set
 
           histo_mc_pdf_error_set_down[i][j][k]->SetBinContent(l + 1, min);
@@ -1128,21 +1164,21 @@ void Histo_Syst::Setup_Template_Reader()
 
 bool Histo_Syst::Set_Region()
 {
-  bool chk_b_tagged_had_t_b = bvsc_wp_m_2018 < event.bvsc_had_t_b ? true : false;
-  bool chk_b_tagged_lep_t_b = bvsc_wp_m_2018 < event.bvsc_lep_t_b ? true : false;
+  bool chk_b_tagged_had_t_b = bvsc_wp_m < event.bvsc_had_t_b ? true : false;
+  bool chk_b_tagged_lep_t_b = bvsc_wp_m < event.bvsc_lep_t_b ? true : false;
   bool chk_best_mva_score = 0.9 < event.best_mva_score ? true : false;
   bool chk_n_b_tagged = 3 <= event.n_bjets ? true : false;
   bool chk_n_c_tagged = event.n_cjets == 1 ? true : false;
-  bool chk_c_tagged_w_u = (cvsb_wp_m_2018 < event.cvsb_w_u && cvsl_wp_m_2018 < event.cvsl_w_u) ? true : false;
-  bool chk_b_tagged_w_d = bvsc_wp_m_2018 < event.bvsc_w_d ? true : false;
+  bool chk_c_tagged_w_u = (cvsb_wp_m < event.cvsb_w_u && cvsl_wp_m < event.cvsl_w_u) ? true : false;
+  bool chk_b_tagged_w_d = bvsc_wp_m < event.bvsc_w_d ? true : false;
 
   // Control 0 : b-inversion
-  if (chk_b_tagged_had_t_b && chk_b_tagged_lep_t_b &&
-      // chk_best_mva_score &&
-      // chk_n_c_tagged &&
-      // chk_c_tagged_w_u &&
-      !chk_n_b_tagged &&
-      !chk_b_tagged_w_d)
+  if (                 // chk_b_tagged_had_t_b && chk_b_tagged_lep_t_b &&
+                       //  chk_best_mva_score &&
+                       //  chk_n_c_tagged &&
+                       //  chk_c_tagged_w_u &&
+      !chk_n_b_tagged) // &&
+    //! chk_b_tagged_w_d)
     region = "Control0";
 
   // //Control 1 : c-inversion

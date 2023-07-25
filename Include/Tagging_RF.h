@@ -18,6 +18,8 @@
 #include <TDirectory.h>
 #include <TList.h>
 #include <TMath.h>
+#include <TString.h>
+#include <TStyle.h>
 
 #include <Samples.h>
 
@@ -30,7 +32,15 @@ public:
   ~Tagging_RF();
 
   float Get_Tagging_RF_B_Tag(const TString &sample, const TString &syst, const int &n_jet, const float &ht);
-  float Get_Tagging_RF_C_Tag(const TString &sample, const TString &syst, const int &n_pv, const float& ht);
+  float Get_Tagging_RF_C_Tag(const TString &sample, const TString &syst, const int &n_pv, const float &ht);
+
+  inline static bool Comparing_TString(const TString &str1, const TString &str2)
+  {
+    if (str1.CompareTo(str2) > 0)
+      return true;
+    else
+      return false;
+  } // bool Comparing_TString(const TString &str1, const TString &str2)
 
 protected:
   int reduction;
@@ -86,6 +96,9 @@ protected:
 
   TH2D ***ratio_b; // n_sample, n_syst_b
   TH2D ***ratio_c; // n_sample, n_syst_c
+
+  TH2D ***ratio_b_averaged;
+  TH2D ***ratio_c_averaged;
 
   TCanvas **canvas_before_b; // n_sample
   TCanvas **canvas_before_c; // n_sample
@@ -182,13 +195,14 @@ protected:
   TFile *fout;
 
   void Combine();
-  void Draw();
+  void Draw_Result();
   void Draw_Validation();
   void Fill_Histo_MC(const int &sample_index);
   void Fill_Histo_Validation_MC(const int &sample_index);
   void Ratio();
   void Read_Tree();
   void Run_Analysis();
+  void Run_Combine();
   void Run_Validation();
   void Setup_Analysis();
   void Setup_Application();
@@ -196,7 +210,6 @@ protected:
   void Setup_Histo();
   void Setup_Histo_Validation();
   void Setup_Tree(TTree *tree);
-  // void Stack_MC();
 
 private:
   bool chk_draw_called = false;

@@ -60,4 +60,21 @@ const float lumi_2016b = 1;
 const float lumi_2017 = 41.53;
 const float lumi_2018 = 59.74;
 
+typedef enum Syst_
+{
+    Central,
+    JetResUp,
+    JetResDown,
+    JetEnUp,
+    JetEnDown,
+    /* MuonEnUp, MuonEnDown,  */
+    ElectronResUp,
+    ElectronResDown,
+    ElectronEnUp,
+    ElectronEnDown,
+    UnclusteredEnergyUp,
+    UnclusteredEnergyDown,
+    NSyst
+} Syst;
+
 #endif /* __Const_Def_H__ */ 

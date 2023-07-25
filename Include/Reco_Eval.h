@@ -36,6 +36,14 @@ public:
 
   void Run();
 
+  inline static bool Comparing_TString(const TString &str1, const TString &str2)
+  {
+    if (str1.CompareTo(str2) > 0)
+      return true;
+    else
+      return false;
+  } // bool Comparing_TString(const TString &str1, const TString &str2)
+
   typedef struct _Discriminating_Variables_Histo_Conf
   {
     TString discriminator;

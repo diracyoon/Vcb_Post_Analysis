@@ -24,12 +24,12 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   if (analyser == "Vcb")
   {
     fin_name = "Vcb_Histos_" + era + "_" + channel + "_All.root";
-    color = {2, 3, 4, 5, 6, 7, 8};
+    color = {1, 2, 3, 4, 5, 6, 7, 8};
   }
   else if (analyser == "Vcb_DL")
   {
     fin_name = "Vcb_DL_Histos_" + era + "_" + channel + ".root";
-    color = {9, 3, 8, 5, 6, 7, 4, 2};
+    color = {9, 3, 8, 5, 6, 7, 4, 2, 46};
   }
 
   fin = new TFile(fin_name);
@@ -165,8 +165,9 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   // variable_name = {"Subleading_Lepton_Pt"};
   n_variable = variable_name.size();
 
-  tl = new TLegend(0.78, 0.53, 0.88, 0.88);
+  tl = new TLegend(0.68, 0.68, 0.88, 0.88);
   tl->SetBorderSize(0);
+  tl->SetNColumns(2);
 
   // setup histo_mc
   Setup_Histo_MC();
@@ -195,8 +196,8 @@ void Data_MC_Comparison::Run()
   Draw();
   Save();
 
-  // for (int i = 0; i < n_syst_name_short; i++)
-  //   Draw_Each(syst_name_short[i]);
+  //for (int i = 0; i < n_syst_name_short; i++)
+  //  Draw_Each(syst_name_short[i], "Met_Phi");
 
   return;
 } // void Data_MC_Comparison::Run()
@@ -322,7 +323,7 @@ void Data_MC_Comparison::Draw()
 
 //////////
 
-void Data_MC_Comparison::Draw_Each(const TString &a_syst_name)
+void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_variable_name)
 {
   // canvas_each = new TCanvas **[n_region];
   for (int i = 0; i < n_region; i++)
@@ -332,6 +333,9 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name)
     for (int j = 0; j < n_variable; j++)
     // for (int j = 0; j < 1; j++)
     {
+      if (a_variable_name != "All" && a_variable_name != variable_name[j])
+        continue;
+
       TString can_name = "Canvas_Each_" + region_name[i] + "_" + a_syst_name + "_" + variable_name[j];
       // canvas_each[i][j] = new TCanvas(can_name, can_name, 800, 500);
       // canvas_each[i][j]->Draw();
@@ -371,6 +375,8 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name)
       {
         if (syst_name[k].Contains(a_syst_name))
         {
+          cout << a_syst_name << " " << syst_name[k] << endl;
+
           TH1D *histo_syst = (TH1D *)(stack_mc[i][k][j]->GetStack()->Last());
           histo_syst->SetLineColor(n_syst_target + 2);
           histo_syst->Draw("SAME");
@@ -474,7 +480,11 @@ void Data_MC_Comparison::Envelope()
 
           float diff = content_syst - content_nominal;
 
-          // cout << "l= " << l << ", bin_center= " << bin_center << ", bin_width= " << bin_width << ", nominal= " << content_nominal << ", syst= " << content_syst << ", diff=" << diff << endl;
+          // if (variable_name[j] == "N_BJets" && content_nominal != 0)
+          //{
+          //   cout << syst_name[k + 1] << endl;
+          //   cout << "l= " << l << ", bin_center= " << bin_center << ", bin_width= " << bin_width << ", nominal= " << content_nominal << ", syst= " << content_syst << ", diff=" << diff << endl;
+          // }
 
           // to mimic histogram for better display
           for (int m = -1; m < 2; m++)
@@ -545,6 +555,8 @@ void Data_MC_Comparison::Envelope()
       } // loop over n_bin
     }   // loop over n_variable
   }     // loop over n_region
+
+  cout << "Data_MC_Comparison::Envelope Done" << endl;
 
   return;
 } // void Data_MC_Comparison::Envelope()
@@ -710,13 +722,13 @@ void Data_MC_Comparison::Stack_MC()
       for (int k = 0; k < n_variable; k++)
       {
         TString stack_name = region_name[i] + "_" + syst_name[j] + "_" + variable_name[k];
-        cout << stack_name << endl;
+        // cout << stack_name << endl;
 
         stack_mc[i][j][k] = new THStack(stack_name, stack_name);
 
         for (int l = 0; l < n_sample; l++)
         {
-          cout << sample_name[l] << endl;
+          // cout << sample_name[l] << endl;
 
           histo_mc[i][j][l][k]->SetFillColorAlpha(color[l], .2);
           stack_mc[i][j][k]->Add(histo_mc[i][j][l][k]);

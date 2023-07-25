@@ -96,7 +96,7 @@ protected:
 
   void Compare();
   void Draw();
-  void Draw_Each(const TString &a_syst_name);
+  void Draw_Each(const TString &a_syst_name, const TString& a_variable_name="All");
   void Envelope();
   void Save();
   void Setup_Histo_Data();

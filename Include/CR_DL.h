@@ -28,6 +28,14 @@ public:
   CR_DL(const TString &a_era = "2018", const TString &a_channel = "MM", const TString &a_run_flag = "All");
   ~CR_DL();
 
+  inline static bool Comparing_TString(const TString &str1, const TString &str2)
+  {
+    if (str1.CompareTo(str2) > 0)
+      return true;
+    else
+      return false;
+  } // bool Comparing_TString(const TString &str1, const TString &str2)
+
   void Run();
 
   typedef struct _Histo_Conf
@@ -58,26 +66,20 @@ protected:
   TString tree_name;
 
   map<TString, TFile *> map_fin_mc;
-  map<TString, TFile *> map_fin_mc_jec_down;
-  map<TString, TFile *> map_fin_mc_jec_up;
-  map<TString, TFile *> map_fin_mc_jer_down;
-  map<TString, TFile *> map_fin_mc_jer_up;
   map<TString, TFile *> map_fin_mc_cp5_down;
   map<TString, TFile *> map_fin_mc_cp5_up;
   map<TString, TFile *> map_fin_mc_hdamp_down;
   map<TString, TFile *> map_fin_mc_hdamp_up;
   map<TString, TFile *> map_fin_mc_mtop_171p5;
   map<TString, TFile *> map_fin_mc_mtop_173p5;
-  map<TString, TFile *> map_fin_mc_eec_down;
-  map<TString, TFile *> map_fin_mc_eec_up;
-  map<TString, TFile *> map_fin_mc_eer_down;
-  map<TString, TFile *> map_fin_mc_eer_up;
 
   map<TString, TTree *> map_tree_mc;
   map<TString, TTree *> map_tree_mc_jec_down;
   map<TString, TTree *> map_tree_mc_jec_up;
   map<TString, TTree *> map_tree_mc_jer_down;
   map<TString, TTree *> map_tree_mc_jer_up;
+  map<TString, TTree *> map_tree_mc_ue_down;
+  map<TString, TTree *> map_tree_mc_ue_up;
   map<TString, TTree *> map_tree_mc_cp5_down;
   map<TString, TTree *> map_tree_mc_cp5_up;
   map<TString, TTree *> map_tree_mc_hdamp_down;
@@ -124,7 +126,7 @@ protected:
 
   void Fill_Histo_Data();
   void Fill_Histo_MC(const TString &sample_name, const TString &syst_fix);
-  int Histo_Index(const TString &sample_name, TString& sample_name_short);
+  int Histo_Index(const TString &sample_name, TString &sample_name_short);
   void Merge_PDF_Error_Set();
   void Read_Tree();
   int Unroller(const float &bvsc_third, const float &bvsc_fourth);

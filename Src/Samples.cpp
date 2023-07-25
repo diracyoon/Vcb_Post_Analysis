@@ -28,6 +28,15 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_mc["QCD_bEn_HT1000to1500"] = "Vcb_QCD_bEnriched_HT1000to1500.root";
   map_mc["QCD_bEn_HT1500to2000"] = "Vcb_QCD_bEnriched_HT1500to2000.root";
   map_mc["QCD_bEn_HT2000toInf"] = "Vcb_QCD_bEnriched_HT2000toInf.root";
+  map_mc["ttHTobb"] = "Vcb_ttHTobb.root";
+  map_mc["ttHToNonbb"] = "Vcb_ttHToNonbb.root";
+  map_mc["ttWToLNu"] = "Vcb_ttWToLNu.root";
+  map_mc["ttWToQQ"] = "Vcb_ttWToQQ.root";
+  map_mc["ttZToLLNuNu"] = "Vcb_ttZToLLNuNu.root";
+  map_mc["ttZToQQ"] = "Vcb_ttZToQQ.root";
+  map_mc["WW"] = "Vcb_WW_pythia.root";
+  map_mc["WZ"] = "Vcb_WZ_pythia.root";
+  map_mc["ZZ"] = "Vcb_ZZ_pythia.root";
 
   map_short_name_mc["TTLJ_WtoCB_powheg"] = "TTLJ_WtoCB";
   map_short_name_mc["TTLJ_powheg"] = "TTLJ";
@@ -37,8 +46,8 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_short_name_mc["SingleTop_tch_antitop_Incl"] = "ST";
   map_short_name_mc["SingleTop_tW_top"] = "ST";
   map_short_name_mc["SingleTop_tW_antitop"] = "ST";
-  map_short_name_mc["WJets"] = "WJets";
-  map_short_name_mc["DYJets"] = "DYJets";
+  map_short_name_mc["WJets"] = "VJets";
+  map_short_name_mc["DYJets"] = "VJets";
   map_short_name_mc["QCD_bEn_HT100to200"] = "QCD_bEn";
   map_short_name_mc["QCD_bEn_HT200to300"] = "QCD_bEn";
   map_short_name_mc["QCD_bEn_HT300to500"] = "QCD_bEn";
@@ -47,7 +56,16 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_short_name_mc["QCD_bEn_HT1000to1500"] = "QCD_bEn";
   map_short_name_mc["QCD_bEn_HT1500to2000"] = "QCD_bEn";
   map_short_name_mc["QCD_bEn_HT2000toInf"] = "QCD_bEn";
-
+  map_short_name_mc["ttHTobb"] = "ttV";
+  map_short_name_mc["ttHToNonbb"] = "ttV";
+  map_short_name_mc["ttWToLNu"] = "ttV";
+  map_short_name_mc["ttWToQQ"] = "ttV";
+  map_short_name_mc["ttZToLLNuNu"] = "ttV";
+  map_short_name_mc["ttZToQQ"] = "ttV";
+  map_short_name_mc["WW"] = "VV";
+  map_short_name_mc["WZ"] = "VV";
+  map_short_name_mc["ZZ"] = "VV";
+ 
   map_top_syst["TTLJ_powheg_CP5down"] = "Vcb_TTLJ_powheg_CP5Down.root";
   map_top_syst["TTLJ_powheg_CP5up"] = "Vcb_TTLJ_powheg_CP5Up.root";
   map_top_syst["TTLJ_powheg_hdampdown"] = "Vcb_TTLJ_powheg_hdampDown.root";
@@ -102,7 +120,7 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     }
   }
 
-  if (channel != "2018")
+  if (era != "2018")
   {
     for (auto it = map_data.begin(); it != map_data.end(); it++)
     {
@@ -144,25 +162,25 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     map_short_name_mc["TTLL_powheg_mtop171p5"] = "TTLL_mtop171p5";
     map_short_name_mc["TTLL_powheg_mtop173p5"] = "TTLL_mtop173p5";
 
-/*
-    map_mc.clear();
-    map_short_name_mc.clear();
+    /*
+        map_mc.clear();
+        map_short_name_mc.clear();
 
-    map_mc["SingleTop_sch_Lep"] = "Vcb_SingleTop_sch_Lep.root";
-    map_mc["SingleTop_tch_top_Incl"] = "Vcb_SingleTop_tch_top_Incl.root";
-    map_mc["SingleTop_tch_antitop_Incl"] = "Vcb_SingleTop_tch_antitop_Incl.root";
-    map_mc["SingleTop_tW_top"] = "Vcb_SingleTop_tW_top_NoFullyHad.root";
-    map_mc["SingleTop_tW_antitop"] = "Vcb_SingleTop_tW_antitop_NoFullyHad.root";
+        map_mc["SingleTop_sch_Lep"] = "Vcb_SingleTop_sch_Lep.root";
+        map_mc["SingleTop_tch_top_Incl"] = "Vcb_SingleTop_tch_top_Incl.root";
+        map_mc["SingleTop_tch_antitop_Incl"] = "Vcb_SingleTop_tch_antitop_Incl.root";
+        map_mc["SingleTop_tW_top"] = "Vcb_SingleTop_tW_top_NoFullyHad.root";
+        map_mc["SingleTop_tW_antitop"] = "Vcb_SingleTop_tW_antitop_NoFullyHad.root";
 
-    map_short_name_mc["SingleTop_sch_Lep"] = "ST";
-    map_short_name_mc["SingleTop_tch_top_Incl"] = "ST";
-    map_short_name_mc["SingleTop_tch_antitop_Incl"] = "ST";
-    map_short_name_mc["SingleTop_tW_top"] = "ST";
-    map_short_name_mc["SingleTop_tW_antitop"] = "ST";
+        map_short_name_mc["SingleTop_sch_Lep"] = "ST";
+        map_short_name_mc["SingleTop_tch_top_Incl"] = "ST";
+        map_short_name_mc["SingleTop_tch_antitop_Incl"] = "ST";
+        map_short_name_mc["SingleTop_tW_top"] = "ST";
+        map_short_name_mc["SingleTop_tW_antitop"] = "ST";
 
-    for (auto it = map_mc.begin(); it != map_mc.end(); it++)
-      it->second.ReplaceAll("Vcb", "Vcb_Tagging_RF");
-      */
+        for (auto it = map_mc.begin(); it != map_mc.end(); it++)
+          it->second.ReplaceAll("Vcb", "Vcb_Tagging_RF");
+          */
   } // if (analyser == "Vcb_Tagging_RF")
   else if (analyser == "Vcb_DL")
   {

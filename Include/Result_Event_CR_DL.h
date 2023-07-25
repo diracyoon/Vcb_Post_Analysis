@@ -6,6 +6,8 @@
 #include "TObject.h"
 #include "TTree.h"
 
+#include "Const_Def.h"
+
 using namespace std;
 
 class Result_Event_CR_DL : public TObject
@@ -16,7 +18,7 @@ public:
   Result_Event_CR_DL();
   ~Result_Event_CR_DL();
 
-  void Setup_Tree(TTree *tree, const bool &chk_syst);
+  void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all=false);
 
 protected:
   int n_pv;
@@ -32,7 +34,12 @@ protected:
   float ht;
 
   float leading_jet_bvsc;
+  float leading_jet_cvsb;
+  float leading_jet_cvsl;
+
   float subleading_jet_bvsc;
+  float subleading_jet_cvsb;
+  float subleading_jet_cvsl;
 
   float met_pt;
   float met_phi;
@@ -101,6 +108,7 @@ protected:
   float weight_el_reco_down;
   float weight_el_reco_up;
 
+  float weight_hem_veto;
   float weight_lumi;
   float weight_mc;
 
@@ -124,6 +132,8 @@ protected:
   float weight_prefire;
   float weight_prefire_down;
   float weight_prefire_up;
+
+  float weight_ps[4];
 
   float weight_pujet_veto;
   float weight_pujet_veto_down;

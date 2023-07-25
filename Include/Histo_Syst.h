@@ -40,6 +40,14 @@ public:
     float x_up;
   } Histo_Conf;
 
+  inline static bool Comparing_TString(const TString &str1, const TString &str2)
+  {
+    if (str1.CompareTo(str2) > 0)
+      return true;
+    else
+      return false;
+  } // bool Comparing_TString(const TString &str1, const TString &str2)
+
 protected:
   int n_split;
   int index_split;
@@ -125,6 +133,10 @@ protected:
   TH1D ***histo_data; // n_region, n_variable
 
   TString region;
+
+  float bvsc_wp_m;
+  float cvsb_wp_m;
+  float cvsl_wp_m;
 
   TFile *fin_tagging_rf;
   TFile *fout;
