@@ -20,6 +20,7 @@
 #include <TMath.h>
 #include <TString.h>
 #include <TStyle.h>
+#include <TLatex.h>
 
 #include <Samples.h>
 
@@ -32,7 +33,7 @@ public:
   ~Tagging_RF();
 
   float Get_Tagging_RF_B_Tag(const TString &sample, const TString &syst, const int &n_jet, const float &ht);
-  float Get_Tagging_RF_C_Tag(const TString &sample, const TString &syst, const int &n_pv, const float &ht);
+  float Get_Tagging_RF_C_Tag(const TString &sample, const TString &syst, const int &n_pv_, const float &ht_);
 
   inline static bool Comparing_TString(const TString &str1, const TString &str2)
   {
@@ -54,8 +55,12 @@ protected:
 
   Samples samples;
   int n_sample;
+  
   vector<TString> vec_short_name_mc;
   int n_sample_merge_mc;
+
+  vector<TString> vec_sample_tagging_rf;
+  int n_sample_tagging_rf;
 
   int color[7] = {2, 3, 4, 5, 6, 7, 8}; // n_sample
 
@@ -65,6 +70,12 @@ protected:
 
   map<TString, TFile *> map_fin_mc;
   map<TString, TTree *> map_tree_mc;
+  map<TString, TTree *> map_tree_mc_jec_down;
+  map<TString, TTree *> map_tree_mc_jec_up;
+  map<TString, TTree *> map_tree_mc_jer_down;
+  map<TString, TTree *> map_tree_mc_jer_up;
+
+  map<TString, map<TString, TTree *> *> map_map_tree_mc;
 
   vector<TString> sample_name;
   vector<TString> syst_name_b;
@@ -73,22 +84,22 @@ protected:
   int n_syst_b;
   int n_syst_c;
 
-  TH2D **histo_mc_before_b; // n_sample
-  TH2D ***histo_mc_after_b; // n_sample, n_syst_b
+  TH2D ***histo_mc_before_b; // n_sample, n_syst_b
+  TH2D ***histo_mc_after_b;  // n_sample, n_syst_b
 
-  TH2D **histo_mc_before_c; // n_sample
-  TH2D ***histo_mc_after_c; // n_sample, n_syst_c
+  TH2D ***histo_mc_before_c; // n_sample, n_syst_c
+  TH2D ***histo_mc_after_c;  // n_sample, n_syst_c
 
-  TH1D ***histo_closure_n_jet; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D ***histo_closure_ht;    // n_sample, 3
-  TH1D ***histo_closure_n_pv;  // n_sample, 3
+  TH1D ****histo_closure_n_jet; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ****histo_closure_ht;    // n_sample, 3
+  TH1D ****histo_closure_n_pv;  // n_sample, 3
 
-  TH1D ***histo_closure_bvsc; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D ***histo_closure_cvsb; // n_sample,
-  TH1D ***histo_closure_cvsl; // n_sample,
+  TH1D ****histo_closure_bvsc; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ****histo_closure_cvsb; // n_sample,
+  TH1D ****histo_closure_cvsl; // n_sample,
 
-  TH1D ***histo_closure_eta; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D ***histo_closure_pt;
+  TH1D ****histo_closure_eta; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ****histo_closure_pt;
 
   THStack *stack_mc_before;
   THStack **stack_mc_after_b; // n_syst_b
@@ -128,6 +139,13 @@ protected:
   float subleading_jet_eta;
   float subleading_jet_pt;
 
+  int decay_mode;
+
+  vector<int> *vec_gen_hf_flavour = NULL;
+  vector<int> *vec_gen_hf_origin = NULL;
+  vector<int> *vec_sel_gen_hf_flavour = NULL;
+  vector<int> *vec_sel_gen_hf_origin = NULL;
+
   float sf_mu_id;
   float sf_mu_iso;
 
@@ -136,12 +154,26 @@ protected:
 
   float sf_sl_trig;
 
+  float weight_hem_veto;
   float weight_lumi;
   float weight_mc;
+
   float weight_pileup;
+  float weight_pileup_down;
+  float weight_pileup_up;
+
+  float weight_ps[4];
+
   float weight_prefire;
   float weight_top_pt;
   float weight_pujet_veto;
+
+  float weight_scale_variation_1;
+  float weight_scale_variation_2;
+  float weight_scale_variation_3;
+  float weight_scale_variation_4;
+  float weight_scale_variation_6;
+  float weight_scale_variation_8;
 
   float weight_b_tag;
   float weight_b_tag_hf_down;
@@ -194,22 +226,26 @@ protected:
   TFile *fin_el;
   TFile *fout;
 
-  void Combine();
+  void Combine_Decay_Mode();
+  void Combine_Lepton_Channel();
   void Draw_Result();
   void Draw_Validation();
-  void Fill_Histo_MC(const int &sample_index);
-  void Fill_Histo_Validation_MC(const int &sample_index);
+  void Fill_Histo_MC(const TString &sample_name, const TString &syst_type);
+  void Fill_Histo_Validation_MC(const TString &sample_name, const TString &syst_type);
+  int Histo_Index(const TString &sample_name);
+  int Histo_Index_RF(const TString &sample_name);
   void Ratio();
   void Read_Tree();
   void Run_Analysis();
   void Run_Combine();
+  void Run_Draw_Validation();
   void Run_Validation();
   void Setup_Analysis();
   void Setup_Application();
   void Setup_Binning();
   void Setup_Histo();
   void Setup_Histo_Validation();
-  void Setup_Tree(TTree *tree);
+  void Setup_Tree(TTree *tree, const TString &syst);
 
 private:
   bool chk_draw_called = false;

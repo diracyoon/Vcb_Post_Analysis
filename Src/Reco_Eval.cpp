@@ -16,7 +16,13 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   channel = a_channel;
   draw_extension = a_draw_extension;
 
-  if (era == "2018")
+  if (era == "2017")
+  {
+    bvsc_wp_m = bvsc_wp_m_2017;
+    cvsb_wp_m = cvsb_wp_m_2017;
+    cvsl_wp_m = cvsl_wp_m_2017;
+  }
+  else if (era == "2018")
   {
     bvsc_wp_m = bvsc_wp_m_2018;
     cvsb_wp_m = cvsb_wp_m_2018;
@@ -38,17 +44,17 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     cout << it->first << endl;
     // if (it->first != "TTLJ_WtoCB_powheg" && it->first != "TTLJ_powheg")
     //  continue;
-    
+
     map_fin[it->first] = new TFile(path_base + it->second);
-  
+
     TString key;
     if (channel == "Mu")
-      key = "POGTightWithTightIso_Central/Result_Tree";
+      key = "Central/Result_Tree";
     else if (channel == "El")
-      key = "passMVAID_iso_WP80_Central/Result_Tree";
+      key = "Central/Result_Tree";
 
     map_tree[it->first] = (TTree *)map_fin[it->first]->Get(key);
-    event.Setup_Tree(map_tree[it->first], false);
+    event.Setup_Tree(map_tree[it->first], Syst::Central, false);
   }
 
   for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
@@ -390,6 +396,54 @@ void Reco_Eval::Calculate_Prob()
 
 //////////
 
+TString Reco_Eval::Detail_Name(const TString &short_name)
+{
+  // This method serves the same purpose as the Histo_Index() method in a different class.
+  // To apply Tagging_RF
+
+  TString detail_name = short_name;
+
+  if ((detail_name.Contains("TTLL") || detail_name.Contains("TTLJ")))
+  {
+    bool chk_b = false;
+    bool chk_c = false;
+
+    // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
+    for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
+    {
+      int flavour = event.vec_sel_gen_hf_flavour->at(i);
+      int origin = event.vec_sel_gen_hf_origin->at(i);
+
+      if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
+      {
+        chk_b = true;
+        break;
+      }
+      else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
+        chk_c = true;
+    }
+
+    if (detail_name.Contains("WtoCB"))
+      detail_name = "TTLJ";
+
+    if (chk_b)
+      detail_name += "_BB";
+    else if (chk_c)
+      detail_name += "_CC";
+
+    // if (event.decay_mode == 21 || event.decay_mode == 23)
+    //   detail_name += "_2";
+    // else if (event.decay_mode == 41 || event.decay_mode == 43)
+    //   detail_name += "_4";
+    // else if (event.decay_mode == 45)
+    //   detail_name += "_45";
+  } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
+
+  return detail_name;
+} // TString& Reco_Eval::Detail_Name()
+
+//////////
+
 void Reco_Eval::Draw_DV()
 {
   cout << "[Reco_Eval::Draw]: start drawing DV" << endl;
@@ -413,7 +467,8 @@ void Reco_Eval::Draw_DV()
 
       for (int k = 0; k < n_histo_type; k++)
       {
-        histo_discriminator[i][j][k]->SetFillColorAlpha(color[k], .2);
+        // histo_discriminator[i][j][k]->SetFillColorAlpha(color[k], .2);
+        histo_discriminator[i][j][k]->SetFillColor(color[k]);
 
         stack_dv[i][j]->Add(histo_discriminator[i][j][k]);
       } // loop over correct or wrong
@@ -511,25 +566,32 @@ void Reco_Eval::Draw_Raw()
 
     for (int j = 0; j < 5; j++)
     {
-      histo_mva_pre[i][j]->SetFillColorAlpha(color[j], 0.2);
+      // histo_mva_pre[i][j]->SetFillColorAlpha(color[j], 0.2);
+      histo_mva_pre[i][j]->SetFillColor(color[j]);
       stack_mva_pre[i]->Add(histo_mva_pre[i][j]);
 
-      histo_mva[i][j]->SetFillColorAlpha(color[j], 0.2);
+      // histo_mva[i][j]->SetFillColorAlpha(color[j], 0.2);
+      histo_mva[i][j]->SetFillColor(color[j]);
       stack_mva[i]->Add(histo_mva[i][j]);
 
-      histo_had_w[i][j]->SetFillColorAlpha(color[j], 0.2);
+      // histo_had_w[i][j]->SetFillColorAlpha(color[j], 0.2);
+      histo_had_w[i][j]->SetFillColor(color[j]);
       stack_had_w[i]->Add(histo_had_w[i][j]);
 
-      histo_had_t[i][j]->SetFillColorAlpha(color[j], 0.2);
+      // histo_had_t[i][j]->SetFillColorAlpha(color[j], 0.2);
+      histo_had_t[i][j]->SetFillColor(color[j]);
       stack_had_t[i]->Add(histo_had_t[i][j]);
 
-      histo_lep_w[i][j]->SetFillColorAlpha(color[j], 0.2);
+      // histo_lep_w[i][j]->SetFillColorAlpha(color[j], 0.2);
+      histo_lep_w[i][j]->SetFillColor(color[j]);
       stack_lep_w[i]->Add(histo_lep_w[i][j]);
 
-      histo_lep_t[i][j]->SetFillColorAlpha(color[j], 0.2);
+      // histo_lep_t[i][j]->SetFillColorAlpha(color[j], 0.2);
+      histo_lep_t[i][j]->SetFillColor(color[j]);
       stack_lep_t[i]->Add(histo_lep_t[i][j]);
 
-      histo_template[i][j]->SetFillColorAlpha(color[j], 0.2);
+      // histo_template[i][j]->SetFillColorAlpha(color[j], 0.2);
+      histo_template[i][j]->SetFillColor(color[j]);
       stack_template[i]->Add(histo_template[i][j]);
 
       // cout << histo_mva[i][j]->Integral() << endl;
@@ -675,10 +737,12 @@ void Reco_Eval::Draw_Raw()
   for (int i = 0; i < 2; i++)
   {
     TString name = "Permutation_MVA_Pre_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
-    canvas_mva_pre[i]->Print(name, draw_extension);
+    // canvas_mva_pre[i]->Print(name, draw_extension);
+    canvas_mva_pre[i]->SaveAs(name);
 
     name = "Permutation_MVA_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
-    canvas_mva[i]->Print(name, draw_extension);
+    // canvas_mva[i]->Print(name, draw_extension);
+    canvas_mva[i]->SaveAs(name);
 
     name = "Had_W_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_had_w[i]->Print(name, draw_extension);
@@ -692,7 +756,7 @@ void Reco_Eval::Draw_Raw()
     name = "Lep_T_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_lep_t[i]->Print(name, draw_extension);
 
-    name = "Template_" + to_string(i) + "_" + era + "_" + channel + "_" + era + "_" + channel + "." + draw_extension;
+    name = "Template_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_template[i]->Print(name, draw_extension);
   }
 
@@ -725,7 +789,8 @@ void Reco_Eval::Draw_Sample_By_Sample()
       if (j != 0)
         stack_count_wrong[i]->Add(histo_count[i][j]);
 
-      histo_cutflow[i][j]->SetFillColorAlpha(color[j], 0.20);
+      // histo_cutflow[i][j]->SetFillColorAlpha(color[j], 0.20);
+      histo_cutflow[i][j]->SetFillColor(color[j]);
       stack_cutflow[i]->Add(histo_cutflow[i][j]);
     }
   }
@@ -856,7 +921,7 @@ void Reco_Eval::Fill_Histo(const TString &short_name, const int &index_decay_mod
   histo_lep_w[index][index_fail_reason]->Fill(event.m_lep_w, event.weight);
   histo_lep_t[index][index_fail_reason]->Fill(event.m_lep_t, event.weight);
 
-  histo_template[index][index_fail_reason]->Fill(event.template_mva_score, event.weight);
+  histo_template[index][index_fail_reason]->Fill(event.template_score, event.weight);
 
   // histo_mva_pre[index][index_fail_reason]->Fill(event.best_mva_score_pre, 1);
   // histo_mva[index][index_fail_reason]->Fill(event.best_mva_score, 1);
@@ -983,8 +1048,8 @@ void Reco_Eval::Read_Tree()
   for (auto it = map_fin.begin(); it != map_fin.end(); it++)
   {
     TString short_name = samples.map_short_name_mc[it->first];
-
-    cout << it->first << " " << short_name << endl;
+      cout << it->first << endl;
+    //cout << short_name << endl;
 
     TTree *tree = map_tree[it->first];
 
@@ -1021,6 +1086,7 @@ void Reco_Eval::Read_Tree()
       event.weight = 1;
       event.weight *= event.weight_lumi;
       event.weight *= event.weight_mc;
+      event.weight *= event.weight_hem_veto;
       event.weight *= event.weight_pileup;
       event.weight *= event.weight_prefire;
       event.weight *= event.weight_top_pt;
@@ -1040,13 +1106,14 @@ void Reco_Eval::Read_Tree()
       event.weight *= event.weight_c_tag;
 
       // event.weight *= tagging_rf.Get_Tagging_RF("B_Tag_Nominal", event.n_jets);
-      event.weight *= tagging_rf.Get_Tagging_RF_C_Tag(short_name, "C_Tag_Nominal", event.n_pv, event.ht);
+      TString detail_name = Detail_Name(short_name);
+      event.weight *= tagging_rf.Get_Tagging_RF_C_Tag(detail_name, "C_Tag_Nominal", event.n_pv, event.ht);
 
       // if (event.chk_gentau_conta == true)
       //   continue;
 
-      //if (event.n_bjets == 2)
-      //  continue;
+      // if (event.n_bjets == 2)
+      //   continue;
 
       Fill_Output_Tree(short_name, event.decay_mode, index_fail_reason);
 
@@ -1103,6 +1170,7 @@ void Reco_Eval::Read_Tree()
       // no additional b-tagging
       if (event.n_bjets != 3)
         continue;
+
       n_cut++;
       Fill_Cutflow(short_name, event.decay_mode, index_fail_reason, n_cut);
       /* Cut */

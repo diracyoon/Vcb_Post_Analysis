@@ -48,7 +48,7 @@ public:
       return false;
   } // bool Comparing_TString(const TString &str1, const TString &str2)
 
-protected:
+ protected:
   int n_split;
   int index_split;
   int reduction;
@@ -73,36 +73,38 @@ protected:
   TString data_short_name;
 
   map<TString, TFile *> map_fin_mc;
-  map<TString, TFile *> map_fin_mc_jec_down;
-  map<TString, TFile *> map_fin_mc_jec_up;
-  map<TString, TFile *> map_fin_mc_jer_down;
-  map<TString, TFile *> map_fin_mc_jer_up;
+  // map<TString, TFile *> map_fin_mc_jec_down;
+  // map<TString, TFile *> map_fin_mc_jec_up;
+  // map<TString, TFile *> map_fin_mc_jer_down;
+  // map<TString, TFile *> map_fin_mc_jer_up;
+  // map<TString, TFile *> map_fin_mc_eec_down;
+  // map<TString, TFile *> map_fin_mc_eec_up;
+  // map<TString, TFile *> map_fin_mc_eer_down;
+  // map<TString, TFile *> map_fin_mc_eer_up;
   map<TString, TFile *> map_fin_mc_cp5_down;
   map<TString, TFile *> map_fin_mc_cp5_up;
   map<TString, TFile *> map_fin_mc_hdamp_down;
   map<TString, TFile *> map_fin_mc_hdamp_up;
   map<TString, TFile *> map_fin_mc_mtop_171p5;
   map<TString, TFile *> map_fin_mc_mtop_173p5;
-  map<TString, TFile *> map_fin_mc_eec_down;
-  map<TString, TFile *> map_fin_mc_eec_up;
-  map<TString, TFile *> map_fin_mc_eer_down;
-  map<TString, TFile *> map_fin_mc_eer_up;
 
   map<TString, TTree *> map_tree_mc;
   map<TString, TTree *> map_tree_mc_jec_down;
   map<TString, TTree *> map_tree_mc_jec_up;
   map<TString, TTree *> map_tree_mc_jer_down;
   map<TString, TTree *> map_tree_mc_jer_up;
+  map<TString, TTree *> map_tree_mc_ue_down;
+  map<TString, TTree *> map_tree_mc_ue_up;
+  // map<TString, TTree *> map_tree_mc_eec_down;
+  // map<TString, TTree *> map_tree_mc_eec_up;
+  // map<TString, TTree *> map_tree_mc_eer_down;
+  // map<TString, TTree *> map_tree_mc_eer_up;
   map<TString, TTree *> map_tree_mc_cp5_down;
   map<TString, TTree *> map_tree_mc_cp5_up;
   map<TString, TTree *> map_tree_mc_hdamp_down;
   map<TString, TTree *> map_tree_mc_hdamp_up;
   map<TString, TTree *> map_tree_mc_mtop_171p5;
   map<TString, TTree *> map_tree_mc_mtop_173p5;
-  map<TString, TTree *> map_tree_mc_eec_down;
-  map<TString, TTree *> map_tree_mc_eec_up;
-  map<TString, TTree *> map_tree_mc_eer_down;
-  map<TString, TTree *> map_tree_mc_eer_up;
 
   map<TString, map<TString, TFile *> *> map_map_fin_mc;
   map<TString, map<TString, TTree *> *> map_map_tree_mc;
@@ -132,8 +134,6 @@ protected:
 
   TH1D ***histo_data; // n_region, n_variable
 
-  TString region;
-
   float bvsc_wp_m;
   float cvsb_wp_m;
   float cvsl_wp_m;
@@ -150,14 +150,15 @@ protected:
   TMVA::Reader *reader_template;
 
   void Fill_Histo_Data(const int &region_index);
-  void Fill_Histo_MC(const int &region_index, const int &sample_index, const TString &syst_fix = "None");
-  inline int Get_Region_Index(const TString &region);
+  void Fill_Histo_MC(const int &region_index, const TString &sample_name_short, const TString &syst_fix = "None");
+  int Histo_Index(const TString& sample_name);
+  int Get_Region_Index(const TString &region);
   void Init_Histo_Syst();
   void Init_Merge_PDF_Error_Set();
   void Merge_PDF_Error_Set();
   void Read_Tree();
   void Setup_Template_Reader();
-  bool Set_Region();
+  TString Set_Region();
 
   ClassDef(Histo_Syst, 1);
 };

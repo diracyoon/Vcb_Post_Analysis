@@ -23,13 +23,30 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   TString fin_name = path_base;
   if (analyser == "Vcb")
   {
-    fin_name = "Vcb_Histos_" + era + "_" + channel + "_All.root";
-    color = {1, 2, 3, 4, 5, 6, 7, 8};
+    fin_name += "/Vcb_Histos_" + era + "_" + channel + "_All.root";
+    // color = {1, 2, 3, 4, 5, 6, 7, 8};
   }
   else if (analyser == "Vcb_DL")
   {
-    fin_name = "Vcb_DL_Histos_" + era + "_" + channel + ".root";
-    color = {9, 3, 8, 5, 6, 7, 4, 2, 46};
+
+    fin_name += "/Workplace/CR_DL/Vcb_DL_Histos_" + era + "_" + channel + ".root";
+    color = {{"TTLJ_JJ_2", kOrange - 9},
+             {"TTLJ_JJ_4", kOrange - 7},
+             {"TTLJ_JJ_45", kOrange - 4},
+             {"TTLL_JJ", kOrange},
+             {"TTLJ_CC_2", kRed - 9},
+             {"TTLJ_CC_4", kRed - 7},
+             {"TTLJ_CC_45", kRed - 4},
+             {"TTLL_CC", kRed},
+             {"TTLJ_BB_2", kPink - 9},
+             {"TTLJ_BB_4", kPink - 7},
+             {"TTLJ_BB_45", kPink - 4},
+             {"TTLL_BB", kMagenta},
+             {"ST", kGreen},
+             {"ttV", kTeal},
+             {"VV", kCyan},
+             {"VJets", kAzure},
+             {"QCD_bEn", kBlack}};
   }
 
   fin = new TFile(fin_name);
@@ -43,6 +60,7 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   TList *list_region = fin->GetListOfKeys();
   Setup_Name(list_region, region_name);
   n_region = region_name.size();
+  cout << "n_region = " << n_region << endl;
 
   // get syst_name
   TList *list_syst = ((TDirectory *)fin->Get(region_name[0]))->GetListOfKeys();
@@ -127,6 +145,8 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
 
   n_syst = syst_name.size();
   cout << "n_syst = " << n_syst << endl;
+  index_mc_nominal = find(syst_name.begin(), syst_name.end(), "Nominal") - syst_name.begin();
+  cout << "Index_MC_Nominal = " << index_mc_nominal << endl;
 
   // syst_name_short for Draw_Each()
   for (unsigned int i = 0; i < n_syst; i++)
@@ -165,15 +185,17 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   // variable_name = {"Subleading_Lepton_Pt"};
   n_variable = variable_name.size();
 
-  tl = new TLegend(0.68, 0.68, 0.88, 0.88);
+  tl = new TLegend(0.54, 0.64, 0.89, 0.89);
   tl->SetBorderSize(0);
-  tl->SetNColumns(2);
+  tl->SetNColumns(3);
 
   // setup histo_mc
   Setup_Histo_MC();
 
   // setup histo_data
   Setup_Histo_Data();
+
+  Ordering_Sample_Name();
 
   Run();
 } // Data_MC_Comparison::Data_MC_Comparison(const TString& a_era, const TString& a_channel))
@@ -194,10 +216,13 @@ void Data_MC_Comparison::Run()
   Envelope();
   Compare();
   Draw();
-  Save();
+  //  Save();
 
-  //for (int i = 0; i < n_syst_name_short; i++)
-  //  Draw_Each(syst_name_short[i], "Met_Phi");
+  for (int i = 0; i < n_syst_name_short; i++)
+  {
+    // Draw_Each(syst_name_short[i], "Best_MVA_Score");
+    //  Draw_Each(syst_name_short[i], "Template_MVA_Score");
+  }
 
   return;
 } // void Data_MC_Comparison::Run()
@@ -206,6 +231,8 @@ void Data_MC_Comparison::Run()
 
 void Data_MC_Comparison::Compare()
 {
+  cout << "[Data_MC_Comparison::Compare]: Init" << endl;
+
   histo_ratio = new TH1D **[n_region];
   gr_ratio = new TGraphAsymmErrors **[n_region];
   for (int i = 0; i < n_region; i++)
@@ -216,7 +243,9 @@ void Data_MC_Comparison::Compare()
     {
       TString histo_name = "Ratio_" + region_name[i] + "_" + variable_name[j];
       histo_ratio[i][j] = new TH1D(histo_name, histo_name, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up);
-      histo_ratio[i][j]->Divide(histo_data[i][j], (TH1D *)(stack_mc[i][0][j]->GetStack()->Last()));
+
+      if (region_name[i] != "Signal")
+        histo_ratio[i][j]->Divide(histo_data[i][j], (TH1D *)(stack_mc[i][index_mc_nominal][j]->GetStack()->Last()));
 
       gr_ratio[i][j] = new TGraphAsymmErrors();
 
@@ -241,6 +270,8 @@ void Data_MC_Comparison::Compare()
     }   // loop over n_variable
   }     // loop over n_region
 
+  cout << "[Data_MC_Comparison::Compare]: Done" << endl;
+
   return;
 } // void Data_MC_Comparison::Compare()
 
@@ -248,9 +279,12 @@ void Data_MC_Comparison::Compare()
 
 void Data_MC_Comparison::Draw()
 {
+  cout << "[Data_MC_Comparison::Draw] Init" << endl;
+
   canvas = new TCanvas **[n_region];
   pad = new TPad ***[n_region];
   for (int i = 0; i < n_region; i++)
+  // for (int i = 1; i < n_region; i++)
   {
     canvas[i] = new TCanvas *[n_variable];
     pad[i] = new TPad **[n_variable];
@@ -258,7 +292,7 @@ void Data_MC_Comparison::Draw()
     for (int j = 0; j < n_variable; j++)
     {
       TString canvas_name = region_name[i] + "_" + era + "_" + channel + "_" + variable_name[j];
-      // cout << canvas_name << endl;
+      cout << canvas_name << endl;
 
       canvas[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
       canvas[i][j]->Draw();
@@ -289,9 +323,12 @@ void Data_MC_Comparison::Draw()
       gr_variation_merged[i][j]->SetFillStyle(3001);
       gr_variation_merged[i][j]->Draw("SAME3");
 
-      histo_data[i][j]->Sumw2();
-      histo_data[i][j]->SetMarkerStyle(8);
-      histo_data[i][j]->Draw("SAME");
+      if (region_name[i] != "Signal")
+      {
+        histo_data[i][j]->Sumw2();
+        histo_data[i][j]->SetMarkerStyle(8);
+        histo_data[i][j]->Draw("SAME");
+      }
 
       TLatex *latex = new TLatex();
       latex->SetTextSize(0.04);
@@ -318,6 +355,8 @@ void Data_MC_Comparison::Draw()
     } // loop over n_variable
   }   // loop over_n_region
 
+  cout << "[Data_MC_Comparison::Draw] Done" << endl;
+
   return;
 } // void Data_MC_Comparison::Draw()
 
@@ -325,6 +364,8 @@ void Data_MC_Comparison::Draw()
 
 void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_variable_name)
 {
+  gStyle->SetOptStat(0);
+
   // canvas_each = new TCanvas **[n_region];
   for (int i = 0; i < n_region; i++)
   {
@@ -336,11 +377,13 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
       if (a_variable_name != "All" && a_variable_name != variable_name[j])
         continue;
 
-      TString can_name = "Canvas_Each_" + region_name[i] + "_" + a_syst_name + "_" + variable_name[j];
+      TString can_name = "Canvas_Each_" + region_name[i] + "_" + era + "_" + channel + "_" + a_syst_name + "_" + variable_name[j];
       // canvas_each[i][j] = new TCanvas(can_name, can_name, 800, 500);
       // canvas_each[i][j]->Draw();
-      TCanvas *canvas_each = new TCanvas(can_name, can_name, 800, 500);
+      TCanvas *canvas_each = new TCanvas(can_name, can_name, 1600, 1000);
       canvas_each->Draw();
+
+      TLegend *tl = new TLegend(0.75, 0.75, 0.95, 0.95);
 
       TString pad_name = region_name[i] + "_" + variable_name[j] + "_";
       TPad *pad_each[2];
@@ -351,22 +394,36 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
       pad_each[0]->cd();
 
       // nominal
-      TH1D *histo_nominal = (TH1D *)(stack_mc[i][0][j]->GetStack()->Last());
+      TH1D *histo_nominal = (TH1D *)(stack_mc[i][index_mc_nominal][j]->GetStack()->Last());
+
       histo_nominal->SetLineColor(1);
+      // float max = histo_nominal->GetMaximum();
+      float max = histo_nominal->GetBinContent(histo_nominal->GetMaximumBin());
+      histo_nominal->GetYaxis()->SetRangeUser(0, 1.4 * max);
+
       histo_nominal->Draw();
+
+      tl->AddEntry(histo_nominal, "MC moninal", "le");
 
       vector<TH1D *> vec_histo_ratio;
 
-      // data
-      // histo_data[i][j]->Sumw2();
-      histo_data[i][j]->SetMarkerStyle(8);
-      histo_data[i][j]->SetMarkerColor(1);
-      histo_data[i][j]->Draw("SAMEP");
-
+      // to contain data
+      // for Signal region, it's only dummy for drawing
       TString histo_name = "Ratio_" + region_name[i] + "_" + variable_name[j] + "_Data";
       TH1D *histo_ratio = new TH1D(histo_name, histo_name, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up);
-      histo_ratio->Divide(histo_data[i][j], histo_nominal);
 
+      // data
+      // histo_data[i][j]->Sumw2();
+      if (region_name[i] != "Signal")
+      {
+        histo_data[i][j]->SetMarkerStyle(8);
+        histo_data[i][j]->SetMarkerColor(1);
+        histo_data[i][j]->Draw("SAMEP");
+
+        tl->AddEntry(histo_data[i][j], "Data", "p");
+
+        histo_ratio->Divide(histo_data[i][j], histo_nominal);
+      }
       vec_histo_ratio.push_back(histo_ratio);
 
       // systs
@@ -375,11 +432,13 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
       {
         if (syst_name[k].Contains(a_syst_name))
         {
-          cout << a_syst_name << " " << syst_name[k] << endl;
+          cout << a_syst_name << " " << syst_name[k] << " " << k << endl;
 
           TH1D *histo_syst = (TH1D *)(stack_mc[i][k][j]->GetStack()->Last());
           histo_syst->SetLineColor(n_syst_target + 2);
           histo_syst->Draw("SAME");
+
+          tl->AddEntry(histo_syst, syst_name[k], "le");
 
           TString histo_name = "Ratio_" + region_name[i] + "_" + variable_name[j] + "_" + syst_name[k];
           TH1D *histo_ratio = new TH1D(histo_name, histo_name, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up);
@@ -391,25 +450,30 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
         }
       }
 
+      tl->Draw();
+
       canvas_each->cd();
       pad_each[1] = new TPad(pad_name + "Ratio", pad_name + "Ratio", 0, 0, 1, 0.4);
       pad_each[1]->Draw();
       pad_each[1]->cd();
 
       // i==0 is data, the highers are systs
-      for (unsigned int i = 0; i < vec_histo_ratio.size(); i++)
+      // for signal region, from i==0 systs
+      for (unsigned int k = 0; k < vec_histo_ratio.size(); k++)
       {
-        TH1D *histo_ratio = vec_histo_ratio[i];
-        histo_ratio->SetLineColor(i + 1);
+        TH1D *histo_ratio = vec_histo_ratio[k];
+        histo_ratio->SetLineColor(k + 1);
 
-        if (i == 0)
+        if (k == 0)
         {
+          histo_ratio->GetYaxis()->SetTitle("Divided by MC Nominal");
           histo_ratio->GetYaxis()->SetRangeUser(0.6, 1.4);
+          histo_ratio->SetMarkerStyle(8);
           histo_ratio->Draw();
         }
         else
           histo_ratio->Draw("SAME");
-      } // loop over systs + data
+      } // loop over systs
 
       canvas_each->Update();
       canvas_each->Print(can_name + "." + extension, extension);
@@ -430,6 +494,7 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
       delete pad_each[0];
       delete pad_each[1];
       delete canvas_each;
+      delete tl;
     } // loop over n_variable
   }   // loop over n_region
 
@@ -440,7 +505,7 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
 
 void Data_MC_Comparison::Envelope()
 {
-  cout << "Data_MC_Comparison::Envelope" << endl;
+  cout << "[Data_MC_Comparison::Envelope]: Init" << endl;
 
   // allocation
   gr_variation = new TGraphAsymmErrors ***[n_region];
@@ -459,18 +524,14 @@ void Data_MC_Comparison::Envelope()
 
   for (int i = 0; i < n_region; i++)
   {
-    // cout << region_name[i] << endl;
     for (int j = 0; j < n_variable; j++)
     {
-      // cout << variable_name[j] << endl;
       float bin_width = (variable_conf[j].x_up - variable_conf[j].x_low) / variable_conf[j].n_bin;
 
-      TH1D *histo_nominal = (TH1D *)(stack_mc[i][0][j]->GetStack()->Last());
-      for (int k = 0; k < n_syst - 1; k++) // excluding nominal
+      TH1D *histo_nominal = (TH1D *)(stack_mc[i][index_mc_nominal][j]->GetStack()->Last());
+      for (int k = 0; k < n_syst; k++)
       {
-        // cout << syst_name[k + 1] << endl;
-
-        TH1D *histo_syst = (TH1D *)(stack_mc[i][k + 1][j]->GetStack()->Last());
+        TH1D *histo_syst = (TH1D *)(stack_mc[i][k][j]->GetStack()->Last());
 
         for (int l = 0; l < variable_conf[j].n_bin; l++)
         {
@@ -481,8 +542,8 @@ void Data_MC_Comparison::Envelope()
           float diff = content_syst - content_nominal;
 
           // if (variable_name[j] == "N_BJets" && content_nominal != 0)
-          //{
-          //   cout << syst_name[k + 1] << endl;
+          // {
+          //   cout << syst_name[k] << endl;
           //   cout << "l= " << l << ", bin_center= " << bin_center << ", bin_width= " << bin_width << ", nominal= " << content_nominal << ", syst= " << content_syst << ", diff=" << diff << endl;
           // }
 
@@ -496,7 +557,6 @@ void Data_MC_Comparison::Envelope()
               gr_variation[i][k][j]->SetPointError(n_point, 0, 0, 0, diff);
             else
               gr_variation[i][k][j]->SetPointError(n_point, 0, 0, TMath::Abs(diff), 0);
-
           } // loop over 3
         }   // loop over n_bin
       }     // loop over n_syst
@@ -507,6 +567,8 @@ void Data_MC_Comparison::Envelope()
   gr_variation_merged = new TGraphAsymmErrors **[n_region];
   for (int i = 0; i < n_region; i++)
   {
+    // cout << region_name[i] << endl;
+
     gr_variation_merged[i] = new TGraphAsymmErrors *[n_variable];
     for (int j = 0; j < n_variable; j++)
     {
@@ -514,12 +576,13 @@ void Data_MC_Comparison::Envelope()
 
       gr_variation_merged[i][j] = new TGraphAsymmErrors();
 
-      TH1D *histo = (TH1D *)stack_mc[i][0][j]->GetStack()->Last();
+      TH1D *histo = (TH1D *)stack_mc[i][index_mc_nominal][j]->GetStack()->Last();
 
-      int n_point = gr_variation[i][0][j]->GetN();
+      int n_point = gr_variation[i][index_mc_nominal][j]->GetN();
+
       for (int k = 0; k < n_point; k++)
       {
-        float x = gr_variation[i][0][j]->GetPointX(k);
+        float x = gr_variation[i][index_mc_nominal][j]->GetPointX(k);
 
         int bin = histo->FindBin(x);
         float stat_error = histo->GetBinError(bin);
@@ -527,9 +590,11 @@ void Data_MC_Comparison::Envelope()
         float variation_up = 0;
         float variation_down = 0;
 
-        for (int l = 0; l < n_syst - 1; l++)
+        for (int l = 0; l < n_syst; l++)
         {
-          // cout << syst_name[l + 1] << endl;
+          // excluding nominal
+          if (syst_name[l] == "Nominal")
+            continue;
 
           float ey_h = gr_variation[i][l][j]->GetErrorYhigh(k);
           float ey_l = gr_variation[i][l][j]->GetErrorYlow(k);
@@ -556,10 +621,48 @@ void Data_MC_Comparison::Envelope()
     }   // loop over n_variable
   }     // loop over n_region
 
-  cout << "Data_MC_Comparison::Envelope Done" << endl;
+  cout << "[Data_MC_Comparison::Envelope] Done" << endl;
 
   return;
 } // void Data_MC_Comparison::Envelope()
+
+//////////
+
+void Data_MC_Comparison::Ordering_Sample_Name()
+{
+
+  // for (unsigned int i = 0; i < n_sample; i++)
+  //   cout << sample_name[i] << " " << histo_mc[0][0][i][0]->Integral() << endl;
+
+  if (analyser == "VCcb")
+  {
+  }
+  else if (analyser == "Vcb_DL")
+  {
+    sample_name_order[0] = "QCD_bEn";
+    sample_name_order[1] = "VV";
+    sample_name_order[2] = "ttV";
+    sample_name_order[3] = "VJets";
+    sample_name_order[4] = "ST";
+    sample_name_order[5] = "TTLJ_JJ_4";
+    sample_name_order[6] = "TTLJ_JJ_2";
+    sample_name_order[7] = "TTLJ_JJ_45";
+    sample_name_order[8] = "TTLL_JJ";
+    sample_name_order[9] = "TTLJ_CC_4";
+    sample_name_order[10] = "TTLJ_CC_2";
+    sample_name_order[11] = "TTLJ_CC_45";
+    sample_name_order[12] = "TTLL_CC";
+    sample_name_order[13] = "TTLJ_CC_4";
+    sample_name_order[14] = "TTLJ_BB_2";
+    sample_name_order[15] = "TTLJ_BB_45";
+    sample_name_order[16] = "TTLL_BB";
+  }
+
+  for (auto it = sample_name_order.begin(); it != sample_name_order.end(); it++)
+    cout << it->first << ", " << it->second << endl;
+
+  return;
+} // void Data_MC_Comparison::Ordering_Sample_Name()
 
 //////////
 
@@ -616,6 +719,9 @@ void Data_MC_Comparison::Save()
 
 void Data_MC_Comparison::Setup_Histo_Data()
 {
+  if (find(region_name.begin(), region_name.end(), "Signal") != region_name.end())
+    n_region--;
+
   histo_data = new TH1D **[n_region];
   for (int i = 0; i < n_region; i++)
   {
@@ -639,6 +745,8 @@ void Data_MC_Comparison::Setup_Histo_Data()
       } // if
     }   // n_variable
   }     // n_region
+
+  n_region = region_name.size();
 
   return;
 } // void Data_MC_Comparison::Setup_Histo_Data()
@@ -715,30 +823,50 @@ void Data_MC_Comparison::Stack_MC()
   stack_mc = new THStack ***[n_region];
   for (int i = 0; i < n_region; i++)
   {
+    // cout << "i = " << i << " " << region_name[i] << endl;
+
     stack_mc[i] = new THStack **[n_syst];
     for (int j = 0; j < n_syst; j++)
     {
+      // cout << "j = " << j << " " << syst_name[j] << endl;
+
       stack_mc[i][j] = new THStack *[n_variable];
       for (int k = 0; k < n_variable; k++)
       {
+        // cout << "k = " << k << " " << variable_name[k] << endl;
+
         TString stack_name = region_name[i] + "_" + syst_name[j] + "_" + variable_name[k];
         // cout << stack_name << endl;
 
         stack_mc[i][j][k] = new THStack(stack_name, stack_name);
 
+        for (auto it = sample_name_order.begin(); it != sample_name_order.end(); it++)
+        {
+          cout << it->second << endl;
+          int sample_index = find(sample_name.begin(), sample_name.end(), it->second) - sample_name.begin();
+          histo_mc[i][j][sample_index][k]->SetFillColor(color[it->second]);
+          stack_mc[i][j][k]->Add(histo_mc[i][j][sample_index][k]);
+
+          if (i == 0 && j == 0 && k == 0)
+            tl->AddEntry(histo_mc[i][j][sample_index][k], it->second, "f");
+        }
+
+        /*
         for (int l = 0; l < n_sample; l++)
         {
-          // cout << sample_name[l] << endl;
+          cout << sample_name[l] << endl;
 
-          histo_mc[i][j][l][k]->SetFillColorAlpha(color[l], .2);
+          // histo_mc[i][j][l][k]->SetFillColorAlpha(color[sample_name[l]], .2);
+          histo_mc[i][j][l][k]->SetFillColor(color[sample_name[l]]);
           stack_mc[i][j][k]->Add(histo_mc[i][j][l][k]);
 
           if (i == 0 && j == 0 && k == 0)
             tl->AddEntry(histo_mc[i][j][l][k], sample_name[l], "f");
         } // loop over n_sample
-      }   // loop over n_variable
-    }     // loop over n_syst
-  }       // loop over n_region
+        */
+      } // loop over n_variable
+    }   // loop over n_syst
+  }     // loop over n_region
 
   cout << "[Data_MC_Comparison::Stack_MC] Done" << endl;
 

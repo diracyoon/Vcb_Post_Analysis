@@ -17,6 +17,7 @@
 #include <TLegend.h>
 #include <TSystem.h>
 #include <TLatex.h>
+#include <TStyle.h>
 
 #include <Const_Def.h>
 
@@ -58,16 +59,18 @@ protected:
 
   int n_syst_name_short;
   vector<TString> syst_name_short;
+  int index_mc_nominal;
 
   int n_sample;
   vector<TString> sample_name;
+  map<int, TString> sample_name_order;
 
   int n_variable;
   vector<TString> variable_name;
 
   vector<Histo_Conf> variable_conf;
 
-  vector<int> color;
+  map<TString, int> color;
 
   TH1D *****histo_mc;   // n_region, n_syst, n_sample, n_variable
   THStack ****stack_mc; // n_region, n_syst, n_variable
@@ -77,7 +80,7 @@ protected:
   TH1D ***histo_ratio;           // n_region, n_variable
   TGraphAsymmErrors ***gr_ratio; // n_region, n_variable
 
-  TGraphAsymmErrors ****gr_variation;       // n_region, n_syst-1, n_variable
+  TGraphAsymmErrors ****gr_variation;       // n_region, n_syst, n_variable
   TGraphAsymmErrors ***gr_variation_merged; // n_region, n_variable
   TList ***list_variation;                  // n_region, n_variable
 
@@ -96,8 +99,9 @@ protected:
 
   void Compare();
   void Draw();
-  void Draw_Each(const TString &a_syst_name, const TString& a_variable_name="All");
+  void Draw_Each(const TString &a_syst_name, const TString &a_variable_name = "All");
   void Envelope();
+  void Ordering_Sample_Name();
   void Save();
   void Setup_Histo_Data();
   void Setup_Histo_MC();

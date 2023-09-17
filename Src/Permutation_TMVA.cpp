@@ -6,7 +6,7 @@ ClassImp(Permutation_TMVA);
 
 Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channel, const int &a_n_jet, const bool &a_chk_pre_cut, const bool &a_chk_final_kin)
 {
-  ROOT::EnableImplicitMT(20);
+  ROOT::EnableImplicitMT(8);
 
   cout << "[Permutation_TMVA::Permutation_TMVA]: Init analysis" << endl;
 
@@ -20,7 +20,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
 
   cout << "Era = " << era << ", Channel = " << channel << ", N_Jets = " << n_jet << ", Chk_Pre_Cut = " << chk_pre_cut << ", Chk_Final_Kin = " << chk_final_kin << endl;
 
-  TMVA::gConfig().GetVariablePlotting().fNbins1D = 500;
+  TMVA::gConfig().GetVariablePlotting().fNbins1D = 200;
   TMVA::gConfig().GetVariablePlotting().fMaxNumOfAllowedVariablesForScatterPlots = 1;
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
@@ -139,7 +139,11 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   data_loader->AddSignalTree(tree_correct, 1.0);
   data_loader->AddBackgroundTree(tree_wrong, 1.0);
 
-  TCut cut_base = Form("%d==n_jets&&met_pt<200&&neutrino_p<600&&lepton_pt<250&&pt_had_t_b<300&&pt_w_u<250&&pt_w_d<250&&pt_lep_t_b<300&&had_t_mass<600&&had_w_mass<300&&lep_t_mass<600&&lep_t_partial_mass<400", n_jet);
+  TCut cut_base;
+  if (7 == n_jet)
+    cut_base = Form("%d>=n_jets&&met_pt<200&&neutrino_p<600&&lepton_pt<250&&pt_had_t_b<300&&pt_w_u<250&&pt_w_d<250&&pt_lep_t_b<300&&had_t_mass<600&&had_w_mass<300&&lep_t_mass<600&&lep_t_partial_mass<400", n_jet);
+  else
+    cut_base = Form("%d==n_jets&&met_pt<200&&neutrino_p<600&&lepton_pt<250&&pt_had_t_b<300&&pt_w_u<250&&pt_w_d<250&&pt_lep_t_b<300&&had_t_mass<600&&had_w_mass<300&&lep_t_mass<600&&lep_t_partial_mass<400", n_jet);
 
   /*
     if (!chk_pre_cut)
@@ -150,7 +154,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
         cut_base += "chi2_jet_extra<30";
     }
   */
- 
+
   cut_s = cut_base;
   cut_b = cut_base;
 
@@ -176,8 +180,15 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   //                  "!H:!V:NTrees=850:MinNodeSize=2.5%:MaxDepth=3:BoostType=AdaBoost:AdaBoostBeta=0.5:UseBaggedBoost:BaggedSampleFraction=0.5:SeparationType=GiniIndex:nCuts=100");
 
   // Gradient Boost
+  int n_tree;
+  if (strcmp(getenv("NTREE"), "")!=0)
+    n_tree = atoi(getenv("NTREE"));
+  else
+    n_tree = 100;
+  cout << "N_Tree = " << n_tree << endl;
+
   factory->BookMethod(data_loader, TMVA::Types::kBDT, "BDTG",
-                      "!H:!V:NTrees=800:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost=True:BaggedSampleFraction=0.5:nCuts=200:MaxDepth=2");
+                      Form("!H:!V:NTrees=%d:MinNodeSize=5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost=True:BaggedSampleFraction=0.5:nCuts=200:MaxDepth=2", n_tree));
 
   // Fisher
   // factory->BookMethod(data_loader, TMVA::Types::kFisher, "Fisher", "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=100:NsmoothMVAPdf=10" );

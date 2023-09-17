@@ -44,7 +44,7 @@ public:
   } // bool Comparing_TString(const TString &str1, const TString &str2)
 
   float Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const int &n_jet, const float &ht);
-  float Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const int &n_pv, const float &ht);
+  float Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const int &n_pv_, const float &ht_);
 
 protected:
   int reduction;
@@ -58,8 +58,12 @@ protected:
 
   Samples samples;
   int n_sample;
+
   vector<TString> vec_short_name_mc;
   int n_sample_merge_mc;
+
+  vector<TString> vec_sample_tagging_rf;
+  int n_sample_tagging_rf;
 
   int color[7] = {2, 3, 4, 5, 6, 7, 8}; // n_sample
 
@@ -98,7 +102,7 @@ protected:
   TH1D ****histo_closure_cvsl; // n_sample, n_syst_c, 3
 
   TH1D ****histo_closure_eta; // n_sample, n_syst_c, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D ****histo_closure_pt;  // n_sample, n_syst_c, 3 
+  TH1D ****histo_closure_pt;  // n_sample, n_syst_c, 3
 
   THStack *stack_mc_before;
   THStack **stack_mc_after_b; // n_syst_b
@@ -210,8 +214,12 @@ protected:
   float weight_c_tag_jes_total_down;
   float weight_c_tag_jes_total_up;
 
-  vector<int> *gen_hf_flavour = NULL;
-  vector<int> *gen_hf_origin = NULL;
+  int decay_mode;
+
+  vector<int> *vec_gen_hf_flavour = NULL;
+  vector<int> *vec_gen_hf_origin = NULL;
+  vector<int> *vec_sel_gen_hf_flavour = NULL;
+  vector<int> *vec_sel_gen_hf_origin = NULL;
 
   TFile *fin;
   TFile *fin_mm;
@@ -219,17 +227,20 @@ protected:
   TFile *fin_ee;
   TFile *fout;
 
-  void Combine();
+  void Combine_Decay_Mode();
+  void Combine_Lepton_Channel();
   void Combine_TT();
   void Draw_Result();
   void Draw_Validation();
   void Fill_Histo_MC(const TString &sample_name, const TString &syst_type);
   void Fill_Histo_Validation_MC(const TString &sample_name, const TString &syst_type);
   int Histo_Index(const TString &sample_name);
+  int Histo_Index_RF(const TString &sample_name);
   void Ratio();
   void Read_Tree();
   void Run_Analysis();
   void Run_Combine();
+  void Run_Draw_Validation();
   void Run_Validation();
   void Setup_Analysis();
   void Setup_Application();

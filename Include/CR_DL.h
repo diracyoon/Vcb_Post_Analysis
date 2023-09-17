@@ -58,6 +58,8 @@ protected:
 
   Samples samples;
   int n_sample_merge_mc;
+
+  vector<TString> vec_name_mc;
   vector<TString> vec_short_name_mc;
 
   Tagging_RF_DL tagging_rf_dl;
@@ -126,7 +128,7 @@ protected:
 
   void Fill_Histo_Data();
   void Fill_Histo_MC(const TString &sample_name, const TString &syst_fix);
-  int Histo_Index(const TString &sample_name, TString &sample_name_short);
+  int Histo_Index(const TString &sample_name);
   void Merge_PDF_Error_Set();
   void Read_Tree();
   int Unroller(const float &bvsc_third, const float &bvsc_fourth);

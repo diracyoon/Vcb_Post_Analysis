@@ -121,6 +121,7 @@ protected:
 
   void Calculate_Significance();
   void Calculate_Prob();
+  TString Detail_Name(const TString& short_name);
   void Draw_DV();
   void Draw_Raw();
   void Draw_Sample_By_Sample();

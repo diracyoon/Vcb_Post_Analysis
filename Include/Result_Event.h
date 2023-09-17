@@ -5,6 +5,7 @@
 #include <TTree.h>
 #include <TH1D.h>
 
+#include "Const_Def.h"
 #include "W_Event.h"
 
 class Data_MC_Comparison;
@@ -19,7 +20,7 @@ public:
   Result_Event(const TString &a_era, const TString &a_channel, const TString &a_swap_mode);
   virtual ~Result_Event();
 
-  void Setup_Tree(TTree *tree, const bool &chk_syst);
+  void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all = false);
 
 protected:
   float weight_mu_id;
@@ -92,6 +93,7 @@ protected:
 
   float weight_lumi;
   float weight_mc;
+  float weight_hem_veto;
 
   float weight_pdf_alternative;
   float weight_pdf_error_set[100];
@@ -106,6 +108,8 @@ protected:
   float weight_prefire_down;
   float weight_prefire_up;
 
+  float weight_ps[4];
+
   float weight_pujet_veto;
   float weight_pujet_veto_down;
   float weight_pujet_veto_up;
@@ -116,6 +120,7 @@ protected:
   float weight_scale_variation_4;
   float weight_scale_variation_6;
   float weight_scale_variation_8;
+
   float weight_top_pt;
 
   int n_pv;
@@ -173,10 +178,15 @@ protected:
   float eta_had_t_b;
   float eta_lep_t_b;
 
-  float template_mva_score;
+  float template_score;
 
   // For MC
   int decay_mode;
+
+  vector<int> *vec_gen_hf_flavour = NULL;
+  vector<int> *vec_gen_hf_origin = NULL;
+  vector<int> *vec_sel_gen_hf_flavour = NULL;
+  vector<int> *vec_sel_gen_hf_origin = NULL;
 
   bool chk_reco_correct;
   bool chk_included;

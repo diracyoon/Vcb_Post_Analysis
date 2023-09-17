@@ -65,7 +65,7 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_short_name_mc["WW"] = "VV";
   map_short_name_mc["WZ"] = "VV";
   map_short_name_mc["ZZ"] = "VV";
- 
+
   map_top_syst["TTLJ_powheg_CP5down"] = "Vcb_TTLJ_powheg_CP5Down.root";
   map_top_syst["TTLJ_powheg_CP5up"] = "Vcb_TTLJ_powheg_CP5Up.root";
   map_top_syst["TTLJ_powheg_hdampdown"] = "Vcb_TTLJ_powheg_hdampDown.root";
@@ -131,15 +131,12 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
 
   if (analyser == "Vcb_Tagging_RF")
   {
-    for (auto it = map_mc.begin(); it != map_mc.end(); it++)
-      it->second.ReplaceAll("Vcb", "Vcb_Tagging_RF");
-
-    map_mc["TTLJ_powheg_hdampDown"] = "Vcb_Tagging_RF_TTLJ_powheg_hdampDown.root";
-    map_mc["TTLJ_powheg_hdampUp"] = "Vcb_Tagging_RF_TTLJ_powheg_hdampUp.root";
-    map_mc["TTLJ_powheg_CP5Down"] = "Vcb_Tagging_RF_TTLJ_powheg_CP5Down.root";
-    map_mc["TTLJ_powheg_CP5Up"] = "Vcb_Tagging_RF_TTLJ_powheg_CP5Up.root";
-    map_mc["TTLJ_powheg_mtop171p5"] = "Vcb_Tagging_RF_TTLJ_powheg_mtop171p5.root";
-    map_mc["TTLJ_powheg_mtop173p5"] = "Vcb_Tagging_RF_TTLJ_powheg_mtop173p5.root";
+    map_mc["TTLJ_powheg_hdampDown"] = "Vcb_TTLJ_powheg_hdampDown.root";
+    map_mc["TTLJ_powheg_hdampUp"] = "Vcb_TTLJ_powheg_hdampUp.root";
+    map_mc["TTLJ_powheg_CP5Down"] = "Vcb_TTLJ_powheg_CP5Down.root";
+    map_mc["TTLJ_powheg_CP5Up"] = "Vcb_TTLJ_powheg_CP5Up.root";
+    map_mc["TTLJ_powheg_mtop171p5"] = "Vcb_TTLJ_powheg_mtop171p5.root";
+    map_mc["TTLJ_powheg_mtop173p5"] = "Vcb_TTLJ_powheg_mtop173p5.root";
 
     map_short_name_mc["TTLJ_powheg_hdampDown"] = "TTLJ_hdampDown";
     map_short_name_mc["TTLJ_powheg_hdampUp"] = "TTLJ_hdampUp";
@@ -148,12 +145,12 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     map_short_name_mc["TTLJ_powheg_mtop171p5"] = "TTLJ_mtop171p5";
     map_short_name_mc["TTLJ_powheg_mtop173p5"] = "TTLJ_mtop173p5";
 
-    map_mc["TTLL_powheg_hdampDown"] = "Vcb_Tagging_RF_TTLL_powheg_hdampDown.root";
-    map_mc["TTLL_powheg_hdampUp"] = "Vcb_Tagging_RF_TTLL_powheg_hdampUp.root";
-    map_mc["TTLL_powheg_CP5Down"] = "Vcb_Tagging_RF_TTLL_powheg_CP5Down.root";
-    map_mc["TTLL_powheg_CP5Up"] = "Vcb_Tagging_RF_TTLL_powheg_CP5Up.root";
-    map_mc["TTLL_powheg_mtop171p5"] = "Vcb_Tagging_RF_TTLL_powheg_mtop171p5.root";
-    map_mc["TTLL_powheg_mtop173p5"] = "Vcb_Tagging_RF_TTLL_powheg_mtop173p5.root";
+    map_mc["TTLL_powheg_hdampDown"] = "Vcb_TTLL_powheg_hdampDown.root";
+    map_mc["TTLL_powheg_hdampUp"] = "Vcb_TTLL_powheg_hdampUp.root";
+    map_mc["TTLL_powheg_CP5Down"] = "Vcb_TTLL_powheg_CP5Down.root";
+    map_mc["TTLL_powheg_CP5Up"] = "Vcb_TTLL_powheg_CP5Up.root";
+    map_mc["TTLL_powheg_mtop171p5"] = "Vcb_TTLL_powheg_mtop171p5.root";
+    map_mc["TTLL_powheg_mtop173p5"] = "Vcb_TTLL_powheg_mtop173p5.root";
 
     map_short_name_mc["TTLL_powheg_hdampDown"] = "TTLL_hdampDown";
     map_short_name_mc["TTLL_powheg_hdampUp"] = "TTLL_hdampUp";
@@ -161,7 +158,9 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     map_short_name_mc["TTLL_powheg_CP5Up"] = "TTLL_CP5Up";
     map_short_name_mc["TTLL_powheg_mtop171p5"] = "TTLL_mtop171p5";
     map_short_name_mc["TTLL_powheg_mtop173p5"] = "TTLL_mtop173p5";
-
+  
+    for (auto it = map_mc.begin(); it != map_mc.end(); it++)
+      it->second.ReplaceAll("Vcb", "Vcb_Tagging_RF");
     /*
         map_mc.clear();
         map_short_name_mc.clear();
@@ -195,6 +194,34 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   } // if (analyser == "Vcb_DL")
   else if (analyser == "Vcb_Tagging_RF_DL")
   {
+    map_mc["TTLJ_powheg_hdampDown"] = "Vcb_TTLJ_powheg_hdampDown.root";
+    map_mc["TTLJ_powheg_hdampUp"] = "Vcb_TTLJ_powheg_hdampUp.root";
+    map_mc["TTLJ_powheg_CP5Down"] = "Vcb_TTLJ_powheg_CP5Down.root";
+    map_mc["TTLJ_powheg_CP5Up"] = "Vcb_TTLJ_powheg_CP5Up.root";
+    map_mc["TTLJ_powheg_mtop171p5"] = "Vcb_TTLJ_powheg_mtop171p5.root";
+    map_mc["TTLJ_powheg_mtop173p5"] = "Vcb_TTLJ_powheg_mtop173p5.root";
+
+    map_short_name_mc["TTLJ_powheg_hdampDown"] = "TTLJ_hdampDown";
+    map_short_name_mc["TTLJ_powheg_hdampUp"] = "TTLJ_hdampUp";
+    map_short_name_mc["TTLJ_powheg_CP5Down"] = "TTLJ_CP5Down";
+    map_short_name_mc["TTLJ_powheg_CP5Up"] = "TTLJ_CP5Up";
+    map_short_name_mc["TTLJ_powheg_mtop171p5"] = "TTLJ_mtop171p5";
+    map_short_name_mc["TTLJ_powheg_mtop173p5"] = "TTLJ_mtop173p5";
+
+    map_mc["TTLL_powheg_hdampDown"] = "Vcb_TTLL_powheg_hdampDown.root";
+    map_mc["TTLL_powheg_hdampUp"] = "Vcb_TTLL_powheg_hdampUp.root";
+    map_mc["TTLL_powheg_CP5Down"] = "Vcb_TTLL_powheg_CP5Down.root";
+    map_mc["TTLL_powheg_CP5Up"] = "Vcb_TTLL_powheg_CP5Up.root";
+    map_mc["TTLL_powheg_mtop171p5"] = "Vcb_TTLL_powheg_mtop171p5.root";
+    map_mc["TTLL_powheg_mtop173p5"] = "Vcb_TTLL_powheg_mtop173p5.root";
+
+    map_short_name_mc["TTLL_powheg_hdampDown"] = "TTLL_hdampDown";
+    map_short_name_mc["TTLL_powheg_hdampUp"] = "TTLL_hdampUp";
+    map_short_name_mc["TTLL_powheg_CP5Down"] = "TTLL_CP5Down";
+    map_short_name_mc["TTLL_powheg_CP5Up"] = "TTLL_CP5Up";
+    map_short_name_mc["TTLL_powheg_mtop171p5"] = "TTLL_mtop171p5";
+    map_short_name_mc["TTLL_powheg_mtop173p5"] = "TTLL_mtop173p5";
+
     for (auto it = map_mc.begin(); it != map_mc.end(); it++)
       it->second.ReplaceAll("Vcb", "Vcb_Tagging_RF_DL");
   } // else if (analyzer == "Vcb_Tagging_RF_DL")

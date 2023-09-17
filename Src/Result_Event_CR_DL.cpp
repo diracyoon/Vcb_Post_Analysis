@@ -44,13 +44,15 @@ void Result_Event_CR_DL::Setup_Tree(TTree *tree, const Syst syst, const bool chk
   tree->SetBranchAddress("met_pt", &met_pt);
   tree->SetBranchAddress("met_phi", &met_phi);
 
-  tree->SetBranchAddress("process", &process);
-
   tree->SetBranchAddress("bvsc_third", &bvsc_third);
   tree->SetBranchAddress("bvsc_fourth", &bvsc_fourth);
 
+  tree->SetBranchAddress("decay_mode", &decay_mode);
+
   tree->SetBranchAddress("Gen_HF_Flavour", &vec_gen_hf_flavour);
   tree->SetBranchAddress("Gen_HF_Origin", &vec_gen_hf_origin);
+  tree->SetBranchAddress("Sel_Gen_HF_Flavour", &vec_sel_gen_hf_flavour);
+  tree->SetBranchAddress("Sel_Gen_HF_Origin", &vec_sel_gen_hf_origin);
 
   if (syst == Syst::Central && chk_all)
   {

@@ -7,11 +7,11 @@ ClassImp(CR_DL);
 CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_run_flag)
     : samples(a_era, a_channel, "Vcb_DL"), tagging_rf_dl(a_era)
 {
-  ROOT::EnableImplicitMT(4);
+  ROOT::EnableImplicitMT(10);
 
   cout << "[CR_DL::CR_DL]: Init analysis" << endl;
 
-  reduction = 1;
+  reduction = 1000;
 
   era = a_era;
   channel = a_channel;
@@ -64,25 +64,25 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
     map_tree_mc_ue_up[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "UEUp" + tree_name);
     event.Setup_Tree(map_tree_mc_ue_up[it->first], Syst::UnclusteredEnergyUp);
 
-    if (channel != "MM")
-    {
-      // eec_down
-      map_tree_mc_eec_down[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "ElectronEnDown" + tree_name);
-      event.Setup_Tree(map_tree_mc_eec_down[it->first], Syst::ElectronEnDown);
+    // if (channel != "MM")
+    // {
+    //   // eec_down
+    //   map_tree_mc_eec_down[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "ElectronEnDown" + tree_name);
+    //   event.Setup_Tree(map_tree_mc_eec_down[it->first], Syst::ElectronEnDown);
 
-      // eec_up
-      map_tree_mc_eec_up[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "ElectronEnUp" + tree_name);
-      event.Setup_Tree(map_tree_mc_eec_up[it->first], Syst::ElectronEnUp);
+    //   // eec_up
+    //   map_tree_mc_eec_up[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "ElectronEnUp" + tree_name);
+    //   event.Setup_Tree(map_tree_mc_eec_up[it->first], Syst::ElectronEnUp);
 
-      // eer_down
-      map_tree_mc_eer_down[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "ElectronResDown" + tree_name);
-      event.Setup_Tree(map_tree_mc_eer_down[it->first], Syst::ElectronResDown);
+    //   // eer_down
+    //   map_tree_mc_eer_down[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "ElectronResDown" + tree_name);
+    //   event.Setup_Tree(map_tree_mc_eer_down[it->first], Syst::ElectronResDown);
 
-      // eer_up
-      map_tree_mc_eer_up[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "ElectronResUp" + tree_name);
-      event.Setup_Tree(map_tree_mc_eer_up[it->first], Syst::ElectronResUp);
-    } // if (channel != "MM")
-  }   // for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
+    //   // eer_up
+    //   map_tree_mc_eer_up[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "ElectronResUp" + tree_name);
+    //   event.Setup_Tree(map_tree_mc_eer_up[it->first], Syst::ElectronResUp);
+    // } // if (channel != "MM")
+  } // for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
 
   // CP5 down
   map_fin_mc_cp5_down = map_fin_mc;
@@ -166,13 +166,13 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
   map_map_tree_mc["Jet_Res_Up"] = &map_tree_mc_jer_up;
   map_map_tree_mc["UE_Down"] = &map_tree_mc_ue_down;
   map_map_tree_mc["UE_Up"] = &map_tree_mc_ue_up;
-  if (channel != "MM")
-  {
-    map_map_tree_mc["El_En_Down"] = &map_tree_mc_eec_down;
-    map_map_tree_mc["El_En_Up"] = &map_tree_mc_eec_up;
-    map_map_tree_mc["El_Res_Down"] = &map_tree_mc_eer_down;
-    map_map_tree_mc["El_Res_Up"] = &map_tree_mc_eer_up;
-  }
+  // if (channel != "MM")
+  // {
+  //   map_map_tree_mc["El_En_Down"] = &map_tree_mc_eec_down;
+  //   map_map_tree_mc["El_En_Up"] = &map_tree_mc_eec_up;
+  //   map_map_tree_mc["El_Res_Down"] = &map_tree_mc_eer_down;
+  //   map_map_tree_mc["El_Res_Up"] = &map_tree_mc_eer_up;
+  // }
 
   map_map_fin_mc["CP5_Down"] = &map_fin_mc_cp5_down;
   map_map_tree_mc["CP5_Down"] = &map_tree_mc_cp5_down;
@@ -209,18 +209,31 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
     // cout << it->second << endl;
     vec_short_name_mc.push_back(it->second);
   }
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL"));
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
+
+  vec_short_name_mc.push_back("TTLJ_JJ_2");  // TTLJ, w->ud or w->us
+  vec_short_name_mc.push_back("TTLJ_JJ_4");  // TTLJ, w->cd or w->cs
+  vec_short_name_mc.push_back("TTLJ_JJ_45"); // TTLJ, w->cb
+
+  vec_short_name_mc.push_back("TTLJ_CC_2");  // TTLJ+cc, w->ud or w->us
+  vec_short_name_mc.push_back("TTLJ_CC_4");  // TTLJ+cc, w->cd or w->cs
+  vec_short_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
+
+  vec_short_name_mc.push_back("TTLJ_BB_2");  // TTLJ+bb, w->ud or w->us
+  vec_short_name_mc.push_back("TTLJ_BB_4");  // TTLJ+bb, w->cd or w->cs
+  vec_short_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
+
+  vec_short_name_mc.push_back("TTLL_JJ"); // TTLL+cc, w->ud or w->us
+  vec_short_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
+  vec_short_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
 
   // remove redundancy
   sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
   vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
-
-  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
-  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL"));
-  vec_short_name_mc.push_back("TTJJ");
-  vec_short_name_mc.push_back("TTCC");
-  vec_short_name_mc.push_back("TTBB");
   n_sample_merge_mc = vec_short_name_mc.size();
-  // cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
+  cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
 
   // Systs
   syst_name = {"Nominal",
@@ -271,10 +284,10 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
     syst_name.push_back("El_Id_Up");
     syst_name.push_back("El_Reco_Down");
     syst_name.push_back("El_Reco_Up");
-    syst_name.push_back("El_En_Down");
-    syst_name.push_back("El_En_Up");
-    syst_name.push_back("El_Res_Down");
-    syst_name.push_back("El_Res_Up");
+    // syst_name.push_back("El_En_Down");
+    // syst_name.push_back("El_En_Up");
+    // syst_name.push_back("El_Res_Down");
+    // syst_name.push_back("El_Res_Up");
   }
   else if (channel == "EE")
   {
@@ -285,10 +298,10 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
     syst_name.push_back("El_Id_Up");
     syst_name.push_back("El_Reco_Down");
     syst_name.push_back("El_Reco_Up");
-    syst_name.push_back("El_En_Down");
-    syst_name.push_back("El_En_Up");
-    syst_name.push_back("El_Res_Down");
-    syst_name.push_back("El_Res_Up");
+    // syst_name.push_back("El_En_Down");
+    // syst_name.push_back("El_En_Up");
+    // syst_name.push_back("El_Res_Down");
+    // syst_name.push_back("El_Res_Up");
   }
 
   for (int i = 0; i < sizeof(event.weight_pdf_error_set) / sizeof(float); i++)
@@ -581,8 +594,7 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
 {
   int unrolled_bin = Unroller(event.bvsc_third, event.bvsc_fourth);
 
-  TString sample_name_short = samples.map_short_name_mc[sample_name];
-  int histo_index = Histo_Index(sample_name, sample_name_short);
+  int histo_index = Histo_Index(sample_name);
 
   // cout << "test histo_index " << histo_index << ", sample_name_short = " << sample_name_short << endl;
 
@@ -878,7 +890,7 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
     else if (syst_type == "MuR_Up")
     {
       event.weight *= event.weight_c_tag_lhe_scale_mur_up;
-      c_tagging_rf_type = "C_Tag_LHE_Scale_MuF_Up";
+      c_tagging_rf_type = "C_Tag_LHE_Scale_MuR_Up";
     }
     else if (syst_type == "FSR_Down")
     {
@@ -916,8 +928,8 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
       c_tagging_rf_type = "C_Tag_Nominal";
     }
 
-    event.weight *= tagging_rf_dl.Get_Tagging_RF_DL_C_Tag(sample_name_short, c_tagging_rf_type, event.n_pv, event.ht);
-
+    event.weight *= tagging_rf_dl.Get_Tagging_RF_DL_C_Tag(vec_short_name_mc[histo_index], c_tagging_rf_type, event.n_pv, event.ht);
+    
     histo_mc[i][histo_index][0]->Fill(unrolled_bin, event.weight);
     histo_mc[i][histo_index][1]->Fill(event.n_pv, event.weight);
     histo_mc[i][histo_index][2]->Fill(event.leading_lepton_eta, event.weight);
@@ -943,56 +955,54 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
 
 //////////
 
-int CR_DL::Histo_Index(const TString &sample_name, TString &sample_name_short)
+int CR_DL::Histo_Index(const TString &sample_name)
 {
   int index = -999;
 
-  if ((sample_name.Contains("TTLL") || sample_name.Contains("TTLJ")) && !sample_name.Contains("TTLJ_WtoCB"))
+  if ((sample_name.Contains("TTLL") || sample_name.Contains("TTLJ")))
   {
-    /*
-    if (event.process == 0)
-      index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTJJ") - vec_short_name_mc.begin();
-    else if (event.process == 1)
-      index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTCC") - vec_short_name_mc.begin();
-    else if (event.process == 2)
-      index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTBB") - vec_short_name_mc.begin();
-    */
-
     bool chk_b = false;
     bool chk_c = false;
 
-    for (size_t i = 0; i < event.vec_gen_hf_flavour->size(); i++)
+    // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
+    for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
     {
-      // cout << gen_hf_flavour->at(i) << " " << gen_hf_origin->at(i) << endl;
+      int flavour = event.vec_sel_gen_hf_flavour->at(i);
+      int origin = event.vec_sel_gen_hf_origin->at(i);
 
-      if (event.vec_gen_hf_flavour->at(i) == 5 && abs(event.vec_gen_hf_origin->at(i)) != 6 && abs(event.vec_gen_hf_origin->at(i)) != 24)
+      if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
       {
         chk_b = true;
         break;
       }
-      else if (event.vec_gen_hf_flavour->at(i) == 4 && abs(event.vec_gen_hf_origin->at(i)) != 6 && abs(event.vec_gen_hf_origin->at(i)) != 24)
+      else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
         chk_c = true;
+    }
 
-    } // for(auto it=gen_hf_flavour->begin(); it!=gen_hf_flavour->end(); it++)
+    TString histo_name = samples.map_short_name_mc[sample_name];
+    if (histo_name.Contains("WtoCB"))
+      histo_name = "TTLJ";
 
     if (chk_b)
-    {
-      sample_name_short = samples.map_short_name_mc[sample_name] + "_HF";
-      index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTBB") - vec_short_name_mc.begin();
-    }
+      histo_name += "_BB";
     else if (chk_c)
-    {
-      sample_name_short = samples.map_short_name_mc[sample_name] + "_HF";
-      index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTCC") - vec_short_name_mc.begin();
-    }
+      histo_name += "_CC";
     else
-    {
-      sample_name_short = samples.map_short_name_mc[sample_name] + "_JJ";
-      index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTJJ") - vec_short_name_mc.begin();
-    }
-  }
+      histo_name += "_JJ";
+
+    if (event.decay_mode == 21 || event.decay_mode == 23)
+      histo_name += "_2";
+    else if (event.decay_mode == 41 || event.decay_mode == 43)
+      histo_name += "_4";
+    else if (event.decay_mode == 45)
+      histo_name += "_45";
+
+    index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), histo_name) - vec_short_name_mc.begin();
+  } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   else
     index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), samples.map_short_name_mc[sample_name]) - vec_short_name_mc.begin();
+
+  // cout << "test Histo_Index: " << sample_name << " " << index << endl;
 
   return index;
 } // int CR_DL::Histo_Index(const TString &sample_name)

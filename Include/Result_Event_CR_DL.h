@@ -44,10 +44,12 @@ protected:
   float met_pt;
   float met_phi;
 
-  int process;
+  int decay_mode;
 
   vector<int> *vec_gen_hf_flavour = NULL;
   vector<int> *vec_gen_hf_origin = NULL;
+  vector<int> *vec_sel_gen_hf_flavour = NULL;
+  vector<int> *vec_sel_gen_hf_origin = NULL;
 
   float bvsc_third;
   float bvsc_fourth;
