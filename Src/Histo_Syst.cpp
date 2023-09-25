@@ -52,37 +52,36 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const boo
   n_region = region_name.size();
 
   // number of merged MC
-  for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
+  for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
   {
-    // cout << it->second << endl;
-    vec_short_name_mc.push_back(it->second);
+    cout << it->first << " " << it->second << endl;
+    vec_name_mc.push_back(it->first);
   }
 
-  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
-  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL"));
-  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
+  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLJ"));
+  vec_name_mc.push_back("TTLJ_2");    // TTLJ, w->ud or w->us
+  vec_name_mc.push_back("TTLJ_4");    // TTLJ, w->cd or w->cs
+  vec_name_mc.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
+  vec_name_mc.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
+  vec_name_mc.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
+  vec_name_mc.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
 
-  vec_short_name_mc.push_back("TTLJ_JJ_2");  // TTLJ, w->ud or w->us
-  vec_short_name_mc.push_back("TTLJ_JJ_4");  // TTLJ, w->cd or w->cs
-  vec_short_name_mc.push_back("TTLJ_JJ_45"); // TTLJ, w->cb
+  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLJ_WtoCB"));
+  vec_name_mc.push_back("TTLJ_45");    // TTLJ, w->cb
+  vec_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
+  vec_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
 
-  vec_short_name_mc.push_back("TTLJ_CC_2");  // TTLJ+cc, w->ud or w->us
-  vec_short_name_mc.push_back("TTLJ_CC_4");  // TTLJ+cc, w->cd or w->cs
-  vec_short_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
-
-  vec_short_name_mc.push_back("TTLJ_BB_2");  // TTLJ+bb, w->ud or w->us
-  vec_short_name_mc.push_back("TTLJ_BB_4");  // TTLJ+bb, w->cd or w->cs
-  vec_short_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
-
-  vec_short_name_mc.push_back("TTLL_JJ"); // TTLL+cc, w->ud or w->us
-  vec_short_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
-  vec_short_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
+  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLL"));
+  vec_name_mc.push_back("TTLL");    // TTLL+cc, w->ud or w->us
+  vec_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
+  vec_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
 
   // remove redundancy
-  sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
-  vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
-  n_sample_merge_mc = vec_short_name_mc.size();
-  // cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
+  sort(vec_name_mc.begin(), vec_name_mc.end(), Comparing_TString);
+  vec_name_mc.erase(unique(vec_name_mc.begin(), vec_name_mc.end()), vec_name_mc.end());
+
+  n_sample_mc = vec_name_mc.size();
+  cout << "n_sample_mc = " << n_sample_mc << endl;
 
   // Systs
   syst_name = {"Nominal",
@@ -310,12 +309,11 @@ void Histo_Syst::Fill_Histo_Data(const int &region_index)
 
 //////////
 
-void Histo_Syst::Fill_Histo_MC(const int &region_index, const TString &sample_name_short, const TString &syst_fix)
+void Histo_Syst::Fill_Histo_MC(const int &region_index, const TString &sample_name, const TString &syst_fix)
 {
-  cout << "test Fill_Histo_MC" << endl;
-
-  //int sample_index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name_short) - vec_short_name_mc.begin();
-  int histo_index = Histo_Index(sample_name_short);
+  // int sample_index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name_short) - vec_short_name_mc.begin();
+  int histo_index = Histo_Index(sample_name);
+  TString histo_name_rf = Histo_Name_RF(sample_name);
 
   for (int i = 0; i < n_syst; i++)
   {
@@ -636,7 +634,7 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const TString &sample_na
       c_tagging_rf_type = "C_Tag_Nominal";
     }
 
-    event.weight *= tagging_rf.Get_Tagging_RF_C_Tag(vec_short_name_mc[histo_index], c_tagging_rf_type, event.n_pv, event.ht);
+    event.weight *= tagging_rf.Get_Tagging_RF_C_Tag(histo_name_rf, c_tagging_rf_type, event.n_pv, event.ht);
 
     // this part is not satisfactory, but don't waste time
     histo_mc[region_index][i][histo_index][0]->Fill(event.n_pv, event.weight);
@@ -668,7 +666,7 @@ void Histo_Syst::Fill_Histo_MC(const int &region_index, const TString &sample_na
 
 //////////
 
-int Histo_Syst::Histo_Index(const TString& sample_name)
+int Histo_Syst::Histo_Index(const TString &sample_name)
 {
   int index = -999;
 
@@ -692,7 +690,7 @@ int Histo_Syst::Histo_Index(const TString& sample_name)
         chk_c = true;
     }
 
-    TString histo_name = samples.map_short_name_mc[sample_name];
+    TString histo_name = sample_name;
     if (histo_name.Contains("WtoCB"))
       histo_name = "TTLJ";
 
@@ -700,8 +698,6 @@ int Histo_Syst::Histo_Index(const TString& sample_name)
       histo_name += "_BB";
     else if (chk_c)
       histo_name += "_CC";
-    else
-      histo_name += "_JJ";
 
     if (event.decay_mode == 21 || event.decay_mode == 23)
       histo_name += "_2";
@@ -710,15 +706,68 @@ int Histo_Syst::Histo_Index(const TString& sample_name)
     else if (event.decay_mode == 45)
       histo_name += "_45";
 
-    index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), histo_name) - vec_short_name_mc.begin();
+    index = find(vec_name_mc.begin(), vec_name_mc.end(), histo_name) - vec_name_mc.begin();
   } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   else
-    index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), samples.map_short_name_mc[sample_name]) - vec_short_name_mc.begin();
+    index = find(vec_name_mc.begin(), vec_name_mc.end(), sample_name) - vec_name_mc.begin();
 
   // cout << "test Histo_Index: " << sample_name << " " << index << endl;
 
   return index;
 } // int Histo_Syst::Histo_Index(const TString& sample_name)
+
+//////////
+
+TString Histo_Syst::Histo_Name_RF(const TString &sample_name)
+{
+  TString histo_name_rf = samples.map_short_name_mc[sample_name];
+
+  if (histo_name_rf.Contains("TTLL") || histo_name_rf.Contains("TTLJ"))
+  {
+    bool chk_b = false;
+    bool chk_c = false;
+
+    // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
+    for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
+    {
+      int flavour = event.vec_sel_gen_hf_flavour->at(i);
+      int origin = event.vec_sel_gen_hf_origin->at(i);
+
+      if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
+      {
+        chk_b = true;
+        break;
+      }
+      else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
+        chk_c = true;
+    }
+
+    if (histo_name_rf.Contains("WtoCB"))
+      histo_name_rf = "TTLJ";
+
+    // if (histo_name.Contains("CP5") || histo_name.Contains("hdamp") || histo_name.Contains("mtop"))
+    // {
+    //   if (histo_name.Contains("TTLJ"))
+    //     histo_name = "TTLJ";
+    //   else if (histo_name.Contains("TTLL"))
+    //     histo_name = "TTLL";
+    // }
+
+    if (chk_b)
+      histo_name_rf += "_BB";
+    else if (chk_c)
+      histo_name_rf += "_CC";
+
+    if (event.decay_mode == 21 || event.decay_mode == 23)
+      histo_name_rf += "_2";
+    else if (event.decay_mode == 41 || event.decay_mode == 43)
+      histo_name_rf += "_4";
+    else if (event.decay_mode == 45)
+      histo_name_rf += "_45";
+  }
+
+  return histo_name_rf;
+} // TString Histo_Syst::Histo_name_RF(const TString &sample_name)
 
 //////////
 
@@ -783,18 +832,13 @@ void Histo_Syst::Init_Histo_Syst()
           run_flag == "All")
       {
         map_tree_mc[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "Central" + tree_name);
-        cout << "test 0" << endl;
         event.Setup_Tree(map_tree_mc[it->first], Syst::Central, true);
-        cout << "test 1" << endl;
       }
 
       if (run_flag == "Jet_En_Down" || run_flag == "All")
       {
-        cout << "test 10" << endl;
         map_tree_mc_jec_down[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "JetEnDown" + tree_name);
-        cout << "test 11" << endl;
         event.Setup_Tree(map_tree_mc_jec_down[it->first], Syst::JetEnDown, false);
-        cout << "test 2" << endl;
       }
 
       if (run_flag == "Jet_En_Up" || run_flag == "All")
@@ -825,7 +869,6 @@ void Histo_Syst::Init_Histo_Syst()
       {
         map_tree_mc_ue_up[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "UEUp" + tree_name);
         event.Setup_Tree(map_tree_mc_ue_up[it->first], Syst::Central, false);
-        cout << "test 3" << endl;
       }
 
       /*
@@ -871,13 +914,13 @@ void Histo_Syst::Init_Histo_Syst()
       map_fin_mc_cp5_down = map_fin_mc;
       map_tree_mc_cp5_down = map_tree_mc;
 
-      map_fin_mc_cp5_down["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5down"]);
-      map_tree_mc_cp5_down["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_down["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_cp5_down["TTLJ_powheg"], Syst::Central, false);
+      map_fin_mc_cp5_down["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_CP5down"]);
+      map_tree_mc_cp5_down["TTLJ"] = (TTree *)map_fin_mc_cp5_down["TTLJ"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_cp5_down["TTLJ"], Syst::Central, false);
 
-      map_fin_mc_cp5_down["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_CP5down"]);
-      map_tree_mc_cp5_down["TTLL_powheg"] = (TTree *)map_fin_mc_cp5_down["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_cp5_down["TTLL_powheg"], Syst::Central, false);
+      map_fin_mc_cp5_down["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_CP5down"]);
+      map_tree_mc_cp5_down["TTLL"] = (TTree *)map_fin_mc_cp5_down["TTLL"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_cp5_down["TTLL"], Syst::Central, false);
     }
 
     if (run_flag == "CP5_Up" || run_flag == "All")
@@ -885,13 +928,13 @@ void Histo_Syst::Init_Histo_Syst()
       map_fin_mc_cp5_up = map_fin_mc;
       map_tree_mc_cp5_up = map_tree_mc;
 
-      map_fin_mc_cp5_up["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5up"]);
-      map_tree_mc_cp5_up["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_up["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_cp5_up["TTLJ_powheg"], Syst::Central, false);
+      map_fin_mc_cp5_up["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_CP5up"]);
+      map_tree_mc_cp5_up["TTLJ"] = (TTree *)map_fin_mc_cp5_up["TTLJ"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_cp5_up["TTLJ"], Syst::Central, false);
 
-      map_fin_mc_cp5_up["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_CP5up"]);
-      map_tree_mc_cp5_up["TTLL_powheg"] = (TTree *)map_fin_mc_cp5_up["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_cp5_up["TTLL_powheg"], Syst::Central, false);
+      map_fin_mc_cp5_up["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_CP5up"]);
+      map_tree_mc_cp5_up["TTLL"] = (TTree *)map_fin_mc_cp5_up["TTLL"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_cp5_up["TTLL"], Syst::Central, false);
     }
 
     if (run_flag == "hDamp_Down" || run_flag == "All")
@@ -899,15 +942,13 @@ void Histo_Syst::Init_Histo_Syst()
       map_fin_mc_hdamp_down = map_fin_mc;
       map_tree_mc_hdamp_down = map_tree_mc;
 
-      map_fin_mc_hdamp_down["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampdown"]);
-      map_tree_mc_hdamp_down["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_down["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_hdamp_down["TTLJ_powheg"], Syst::Central, false);
+      map_fin_mc_hdamp_down["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_hdampdown"]);
+      map_tree_mc_hdamp_down["TTLJ"] = (TTree *)map_fin_mc_hdamp_down["TTLJ"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_hdamp_down["TTLJ"], Syst::Central, false);
 
-      map_fin_mc_hdamp_down["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_hdampdown"]);
-      map_tree_mc_hdamp_down["TTLL_powheg"] = (TTree *)map_fin_mc_hdamp_down["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_hdamp_down["TTLL_powheg"], Syst::Central, false);
-
-      cout << "test 4" << endl;
+      map_fin_mc_hdamp_down["TTL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_hdampdown"]);
+      map_tree_mc_hdamp_down["TTLL"] = (TTree *)map_fin_mc_hdamp_down["TTLL"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_hdamp_down["TTLL"], Syst::Central, false);
     }
 
     if (run_flag == "hDamp_Up" || run_flag == "All")
@@ -915,13 +956,13 @@ void Histo_Syst::Init_Histo_Syst()
       map_fin_mc_hdamp_up = map_fin_mc;
       map_tree_mc_hdamp_up = map_tree_mc;
 
-      map_fin_mc_hdamp_up["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampup"]);
-      map_tree_mc_hdamp_up["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_up["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_hdamp_up["TTLJ_powheg"], Syst::Central, false);
+      map_fin_mc_hdamp_up["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_hdampup"]);
+      map_tree_mc_hdamp_up["TTLJ"] = (TTree *)map_fin_mc_hdamp_up["TTLJ"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_hdamp_up["TTLJ"], Syst::Central, false);
 
-      map_fin_mc_hdamp_up["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_hdampup"]);
-      map_tree_mc_hdamp_up["TTLL_powheg"] = (TTree *)map_fin_mc_hdamp_up["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_hdamp_up["TTLL_powheg"], Syst::Central, false);
+      map_fin_mc_hdamp_up["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_hdampup"]);
+      map_tree_mc_hdamp_up["TTLL"] = (TTree *)map_fin_mc_hdamp_up["TTLL"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_hdamp_up["TTLL"], Syst::Central, false);
     }
 
     if (run_flag == "mTop_171p5" || run_flag == "All")
@@ -929,13 +970,13 @@ void Histo_Syst::Init_Histo_Syst()
       map_fin_mc_mtop_171p5 = map_fin_mc;
       map_tree_mc_mtop_171p5 = map_tree_mc;
 
-      map_fin_mc_mtop_171p5["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_171p5"]);
-      map_tree_mc_mtop_171p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_171p5["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_mtop_171p5["TTLJ_powheg"], Syst::Central, false);
+      map_fin_mc_mtop_171p5["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_mtop_171p5"]);
+      map_tree_mc_mtop_171p5["TTLJ"] = (TTree *)map_fin_mc_mtop_171p5["TTLJ"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_mtop_171p5["TTLJ"], Syst::Central, false);
 
-      map_fin_mc_mtop_171p5["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_mtop_171p5"]);
-      map_tree_mc_mtop_171p5["TTLL_powheg"] = (TTree *)map_fin_mc_mtop_171p5["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_mtop_171p5["TTLL_powheg"], Syst::Central, false);
+      map_fin_mc_mtop_171p5["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_mtop_171p5"]);
+      map_tree_mc_mtop_171p5["TTLL"] = (TTree *)map_fin_mc_mtop_171p5["TTLL"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_mtop_171p5["TTLL"], Syst::Central, false);
     }
 
     if (run_flag == "mTop_173p5" || run_flag == "All")
@@ -943,13 +984,13 @@ void Histo_Syst::Init_Histo_Syst()
       map_fin_mc_mtop_173p5 = map_fin_mc;
       map_tree_mc_mtop_173p5 = map_tree_mc;
 
-      map_fin_mc_mtop_173p5["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_173p5"]);
-      map_tree_mc_mtop_173p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_173p5["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_mtop_173p5["TTLJ_powheg"], Syst::Central, false);
+      map_fin_mc_mtop_173p5["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_mtop_173p5"]);
+      map_tree_mc_mtop_173p5["TTLJ"] = (TTree *)map_fin_mc_mtop_173p5["TTLJ"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_mtop_173p5["TTLJ"], Syst::Central, false);
 
-      map_fin_mc_mtop_173p5["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_mtop_173p5"]);
-      map_tree_mc_mtop_173p5["TTLL_powheg"] = (TTree *)map_fin_mc_mtop_173p5["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-      event.Setup_Tree(map_tree_mc_mtop_173p5["TTLL_powheg"], Syst::Central, false);
+      map_fin_mc_mtop_173p5["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_mtop_173p5"]);
+      map_tree_mc_mtop_173p5["TTLL"] = (TTree *)map_fin_mc_mtop_173p5["TTLL"]->Get(key_base + "Central" + tree_name);
+      event.Setup_Tree(map_tree_mc_mtop_173p5["TTLL"], Syst::Central, false);
     }
 
     // TFile and TTree handlers
@@ -1020,7 +1061,6 @@ void Histo_Syst::Init_Histo_Syst()
       }
     } // if (channel == "El")
     */
-    cout << "test 5" << endl;
   } // if (run_flag != "Data")
 
   // data
@@ -1046,13 +1086,13 @@ void Histo_Syst::Init_Histo_Syst()
     histo_mc[i] = new TH1D ***[n_syst];
     for (int j = 0; j < n_syst; j++)
     {
-      histo_mc[i][j] = new TH1D **[n_sample_merge_mc];
-      for (int k = 0; k < n_sample_merge_mc; k++)
+      histo_mc[i][j] = new TH1D **[n_sample_mc];
+      for (int k = 0; k < n_sample_mc; k++)
       {
         histo_mc[i][j][k] = new TH1D *[n_variable];
         for (int l = 0; l < n_variable; l++)
         {
-          TString histo_name = region_name[i] + "_" + syst_name[j] + "_" + vec_short_name_mc[k] + "_" + variable_conf[l].variable_title;
+          TString histo_name = region_name[i] + "_" + syst_name[j] + "_" + vec_name_mc[k] + "_" + variable_conf[l].variable_title;
           histo_mc[i][j][k][l] = new TH1D(histo_name, variable_conf[l].variable_title, variable_conf[l].n_bin, variable_conf[l].x_low, variable_conf[l].x_up);
         } // loop over n_variable
       }   // loop over n_sample_merge_mc
@@ -1225,8 +1265,7 @@ void Histo_Syst::Read_Tree()
     for (auto it = map_tree->begin(); it != map_tree->end(); it++)
     {
       cout << it->first << endl;
-      //TString sample_name_short = samples.map_short_name_mc[it->first];
-      TString sample_name_short = samples.map_short_name_mc[it->first];
+      // TString sample_name_short = samples.map_short_name_mc[it->first];
       // cout << sample_name_short << endl;
 
       // int sample_index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), samples.map_short_name_mc[it->first]) - vec_short_name_mc.begin();
@@ -1273,7 +1312,7 @@ void Histo_Syst::Read_Tree()
           continue;
         }
 
-        event.Swap();
+        // event.Swap();
 
         TString region = Set_Region();
 
@@ -1282,7 +1321,7 @@ void Histo_Syst::Read_Tree()
 
         int region_index = Get_Region_Index(region);
 
-        Fill_Histo_MC(region_index, sample_name_short, syst_fix);
+        Fill_Histo_MC(region_index, it->first, syst_fix);
         // if (syst_fix == "None") Fill_Histo_Weight(region_index, sample_index);
       } // loop over entries
     }   // loop over map_tree_mc

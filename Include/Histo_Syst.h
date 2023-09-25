@@ -48,7 +48,7 @@ public:
       return false;
   } // bool Comparing_TString(const TString &str1, const TString &str2)
 
- protected:
+protected:
   int n_split;
   int index_split;
   int reduction;
@@ -62,8 +62,12 @@ public:
   TString path_base;
 
   Samples samples;
-  int n_sample_merge_mc;
+
+  vector<TString> vec_name_mc;
+  int n_sample_mc;
+
   vector<TString> vec_short_name_mc;
+  int n_sample_merge_mc;
 
   TString key_base;
   TString tree_name;
@@ -150,8 +154,9 @@ public:
   TMVA::Reader *reader_template;
 
   void Fill_Histo_Data(const int &region_index);
-  void Fill_Histo_MC(const int &region_index, const TString &sample_name_short, const TString &syst_fix = "None");
-  int Histo_Index(const TString& sample_name);
+  void Fill_Histo_MC(const int &region_index, const TString &sample_name, const TString &syst_fix = "None");
+  int Histo_Index(const TString &sample_name);
+  TString Histo_Name_RF(const TString &sample_name);
   int Get_Region_Index(const TString &region);
   void Init_Histo_Syst();
   void Init_Merge_PDF_Error_Set();

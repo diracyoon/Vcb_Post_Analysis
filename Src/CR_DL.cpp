@@ -88,73 +88,73 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
   map_fin_mc_cp5_down = map_fin_mc;
   map_tree_mc_cp5_down = map_tree_mc;
 
-  map_fin_mc_cp5_down["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5down"]);
-  map_tree_mc_cp5_down["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_down["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_cp5_down["TTLJ_powheg"], Syst::Central);
+  map_fin_mc_cp5_down["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_CP5down"]);
+  map_tree_mc_cp5_down["TTLJ"] = (TTree *)map_fin_mc_cp5_down["TTLJ"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_cp5_down["TTLJ"], Syst::Central);
 
-  map_fin_mc_cp5_down["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_CP5down"]);
-  map_tree_mc_cp5_down["TTLL_powheg"] = (TTree *)map_fin_mc_cp5_down["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_cp5_down["TTLL_powheg"], Syst::Central);
+  map_fin_mc_cp5_down["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_CP5down"]);
+  map_tree_mc_cp5_down["TTLL"] = (TTree *)map_fin_mc_cp5_down["TTLL"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_cp5_down["TTLL"], Syst::Central);
 
   // CP5 up
   map_fin_mc_cp5_up = map_fin_mc;
   map_tree_mc_cp5_up = map_tree_mc;
 
-  map_fin_mc_cp5_up["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_CP5up"]);
-  map_tree_mc_cp5_up["TTLJ_powheg"] = (TTree *)map_fin_mc_cp5_up["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_cp5_up["TTLJ_powheg"], Syst::Central);
+  map_fin_mc_cp5_up["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_CP5up"]);
+  map_tree_mc_cp5_up["TTLJ"] = (TTree *)map_fin_mc_cp5_up["TTLJ"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_cp5_up["TTLJ"], Syst::Central);
 
-  map_fin_mc_cp5_up["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_CP5up"]);
-  map_tree_mc_cp5_up["TTLL_powheg"] = (TTree *)map_fin_mc_cp5_up["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_cp5_up["TTLL_powheg"], Syst::Central);
+  map_fin_mc_cp5_up["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_CP5up"]);
+  map_tree_mc_cp5_up["TTLL"] = (TTree *)map_fin_mc_cp5_up["TTLL"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_cp5_up["TTLL"], Syst::Central);
 
   // hDamp down
   map_fin_mc_hdamp_down = map_fin_mc;
   map_tree_mc_hdamp_down = map_tree_mc;
 
-  map_fin_mc_hdamp_down["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampdown"]);
-  map_tree_mc_hdamp_down["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_down["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_hdamp_down["TTLJ_powheg"], Syst::Central);
+  map_fin_mc_hdamp_down["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_hdampdown"]);
+  map_tree_mc_hdamp_down["TTLJ"] = (TTree *)map_fin_mc_hdamp_down["TTLJ"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_hdamp_down["TTLJ"], Syst::Central);
 
-  map_fin_mc_hdamp_down["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_hdampdown"]);
-  map_tree_mc_hdamp_down["TTLL_powheg"] = (TTree *)map_fin_mc_hdamp_down["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_hdamp_down["TTLL_powheg"], Syst::Central);
+  map_fin_mc_hdamp_down["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_hdampdown"]);
+  map_tree_mc_hdamp_down["TTLL"] = (TTree *)map_fin_mc_hdamp_down["TTLL"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_hdamp_down["TTLL"], Syst::Central);
 
   // hDamp up
   map_fin_mc_hdamp_up = map_fin_mc;
   map_tree_mc_hdamp_up = map_tree_mc;
 
-  map_fin_mc_hdamp_up["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_hdampup"]);
-  map_tree_mc_hdamp_up["TTLJ_powheg"] = (TTree *)map_fin_mc_hdamp_up["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_hdamp_up["TTLJ_powheg"], Syst::Central);
+  map_fin_mc_hdamp_up["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_hdampup"]);
+  map_tree_mc_hdamp_up["TTLJ"] = (TTree *)map_fin_mc_hdamp_up["TTLJ"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_hdamp_up["TTLJ"], Syst::Central);
 
-  map_fin_mc_hdamp_up["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_hdampup"]);
-  map_tree_mc_hdamp_up["TTLL_powheg"] = (TTree *)map_fin_mc_hdamp_up["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_hdamp_up["TTLL_powheg"], Syst::Central);
+  map_fin_mc_hdamp_up["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_hdampup"]);
+  map_tree_mc_hdamp_up["TTLL"] = (TTree *)map_fin_mc_hdamp_up["TTLL"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_hdamp_up["TTLL"], Syst::Central);
 
   // mTop 171.5
   map_fin_mc_mtop_171p5 = map_fin_mc;
   map_tree_mc_mtop_171p5 = map_tree_mc;
 
-  map_fin_mc_mtop_171p5["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_171p5"]);
-  map_tree_mc_mtop_171p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_171p5["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_mtop_171p5["TTLJ_powheg"], Syst::Central);
+  map_fin_mc_mtop_171p5["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_mtop_171p5"]);
+  map_tree_mc_mtop_171p5["TTLJ"] = (TTree *)map_fin_mc_mtop_171p5["TTLJ"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_mtop_171p5["TTLJ"], Syst::Central);
 
-  map_fin_mc_mtop_171p5["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_mtop_171p5"]);
-  map_tree_mc_mtop_171p5["TTLL_powheg"] = (TTree *)map_fin_mc_mtop_171p5["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_mtop_171p5["TTLL_powheg"], Syst::Central);
+  map_fin_mc_mtop_171p5["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_mtop_171p5"]);
+  map_tree_mc_mtop_171p5["TTLL"] = (TTree *)map_fin_mc_mtop_171p5["TTLL"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_mtop_171p5["TTLL"], Syst::Central);
 
   // mTop 173.5
   map_fin_mc_mtop_173p5 = map_fin_mc;
   map_tree_mc_mtop_173p5 = map_tree_mc;
 
-  map_fin_mc_mtop_173p5["TTLJ_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_powheg_mtop_173p5"]);
-  map_tree_mc_mtop_173p5["TTLJ_powheg"] = (TTree *)map_fin_mc_mtop_173p5["TTLJ_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_mtop_173p5["TTLJ_powheg"], Syst::Central);
+  map_fin_mc_mtop_173p5["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_mtop_173p5"]);
+  map_tree_mc_mtop_173p5["TTLJ"] = (TTree *)map_fin_mc_mtop_173p5["TTLJ"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_mtop_173p5["TTLJ"], Syst::Central);
 
-  map_fin_mc_mtop_173p5["TTLL_powheg"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_powheg_mtop_173p5"]);
-  map_tree_mc_mtop_173p5["TTLL_powheg"] = (TTree *)map_fin_mc_mtop_173p5["TTLL_powheg"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_mtop_173p5["TTLL_powheg"], Syst::Central);
+  map_fin_mc_mtop_173p5["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_mtop_173p5"]);
+  map_tree_mc_mtop_173p5["TTLL"] = (TTree *)map_fin_mc_mtop_173p5["TTLL"]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_mc_mtop_173p5["TTLL"], Syst::Central);
 
   // TFile and TTree handlers
   map_map_fin_mc["Central"] = &map_fin_mc;
@@ -203,37 +203,36 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
     event.Setup_Tree(map_tree_data[it->first], Syst::Central);
   }
 
-  // number of merged MC
-  for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
+  // number of MC
+  for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
   {
-    // cout << it->second << endl;
-    vec_short_name_mc.push_back(it->second);
+    cout << it->first << endl;
+    vec_name_mc.push_back(it->first);
   }
-  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
-  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL"));
-  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
+  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLJ"));
+  vec_name_mc.push_back("TTLJ_JJ_2"); // TTLJ, w->ud or w->us
+  vec_name_mc.push_back("TTLJ_JJ_4"); // TTLJ, w->cd or w->cs
+  vec_name_mc.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
+  vec_name_mc.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
+  vec_name_mc.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
+  vec_name_mc.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
 
-  vec_short_name_mc.push_back("TTLJ_JJ_2");  // TTLJ, w->ud or w->us
-  vec_short_name_mc.push_back("TTLJ_JJ_4");  // TTLJ, w->cd or w->cs
-  vec_short_name_mc.push_back("TTLJ_JJ_45"); // TTLJ, w->cb
+  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLJ_WtoCB"));
+  vec_name_mc.push_back("TTLJ_JJ_45"); // TTLJ, w->cb
+  vec_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
+  vec_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
 
-  vec_short_name_mc.push_back("TTLJ_CC_2");  // TTLJ+cc, w->ud or w->us
-  vec_short_name_mc.push_back("TTLJ_CC_4");  // TTLJ+cc, w->cd or w->cs
-  vec_short_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
-
-  vec_short_name_mc.push_back("TTLJ_BB_2");  // TTLJ+bb, w->ud or w->us
-  vec_short_name_mc.push_back("TTLJ_BB_4");  // TTLJ+bb, w->cd or w->cs
-  vec_short_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
-
-  vec_short_name_mc.push_back("TTLL_JJ"); // TTLL+cc, w->ud or w->us
-  vec_short_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
-  vec_short_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
+  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLL"));
+  vec_name_mc.push_back("TTLL_JJ"); // TTLL+cc, w->ud or w->us
+  vec_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
+  vec_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
 
   // remove redundancy
-  sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
-  vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
-  n_sample_merge_mc = vec_short_name_mc.size();
-  cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
+  sort(vec_name_mc.begin(), vec_name_mc.end(), Comparing_TString);
+  vec_name_mc.erase(unique(vec_name_mc.begin(), vec_name_mc.end()), vec_name_mc.end());
+
+  n_sample_mc = vec_name_mc.size();
+  cout << "n_sample_mc = " << n_sample_mc << endl;
 
   // Systs
   syst_name = {"Nominal",
@@ -361,7 +360,9 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
                    {"Subleading_Jet_CvsB", 100, 0, 1},
                    {"Subleading_Jet_CvsL", 100, 0, 1},
                    {"Met_Pt", 100, 0, 500},
-                   {"Met_Phi", 100, -4, 4}};
+                   {"Met_Phi", 100, -4, 4},
+                   {"Leading_Jet_Charge", 40, -2, 2},
+                   {"Subleading_jet_Charge", 40, -2, 2}};
   n_variable = variable_conf.size();
 
   // histo for MC
@@ -369,15 +370,15 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
   // histo_mc_2d = new TH2D ***[n_syst];
   for (int i = 0; i < n_syst; i++)
   {
-    histo_mc[i] = new TH1D **[n_sample_merge_mc];
+    histo_mc[i] = new TH1D **[n_sample_mc];
     // histo_mc_2d[i] = new TH2D **[n_sample_merge_mc];
-    for (int j = 0; j < n_sample_merge_mc; j++)
+    for (int j = 0; j < n_sample_mc; j++)
     {
       histo_mc[i][j] = new TH1D *[n_variable];
       // histo_mc_2d[i][j] = new TH2D *[n_variable];
       for (int k = 0; k < n_variable; k++)
       {
-        TString histo_name = syst_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
+        TString histo_name = syst_name[i] + "_" + vec_name_mc[j] + "_" + variable_conf[k].variable_title;
         histo_mc[i][j][k] = new TH1D(histo_name, histo_name, variable_conf[k].n_bin, variable_conf[k].x_low, variable_conf[k].x_up);
 
         // histo_name = syst_name[i] + "_" + vec_short_name_mc[j] + "_" + histo_type[k];
@@ -429,9 +430,9 @@ CR_DL::~CR_DL()
   for (int i = 0; i < n_syst; i++)
   {
     TDirectory *dir_syst = dir_region->mkdir(syst_name[i]);
-    for (int j = 0; j < n_sample_merge_mc; j++)
+    for (int j = 0; j < n_sample_mc; j++)
     {
-      TDirectory *dir_sample = dir_syst->mkdir(vec_short_name_mc[j]);
+      TDirectory *dir_sample = dir_syst->mkdir(vec_name_mc[j]);
       for (int k = 0; k < n_variable; k++)
       {
         dir_sample->cd();
@@ -451,9 +452,9 @@ CR_DL::~CR_DL()
   if (chk_merge_pdf_error_set)
   {
     TDirectory *dir_syst = dir_region->mkdir("PDF_Error_Set_Down");
-    for (int i = 0; i < n_sample_merge_mc; i++)
+    for (int i = 0; i < n_sample_mc; i++)
     {
-      TDirectory *dir_sample = dir_syst->mkdir(vec_short_name_mc[i]);
+      TDirectory *dir_sample = dir_syst->mkdir(vec_name_mc[i]);
       for (int j = 0; j < n_variable; j++)
       {
         dir_sample->cd();
@@ -464,9 +465,9 @@ CR_DL::~CR_DL()
     }
 
     dir_syst = dir_region->mkdir("PDF_Error_Set_Up");
-    for (int i = 0; i < n_sample_merge_mc; i++)
+    for (int i = 0; i < n_sample_mc; i++)
     {
-      TDirectory *dir_sample = dir_syst->mkdir(vec_short_name_mc[i]);
+      TDirectory *dir_sample = dir_syst->mkdir(vec_name_mc[i]);
       for (int j = 0; j < n_variable; j++)
       {
         dir_sample->cd();
@@ -476,6 +477,7 @@ CR_DL::~CR_DL()
       }
     }
   } //  if (chk_merge_pdf_error_set)
+
 } // CR_DL::~CR_DL()
 
 //////////
@@ -582,6 +584,8 @@ void CR_DL::Fill_Histo_Data()
   histo_data[15]->Fill(event.subleading_jet_cvsl, 1.);
   histo_data[16]->Fill(event.met_pt, 1.);
   histo_data[17]->Fill(event.met_phi, 1.);
+  histo_data[18]->Fill(event.leading_jet_charge, 1);
+  histo_data[19]->Fill(event.subleading_jet_charge, 1);
 
   // histo_data_2d[0]->Fill(event.bvsc_third, event.bvsc_fourth, 1.);
 
@@ -595,8 +599,9 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
   int unrolled_bin = Unroller(event.bvsc_third, event.bvsc_fourth);
 
   int histo_index = Histo_Index(sample_name);
+  TString histo_name_rf = Histo_Name_RF(sample_name);
 
-  // cout << "test histo_index " << histo_index << ", sample_name_short = " << sample_name_short << endl;
+  // cout << "test sample_name = " << sample_name << ", histo_index = " << histo_index << ", histo_index_rf = " << histo_name_rf << endl;
 
   for (int i = 0; i < n_syst; i++)
   {
@@ -928,8 +933,8 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
       c_tagging_rf_type = "C_Tag_Nominal";
     }
 
-    event.weight *= tagging_rf_dl.Get_Tagging_RF_DL_C_Tag(vec_short_name_mc[histo_index], c_tagging_rf_type, event.n_pv, event.ht);
-    
+    event.weight *= tagging_rf_dl.Get_Tagging_RF_DL_C_Tag(histo_name_rf, c_tagging_rf_type, event.n_pv, event.ht);
+
     histo_mc[i][histo_index][0]->Fill(unrolled_bin, event.weight);
     histo_mc[i][histo_index][1]->Fill(event.n_pv, event.weight);
     histo_mc[i][histo_index][2]->Fill(event.leading_lepton_eta, event.weight);
@@ -948,6 +953,8 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
     histo_mc[i][histo_index][15]->Fill(event.subleading_jet_cvsl, event.weight);
     histo_mc[i][histo_index][16]->Fill(event.met_pt, event.weight);
     histo_mc[i][histo_index][17]->Fill(event.met_phi, event.weight);
+    histo_mc[i][histo_index][18]->Fill(event.leading_jet_charge, event.weight);
+    histo_mc[i][histo_index][19]->Fill(event.subleading_jet_charge, event.weight);
   } // loop over n_syst
 
   return;
@@ -979,7 +986,7 @@ int CR_DL::Histo_Index(const TString &sample_name)
         chk_c = true;
     }
 
-    TString histo_name = samples.map_short_name_mc[sample_name];
+    TString histo_name = sample_name;
     if (histo_name.Contains("WtoCB"))
       histo_name = "TTLJ";
 
@@ -997,15 +1004,70 @@ int CR_DL::Histo_Index(const TString &sample_name)
     else if (event.decay_mode == 45)
       histo_name += "_45";
 
-    index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), histo_name) - vec_short_name_mc.begin();
+    index = find(vec_name_mc.begin(), vec_name_mc.end(), histo_name) - vec_name_mc.begin();
   } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   else
-    index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), samples.map_short_name_mc[sample_name]) - vec_short_name_mc.begin();
+    index = find(vec_name_mc.begin(), vec_name_mc.end(), sample_name) - vec_name_mc.begin();
 
   // cout << "test Histo_Index: " << sample_name << " " << index << endl;
 
   return index;
 } // int CR_DL::Histo_Index(const TString &sample_name)
+
+//////////
+
+TString CR_DL::Histo_Name_RF(const TString &sample_name)
+{
+  TString histo_name_rf = samples.map_short_name_mc[sample_name];
+
+  if (histo_name_rf.Contains("TTLL") || histo_name_rf.Contains("TTLJ"))
+  {
+    bool chk_b = false;
+    bool chk_c = false;
+
+    // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
+    for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
+    {
+      int flavour = event.vec_sel_gen_hf_flavour->at(i);
+      int origin = event.vec_sel_gen_hf_origin->at(i);
+
+      if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
+      {
+        chk_b = true;
+        break;
+      }
+      else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
+        chk_c = true;
+    }
+
+    if (histo_name_rf.Contains("WtoCB"))
+      histo_name_rf = "TTLJ";
+
+    // if (histo_name.Contains("CP5") || histo_name.Contains("hdamp") || histo_name.Contains("mtop"))
+    // {
+    //   if (histo_name.Contains("TTLJ"))
+    //     histo_name = "TTLJ";
+    //   else if (histo_name.Contains("TTLL"))
+    //     histo_name = "TTLL";
+    // }
+
+    if (chk_b)
+      histo_name_rf += "_BB";
+    else if (chk_c)
+      histo_name_rf += "_CC";
+    else
+      histo_name_rf += "_JJ";
+
+    if (event.decay_mode == 21 || event.decay_mode == 23)
+      histo_name_rf += "_2";
+    else if (event.decay_mode == 41 || event.decay_mode == 43)
+      histo_name_rf += "_4";
+    else if (event.decay_mode == 45)
+      histo_name_rf += "_45";
+  }
+
+  return histo_name_rf;
+} // TString CR_DL::Histo_name_RF(const TString &sample_name)
 
 //////////
 
@@ -1082,24 +1144,24 @@ void CR_DL::Merge_PDF_Error_Set()
     }   // loop over n_variable
   */
 
-  histo_mc_pdf_error_set_down = new TH1D **[n_sample_merge_mc];
-  histo_mc_pdf_error_set_up = new TH1D **[n_sample_merge_mc];
-  for (int i = 0; i < n_sample_merge_mc; i++)
+  histo_mc_pdf_error_set_down = new TH1D **[n_sample_mc];
+  histo_mc_pdf_error_set_up = new TH1D **[n_sample_mc];
+  for (int i = 0; i < n_sample_mc; i++)
   {
     histo_mc_pdf_error_set_down[i] = new TH1D *[n_variable];
     histo_mc_pdf_error_set_up[i] = new TH1D *[n_variable];
     for (int j = 0; j < n_variable; j++)
     {
-      TString histo_name_pdf_error = "PDF_Error_Set_Down_" + vec_short_name_mc[i] + "_" + variable_conf[j].variable_title;
+      TString histo_name_pdf_error = "PDF_Error_Set_Down_" + vec_name_mc[i] + "_" + variable_conf[j].variable_title;
       histo_mc_pdf_error_set_down[i][j] = new TH1D(histo_name_pdf_error, histo_name_pdf_error, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up);
 
-      histo_name_pdf_error = "PDF_Error_Set_Up_" + vec_short_name_mc[i] + "_" + variable_conf[j].variable_title;
+      histo_name_pdf_error = "PDF_Error_Set_Up_" + vec_name_mc[i] + "_" + variable_conf[j].variable_title;
       histo_mc_pdf_error_set_up[i][j] = new TH1D(histo_name_pdf_error, histo_name_pdf_error, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up);
     }
   }
 
   // find min and max and fill histo
-  for (int i = 0; i < n_sample_merge_mc; i++)
+  for (int i = 0; i < n_sample_mc; i++)
   {
     // cout << vec_short_name_mc[i] << endl;
     for (int j = 0; j < n_variable; j++)

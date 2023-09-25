@@ -18,7 +18,7 @@ public:
   Result_Event_CR_DL();
   ~Result_Event_CR_DL();
 
-  void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all=false);
+  void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all = false);
 
 protected:
   int n_pv;
@@ -43,6 +43,9 @@ protected:
 
   float met_pt;
   float met_phi;
+
+  float leading_jet_charge;
+  float subleading_jet_charge;
 
   int decay_mode;
 

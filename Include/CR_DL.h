@@ -57,10 +57,12 @@ protected:
   bool chk_merge_pdf_error_set = false;
 
   Samples samples;
-  int n_sample_merge_mc;
 
   vector<TString> vec_name_mc;
+  int n_sample_mc;
+
   vector<TString> vec_short_name_mc;
+  int n_sample_merge_mc;
 
   Tagging_RF_DL tagging_rf_dl;
 
@@ -129,6 +131,7 @@ protected:
   void Fill_Histo_Data();
   void Fill_Histo_MC(const TString &sample_name, const TString &syst_fix);
   int Histo_Index(const TString &sample_name);
+  TString Histo_Name_RF(const TString &sample_name);
   void Merge_PDF_Error_Set();
   void Read_Tree();
   int Unroller(const float &bvsc_third, const float &bvsc_fourth);

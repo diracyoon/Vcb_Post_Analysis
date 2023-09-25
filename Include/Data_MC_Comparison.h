@@ -20,6 +20,7 @@
 #include <TStyle.h>
 
 #include <Const_Def.h>
+#include <Samples.h>
 
 using namespace std;
 
@@ -44,6 +45,8 @@ protected:
   TString channel;
   TString analyser;
   TString extension;
+
+  Samples samples;
 
   float lumi;
 
@@ -101,6 +104,7 @@ protected:
   void Draw();
   void Draw_Each(const TString &a_syst_name, const TString &a_variable_name = "All");
   void Envelope();
+  vector<int> Get_Histo_Group(const TString &sample_name_merged);
   void Ordering_Sample_Name();
   void Save();
   void Setup_Histo_Data();

@@ -184,7 +184,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   if (strcmp(getenv("NTREE"), "")!=0)
     n_tree = atoi(getenv("NTREE"));
   else
-    n_tree = 100;
+    n_tree = 200;
   cout << "N_Tree = " << n_tree << endl;
 
   factory->BookMethod(data_loader, TMVA::Types::kBDT, "BDTG",

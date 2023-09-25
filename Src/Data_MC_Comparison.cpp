@@ -5,6 +5,7 @@ ClassImp(Data_MC_Comparison);
 //////////
 
 Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_channel, const TString &a_analyser, const TString &a_extension)
+    : samples(a_era, a_channel, a_analyser)
 {
   cout << "[Data_MC_Comparison::Data_MC_Comparison]: Init analysis" << endl;
 
@@ -176,6 +177,12 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   // get sample_name
   TList *list_sample = ((TDirectory *)fin->Get(region_name[0] + "/" + syst_name[0]))->GetListOfKeys();
   Setup_Name(list_sample, sample_name);
+
+  for (int i = 0; i < sample_name.size(); i++)
+  {
+    cout << sample_name[i] << endl;
+  }
+
   n_sample = sample_name.size();
   cout << "n_sample = " << n_sample << endl;
 
@@ -216,7 +223,7 @@ void Data_MC_Comparison::Run()
   Envelope();
   Compare();
   Draw();
-  //  Save();
+  // Save();
 
   for (int i = 0; i < n_syst_name_short; i++)
   {
@@ -628,13 +635,34 @@ void Data_MC_Comparison::Envelope()
 
 //////////
 
+vector<int> Data_MC_Comparison::Get_Histo_Group(const TString &sample_name_merged)
+{
+  vector<int> vec_histo_group;
+
+  for (unsigned i = 0; i < sample_name.size(); i++)
+  {
+    if (samples.map_short_name_mc[sample_name[i]] == sample_name_merged)
+      vec_histo_group.push_back(i);
+  }
+
+  if (vec_histo_group.size() == 0)
+  {
+    int index = find(sample_name.begin(), sample_name.end(), sample_name_merged) - sample_name.begin();
+    vec_histo_group.push_back(index);
+  }
+
+  return vec_histo_group;
+} // vector<int> Data_MC_Comparison::Get_Histo_Group(const TString &sample_name_merged)
+
+//////////
+
 void Data_MC_Comparison::Ordering_Sample_Name()
 {
 
   // for (unsigned int i = 0; i < n_sample; i++)
   //   cout << sample_name[i] << " " << histo_mc[0][0][i][0]->Integral() << endl;
 
-  if (analyser == "VCcb")
+  if (analyser == "Vcb")
   {
   }
   else if (analyser == "Vcb_DL")
@@ -842,13 +870,21 @@ void Data_MC_Comparison::Stack_MC()
 
         for (auto it = sample_name_order.begin(); it != sample_name_order.end(); it++)
         {
-          cout << it->second << endl;
-          int sample_index = find(sample_name.begin(), sample_name.end(), it->second) - sample_name.begin();
-          histo_mc[i][j][sample_index][k]->SetFillColor(color[it->second]);
-          stack_mc[i][j][k]->Add(histo_mc[i][j][sample_index][k]);
+          cout << it->second << " ";
 
-          if (i == 0 && j == 0 && k == 0)
-            tl->AddEntry(histo_mc[i][j][sample_index][k], it->second, "f");
+          vector<int> vec_sample_index = Get_Histo_Group(it->second);
+
+          for (unsigned int l = 0; l < vec_sample_index.size(); l++)
+          {
+            cout << vec_sample_index[l] << " ";
+
+            histo_mc[i][j][vec_sample_index[l]][k]->SetFillColor(color[it->second]);
+            stack_mc[i][j][k]->Add(histo_mc[i][j][vec_sample_index[l]][k]);
+          } // loop over histo group
+          cout << endl;
+
+           if (i == 0 && j == 0 && k == 0)
+             tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], it->second, "f");
         }
 
         /*

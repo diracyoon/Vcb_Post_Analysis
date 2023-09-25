@@ -18,7 +18,7 @@ Result_Event::~Result_Event()
 
 void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all)
 {
-  cout << "[Result_Event::Setup_Tree]: Init" << endl;
+  // cout << "[Result_Event::Setup_Tree]: Init" << endl;
 
   tree->SetBranchAddress("weight_mu_id", &weight_mu_id);
   if (syst == Syst::Central && chk_all)
@@ -255,7 +255,7 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all)
   tree->SetBranchAddress("pu_conta_w_d", &pu_conta_w_d);
   tree->SetBranchAddress("pu_conta_lep_t_b", &pu_conta_lep_t_b);
 
-  cout << "[Result_Event::Setup_Tree]: Done" << endl;
+  // cout << "[Result_Event::Setup_Tree]: Done" << endl;
 
   return;
 } // void Result_Event::Setup_Tree(TTree* tree)

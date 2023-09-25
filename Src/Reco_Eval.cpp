@@ -6,7 +6,7 @@ ClassImp(Reco_Eval);
 
 Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TString &a_swap_mode, const TString &a_draw_extension) : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
 {
-  ROOT::EnableImplicitMT(4);
+  ROOT::EnableImplicitMT(10);
 
   cout << "[Reco_Eval::Reco_Eval]: Init analysis" << endl;
 
@@ -323,8 +323,8 @@ void Reco_Eval::Run()
   Calculate_Significance();
   Calculate_Prob();
   Draw_Raw();
-  //  Draw_Sample_By_Sample();
-  //  Draw_Significance();
+  // Draw_Sample_By_Sample();
+  // Draw_Significance();
   Draw_Swap();
   Draw_DV();
 } // void Reco_Eval::Run()
@@ -393,54 +393,6 @@ void Reco_Eval::Calculate_Prob()
 
   return;
 } // void Reco_Eval::Calculate_Prob()
-
-//////////
-
-TString Reco_Eval::Detail_Name(const TString &short_name)
-{
-  // This method serves the same purpose as the Histo_Index() method in a different class.
-  // To apply Tagging_RF
-
-  TString detail_name = short_name;
-
-  if ((detail_name.Contains("TTLL") || detail_name.Contains("TTLJ")))
-  {
-    bool chk_b = false;
-    bool chk_c = false;
-
-    // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
-    for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
-    {
-      int flavour = event.vec_sel_gen_hf_flavour->at(i);
-      int origin = event.vec_sel_gen_hf_origin->at(i);
-
-      if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
-      {
-        chk_b = true;
-        break;
-      }
-      else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
-        chk_c = true;
-    }
-
-    if (detail_name.Contains("WtoCB"))
-      detail_name = "TTLJ";
-
-    if (chk_b)
-      detail_name += "_BB";
-    else if (chk_c)
-      detail_name += "_CC";
-
-    // if (event.decay_mode == 21 || event.decay_mode == 23)
-    //   detail_name += "_2";
-    // else if (event.decay_mode == 41 || event.decay_mode == 43)
-    //   detail_name += "_4";
-    // else if (event.decay_mode == 45)
-    //   detail_name += "_45";
-  } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
-
-  return detail_name;
-} // TString& Reco_Eval::Detail_Name()
 
 //////////
 
@@ -966,14 +918,20 @@ void Reco_Eval::Fill_Histo_Swap(const TString &short_name, const int &index_deca
 {
   int index = Get_Index(short_name, index_decay_mode);
 
-  int unmatched_swapped = 0;
-  if (event.swapped_truth == chk_swap)
-    unmatched_swapped = 0;
-  else
-    unmatched_swapped = 1;
+  int swapped_before_removing_kf_ambiguity = -1;
 
-  histo_swap[index]->Fill(event.swapped_truth, event.weight);
-  histo_swap_fix[index]->Fill(unmatched_swapped, event.weight);
+  if ((event.swapped_truth == 1 && event.swapped_mva == 1) || (event.swapped_truth == 0 && event.swapped_mva == 0))
+    swapped_before_removing_kf_ambiguity = 0;
+  else if ((event.swapped_truth == 0 && event.swapped_mva == 1) || (event.swapped_truth == 1 && event.swapped_mva == 0))
+    swapped_before_removing_kf_ambiguity = 1;
+
+  // cout << event.swapped_truth << " " << event.swapped_mva << " " << endl;
+
+  if (swapped_before_removing_kf_ambiguity != -1)
+  {
+    histo_swap[index]->Fill(swapped_before_removing_kf_ambiguity, event.weight);
+    histo_swap_fix[index]->Fill(event.swapped_truth, event.weight);
+  }
 
   return;
 } // void Reco_Eval::Fill_Histo_Swap(const TString& short_name, const int& index_decay_mode)
@@ -1041,6 +999,62 @@ int Reco_Eval::Get_Index(const TString &short_name, const int &index_decay_mode)
 
 //////////
 
+TString Reco_Eval::Histo_Name_RF(const TString &short_name)
+{
+  // This method serves the same purpose as the Histo_Index() method in a different class.
+  // To apply Tagging_RF
+
+  TString histo_name_rf = short_name;
+
+  if (histo_name_rf.Contains("TTLL") || histo_name_rf.Contains("TTLJ"))
+  {
+    bool chk_b = false;
+    bool chk_c = false;
+
+    // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
+    for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
+    {
+      int flavour = event.vec_sel_gen_hf_flavour->at(i);
+      int origin = event.vec_sel_gen_hf_origin->at(i);
+
+      if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
+      {
+        chk_b = true;
+        break;
+      }
+      else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
+        chk_c = true;
+    }
+
+    if (histo_name_rf.Contains("WtoCB"))
+      histo_name_rf = "TTLJ";
+
+    // if (histo_name.Contains("CP5") || histo_name.Contains("hdamp") || histo_name.Contains("mtop"))
+    // {
+    //   if (histo_name.Contains("TTLJ"))
+    //     histo_name = "TTLJ";
+    //   else if (histo_name.Contains("TTLL"))
+    //     histo_name = "TTLL";
+    // }
+
+    if (chk_b)
+      histo_name_rf += "_BB";
+    else if (chk_c)
+      histo_name_rf += "_CC";
+
+    if (event.decay_mode == 21 || event.decay_mode == 23)
+      histo_name_rf += "_2";
+    else if (event.decay_mode == 41 || event.decay_mode == 43)
+      histo_name_rf += "_4";
+    else if (event.decay_mode == 45)
+      histo_name_rf += "_45";
+  }
+
+  return histo_name_rf;
+} // TString& Reco_Eval::Histo_Name_RF()
+
+//////////
+
 void Reco_Eval::Read_Tree()
 {
   cout << "[Reco_Eval::Read_Tree]: Start to read trees " << endl;
@@ -1048,13 +1062,15 @@ void Reco_Eval::Read_Tree()
   for (auto it = map_fin.begin(); it != map_fin.end(); it++)
   {
     TString short_name = samples.map_short_name_mc[it->first];
-      cout << it->first << endl;
-    //cout << short_name << endl;
+    cout << it->first << endl;
+    // cout << short_name << endl;
 
     TTree *tree = map_tree[it->first];
 
     Long64_t n_entries = tree->GetEntries();
     n_entries /= reduction;
+
+    cout << "N_Entries = " << tree->GetEntries() << ", Reduction = " << reduction << ", N_Entries/Reduction = " << n_entries << endl;
 
     for (Long64_t j = 0; j < n_entries; j++)
     {
@@ -1066,7 +1082,7 @@ void Reco_Eval::Read_Tree()
       // if (20 < event.met_pt)
       //   continue;
 
-      chk_swap = event.Swap();
+      // chk_swap = event.Swap();
 
       int index_fail_reason = -1;
       if (event.chk_reco_correct)
@@ -1106,8 +1122,8 @@ void Reco_Eval::Read_Tree()
       event.weight *= event.weight_c_tag;
 
       // event.weight *= tagging_rf.Get_Tagging_RF("B_Tag_Nominal", event.n_jets);
-      TString detail_name = Detail_Name(short_name);
-      event.weight *= tagging_rf.Get_Tagging_RF_C_Tag(detail_name, "C_Tag_Nominal", event.n_pv, event.ht);
+      TString histo_name_rf = Histo_Name_RF(short_name);
+      event.weight *= tagging_rf.Get_Tagging_RF_C_Tag(histo_name_rf, "C_Tag_Nominal", event.n_pv, event.ht);
 
       // if (event.chk_gentau_conta == true)
       //   continue;

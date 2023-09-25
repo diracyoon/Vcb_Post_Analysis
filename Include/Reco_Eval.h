@@ -64,10 +64,14 @@ protected:
 
   map<TString, TFile *> map_fin;
   map<TString, TTree *> map_tree;
-  vector<TString> vec_short_name_mc;
-  vector<TString> vec_histo_sample;
 
+  vector<TString> vec_short_name_mc;
   int n_sample_merge_mc;
+
+  vector<TString> vec_name_mc;
+  int n_sample_mc;
+
+  vector<TString> vec_histo_sample;
   int n_histo_sample;
 
   Result_Event event;
@@ -121,7 +125,6 @@ protected:
 
   void Calculate_Significance();
   void Calculate_Prob();
-  TString Detail_Name(const TString& short_name);
   void Draw_DV();
   void Draw_Raw();
   void Draw_Sample_By_Sample();
@@ -135,6 +138,7 @@ protected:
   void Fill_Output_Tree(const TString &short_name, const int &index_decay_mode, const int &index_fail_reason);
   int Get_Index(const TString &name);
   int Get_Index(const TString &short_name, const int &index_decay_mode);
+  TString Histo_Name_RF(const TString &short_name);
   void Read_Tree();
 
   ClassDef(Reco_Eval, 1);

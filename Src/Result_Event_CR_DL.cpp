@@ -44,6 +44,9 @@ void Result_Event_CR_DL::Setup_Tree(TTree *tree, const Syst syst, const bool chk
   tree->SetBranchAddress("met_pt", &met_pt);
   tree->SetBranchAddress("met_phi", &met_phi);
 
+  tree->SetBranchAddress("leading_jet_charge", &leading_jet_charge);
+  tree->SetBranchAddress("subleading_jet_charge", &subleading_jet_charge);
+
   tree->SetBranchAddress("bvsc_third", &bvsc_third);
   tree->SetBranchAddress("bvsc_fourth", &bvsc_fourth);
 
