@@ -21,33 +21,104 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
 
+  // simplified drawing
+  chk_simple = true;
+
+  if (analyser == "Vcb")
+    signal_scale = 100;
+  else if (analyser == "Vcb_DL")
+    signal_scale = 1000;
+
   TString fin_name = path_base;
   if (analyser == "Vcb")
   {
-    fin_name += "/Vcb_Histos_" + era + "_" + channel + "_All.root";
-    // color = {1, 2, 3, 4, 5, 6, 7, 8};
+    fin_name += "/Workplace/Histo_Syst/Vcb_Histos_" + era + "_" + channel + "_All.root";
+
+    if (chk_simple)
+    {
+      color = {{"TTLJ_2", kOrange},
+               {"TTLJ_CC_2", kOrange},
+               {"TTLJ_BB_2", kOrange},
+               {"TTLJ_4", kYellow},
+               {"TTLJ_CC_4", kYellow},
+               {"TTLJ_BB_4", kYellow},
+               {"TTLJ_45", kRed},
+               {"TTLJ_CC_45", kRed},
+               {"TTLJ_BB_45", kRed},
+               {"TTLL", kViolet},
+               {"TTLL_CC", kViolet},
+               {"TTLL_BB", kViolet},
+               {"ST", kGreen},
+               {"ttV", kTeal},
+               {"VV", kCyan},
+               {"VJets", kAzure},
+               {"QCD_bEn", kBlack}};
+    }
+    else
+    {
+      color = {{"TTLJ_2", kOrange - 9},
+               {"TTLJ_4", kOrange - 7},
+               {"TTLJ_45", kOrange - 4},
+               {"TTLL", kOrange},
+               {"TTLJ_CC_2", kRed - 9},
+               {"TTLJ_CC_4", kRed - 7},
+               {"TTLJ_CC_45", kRed - 4},
+               {"TTLL_CC", kRed},
+               {"TTLJ_BB_2", kPink - 9},
+               {"TTLJ_BB_4", kPink - 7},
+               {"TTLJ_BB_45", kPink - 4},
+               {"TTLL_BB", kMagenta},
+               {"ST", kGreen},
+               {"ttV", kTeal},
+               {"VV", kCyan},
+               {"VJets", kAzure},
+               {"QCD_bEn", kBlack}};
+    }
   }
   else if (analyser == "Vcb_DL")
   {
-
     fin_name += "/Workplace/CR_DL/Vcb_DL_Histos_" + era + "_" + channel + ".root";
-    color = {{"TTLJ_JJ_2", kOrange - 9},
-             {"TTLJ_JJ_4", kOrange - 7},
-             {"TTLJ_JJ_45", kOrange - 4},
-             {"TTLL_JJ", kOrange},
-             {"TTLJ_CC_2", kRed - 9},
-             {"TTLJ_CC_4", kRed - 7},
-             {"TTLJ_CC_45", kRed - 4},
-             {"TTLL_CC", kRed},
-             {"TTLJ_BB_2", kPink - 9},
-             {"TTLJ_BB_4", kPink - 7},
-             {"TTLJ_BB_45", kPink - 4},
-             {"TTLL_BB", kMagenta},
-             {"ST", kGreen},
-             {"ttV", kTeal},
-             {"VV", kCyan},
-             {"VJets", kAzure},
-             {"QCD_bEn", kBlack}};
+
+    if (chk_simple)
+    {
+      color = {{"TTLJ_JJ_2", kYellow - 7},
+               {"TTLJ_JJ_4", kYellow - 7},
+               {"TTLL_JJ", kYellow - 7},
+               {"TTLJ_CC_2", kOrange + 7},
+               {"TTLJ_CC_4", kOrange + 7},
+               {"TTLL_CC", kOrange + 7},
+               {"TTLJ_BB_2", kViolet},
+               {"TTLL_BB_4", kViolet},
+               {"TTLL_BB", kViolet},
+               {"TTLJ_JJ_45", kRed},
+               {"TTLJ_CC_45", kRed},
+               {"TTLJ_BB_45", kRed},
+               {"ST", kGreen},
+               {"ttV", kTeal},
+               {"VV", kCyan},
+               {"VJets", kAzure},
+               {"QCD_bEn", kBlack}};
+    }
+    else
+    {
+      color = {{"TTLJ_JJ_2", kOrange - 9},
+               {"TTLJ_JJ_4", kOrange - 7},
+               {"TTLJ_JJ_45", kOrange - 4},
+               {"TTLL_JJ", kOrange},
+               {"TTLJ_CC_2", kRed - 9},
+               {"TTLJ_CC_4", kRed - 7},
+               {"TTLJ_CC_45", kRed - 4},
+               {"TTLL_CC", kRed},
+               {"TTLJ_BB_2", kPink - 9},
+               {"TTLJ_BB_4", kPink - 7},
+               {"TTLJ_BB_45", kPink - 4},
+               {"TTLL_BB", kMagenta},
+               {"ST", kGreen},
+               {"ttV", kTeal},
+               {"VV", kCyan},
+               {"VJets", kAzure},
+               {"QCD_bEn", kBlack}};
+    }
   }
 
   fin = new TFile(fin_name);
@@ -60,6 +131,8 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   // get region_name
   TList *list_region = fin->GetListOfKeys();
   Setup_Name(list_region, region_name);
+  // region_name.clear();
+  // region_name = {"Control0"};
   n_region = region_name.size();
   cout << "n_region = " << n_region << endl;
 
@@ -189,11 +262,13 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   // get variable_name
   TList *list_variable = ((TDirectory *)fin->Get(region_name[0] + "/" + syst_name[0] + "/" + sample_name[0]))->GetListOfKeys();
   Setup_Name(list_variable, variable_name);
-  // variable_name = {"Subleading_Lepton_Pt"};
+  // variable_name.clear();
+  // variable_name = {"Lepton_Eta"};
   n_variable = variable_name.size();
 
-  tl = new TLegend(0.54, 0.64, 0.89, 0.89);
+  tl = new TLegend(0.44, 0.69, 0.89, 0.89);
   tl->SetBorderSize(0);
+  tl->SetFillStyle(0);
   tl->SetNColumns(3);
 
   // setup histo_mc
@@ -223,12 +298,17 @@ void Data_MC_Comparison::Run()
   Envelope();
   Compare();
   Draw();
-  // Save();
+  //  Save();
 
   for (int i = 0; i < n_syst_name_short; i++)
   {
-    // Draw_Each(syst_name_short[i], "Best_MVA_Score");
-    //  Draw_Each(syst_name_short[i], "Template_MVA_Score");
+    if (analyser == "Vcb")
+    {
+      Draw_Each(syst_name_short[i], "Best_MVA_Score");
+      Draw_Each(syst_name_short[i], "Template_MVA_Score");
+    }
+    else if (analyser == "Vcb_DL")
+      Draw_Each(syst_name_short[i], "BvsC_3rd_4th_Jets_Unrolled");
   }
 
   return;
@@ -288,6 +368,8 @@ void Data_MC_Comparison::Draw()
 {
   cout << "[Data_MC_Comparison::Draw] Init" << endl;
 
+  gStyle->SetOptStat(0);
+
   canvas = new TCanvas **[n_region];
   pad = new TPad ***[n_region];
   for (int i = 0; i < n_region; i++)
@@ -308,27 +390,38 @@ void Data_MC_Comparison::Draw()
 
       TString pad_name = region_name[i] + "_" + variable_name[j] + "_";
 
-      pad[i][j][0] = new TPad(pad_name + "Comp", pad_name + "Comp", 0, 0.4, 1, 1);
+      pad[i][j][0] = new TPad(pad_name + "Comp", pad_name + "Comp", 0, 0.3, 1, 1);
       canvas[i][j]->cd();
       pad[i][j][0]->Draw();
 
       pad[i][j][0]->cd();
 
-      stack_mc[i][0][j]->Draw("BAR");
+      stack_mc[i][index_mc_nominal][j]->Draw("BAR");
 
-      stack_mc[i][0][j]->SetTitle("");
-      stack_mc[i][0][j]->GetXaxis()->SetTitle(variable_conf[j].variable_title);
+      stack_mc[i][index_mc_nominal][j]->SetTitle("");
+      stack_mc[i][index_mc_nominal][j]->GetXaxis()->SetTitle(variable_conf[j].variable_title);
 
-      float max = stack_mc[i][0][j]->GetMaximum();
-      stack_mc[i][0][j]->SetMaximum(1.7 * max);
+      float max = stack_mc[i][index_mc_nominal][j]->GetMaximum();
+      stack_mc[i][index_mc_nominal][j]->SetMaximum(1.6 * max);
+
+      gr_variation_merged[i][j]->SetFillColor(1);
+      gr_variation_merged[i][j]->SetFillStyle(3002);
+      gr_variation_merged[i][j]->Draw("SAME3");
+
+      // scaled signal
+      // stack_mc_signal[i][0][j]->Draw("SAME ");
+      TH1D *histo_signal = (TH1D *)stack_mc_signal[i][index_mc_nominal][j]->GetStack()->Last();
+      histo_signal->SetLineColor(color["TTLJ_45"]);
+      histo_signal->SetLineWidth(3);
+      histo_signal->Draw("SAME");
+
+      // gr_variation_merged_signal[i][j]->SetFillColor(color["TTLJ_45"]);
+      // gr_variation_merged_signal[i][j]->SetFillStyle(3001);
+      // gr_variation_merged_signal[i][j]->Draw("SAME3");
 
       pad[i][j][0]->cd();
       TLegend *legend = (TLegend *)tl->Clone();
       legend->Draw("SAME");
-
-      gr_variation_merged[i][j]->SetFillColor(1);
-      gr_variation_merged[i][j]->SetFillStyle(3001);
-      gr_variation_merged[i][j]->Draw("SAME3");
 
       if (region_name[i] != "Signal")
       {
@@ -339,18 +432,23 @@ void Data_MC_Comparison::Draw()
 
       TLatex *latex = new TLatex();
       latex->SetTextSize(0.04);
-      latex->DrawLatexNDC(0.1, 0.91, "#bf{CMS} work in progress");
-      latex->DrawLatexNDC(0.84, 0.91, Form("%.2f fb^{-1}", lumi));
+      latex->DrawLatexNDC(0.1, 0.91, "CMS #bf{work in progress}");
+      latex->DrawLatexNDC(0.82, 0.91, Form("%.2f fb^{-1}", lumi));
 
-      pad[i][j][1] = new TPad(pad_name + "Ratio", pad_name + "Ratio", 0, 0, 1, 0.4);
+      pad[i][j][1] = new TPad(pad_name + "Ratio", pad_name + "Ratio", 0, 0, 1, 0.3);
       canvas[i][j]->cd();
       pad[i][j][1]->Draw();
       pad[i][j][1]->cd();
       histo_ratio[i][j]->Draw();
 
-      histo_ratio[i][j]->GetXaxis()->SetTitle(variable_conf[j].variable_title);
-      histo_ratio[i][j]->GetYaxis()->SetTitle("Data/MC");
-      histo_ratio[i][j]->GetYaxis()->SetRangeUser(0.6, 1.4);
+      histo_ratio[i][j]->SetTitle("");
+      // histo_ratio[i][j]->GetXaxis()->SetTitle(variable_conf[j].variable_title);
+      histo_ratio[i][j]->GetXaxis()->SetTitle("");
+      histo_ratio[i][j]->GetYaxis()->SetTitle("Normalized by Nominal MC");
+      histo_ratio[i][j]->GetYaxis()->SetTitleSize(0.07);
+      histo_ratio[i][j]->GetYaxis()->SetTitleOffset(0.3);
+      histo_ratio[i][j]->GetYaxis()->SetRangeUser(0.5, 1.5);
+      histo_ratio[i][j]->SetMarkerStyle(8);
 
       gr_ratio[i][j]->SetFillColor(1);
       gr_ratio[i][j]->SetFillStyle(3001);
@@ -439,7 +537,7 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
       {
         if (syst_name[k].Contains(a_syst_name))
         {
-          cout << a_syst_name << " " << syst_name[k] << " " << k << endl;
+          // cout << a_syst_name << " " << syst_name[k] << " " << k << endl;
 
           TH1D *histo_syst = (TH1D *)(stack_mc[i][k][j]->GetStack()->Last());
           histo_syst->SetLineColor(n_syst_target + 2);
@@ -516,15 +614,19 @@ void Data_MC_Comparison::Envelope()
 
   // allocation
   gr_variation = new TGraphAsymmErrors ***[n_region];
+  gr_variation_signal = new TGraphAsymmErrors ***[n_region];
   for (int i = 0; i < n_region; i++)
   {
     gr_variation[i] = new TGraphAsymmErrors **[n_syst];
+    gr_variation_signal[i] = new TGraphAsymmErrors **[n_syst];
     for (int j = 0; j < n_syst; j++)
     {
       gr_variation[i][j] = new TGraphAsymmErrors *[n_variable];
+      gr_variation_signal[i][j] = new TGraphAsymmErrors *[n_variable];
       for (int k = 0; k < n_variable; k++)
       {
         gr_variation[i][j][k] = new TGraphAsymmErrors();
+        gr_variation_signal[i][j][k] = new TGraphAsymmErrors();
       } // loop over n_variable
     }   // loop over n_syst;
   }     // loop over n_region
@@ -536,17 +638,26 @@ void Data_MC_Comparison::Envelope()
       float bin_width = (variable_conf[j].x_up - variable_conf[j].x_low) / variable_conf[j].n_bin;
 
       TH1D *histo_nominal = (TH1D *)(stack_mc[i][index_mc_nominal][j]->GetStack()->Last());
+      TH1D *histo_nominal_signal = (TH1D *)(stack_mc_signal[i][index_mc_nominal][j]->GetStack()->Last());
+
       for (int k = 0; k < n_syst; k++)
       {
+        cout << syst_name[k] << endl;
+
         TH1D *histo_syst = (TH1D *)(stack_mc[i][k][j]->GetStack()->Last());
+        TH1D *histo_syst_signal = (TH1D *)(stack_mc_signal[i][k][j]->GetStack()->Last());
 
         for (int l = 0; l < variable_conf[j].n_bin; l++)
         {
           float bin_center = histo_nominal->GetBinCenter(l + 1);
+
           float content_nominal = histo_nominal->GetBinContent(l + 1);
           float content_syst = histo_syst->GetBinContent(l + 1);
-
           float diff = content_syst - content_nominal;
+
+          float content_nominal_signal = histo_nominal_signal->GetBinContent(l + 1);
+          float content_syst_signal = histo_syst_signal->GetBinContent(l + 1);
+          float diff_signal = content_syst - content_nominal;
 
           // if (variable_name[j] == "N_BJets" && content_nominal != 0)
           // {
@@ -559,11 +670,19 @@ void Data_MC_Comparison::Envelope()
           {
             int n_point = gr_variation[i][k][j]->GetN();
 
+            // background
             gr_variation[i][k][j]->SetPoint(n_point, bin_center + m * 0.99 * bin_width / 2, content_nominal);
             if (0 < diff)
               gr_variation[i][k][j]->SetPointError(n_point, 0, 0, 0, diff);
             else
               gr_variation[i][k][j]->SetPointError(n_point, 0, 0, TMath::Abs(diff), 0);
+
+            // signal
+            gr_variation_signal[i][k][j]->SetPoint(n_point, bin_center + m * 0.99 * bin_width / 2, content_nominal_signal);
+            if (0 < diff_signal)
+              gr_variation_signal[i][k][j]->SetPointError(n_point, 0, 0, 0, diff_signal);
+            else
+              gr_variation_signal[i][k][j]->SetPointError(n_point, 0, 0, TMath::Abs(diff_signal), 0);
           } // loop over 3
         }   // loop over n_bin
       }     // loop over n_syst
@@ -572,18 +691,22 @@ void Data_MC_Comparison::Envelope()
 
   // merge variations via quadratic sum
   gr_variation_merged = new TGraphAsymmErrors **[n_region];
+  gr_variation_merged_signal = new TGraphAsymmErrors **[n_region];
   for (int i = 0; i < n_region; i++)
   {
     // cout << region_name[i] << endl;
 
     gr_variation_merged[i] = new TGraphAsymmErrors *[n_variable];
+    gr_variation_merged_signal[i] = new TGraphAsymmErrors *[n_variable];
     for (int j = 0; j < n_variable; j++)
     {
       // cout << variable_name[j] << endl;
 
       gr_variation_merged[i][j] = new TGraphAsymmErrors();
+      gr_variation_merged_signal[i][j] = new TGraphAsymmErrors();
 
       TH1D *histo = (TH1D *)stack_mc[i][index_mc_nominal][j]->GetStack()->Last();
+      TH1D *histo_signal = (TH1D *)stack_mc_signal[i][index_mc_nominal][j]->GetStack()->Last();
 
       int n_point = gr_variation[i][index_mc_nominal][j]->GetN();
 
@@ -592,10 +715,14 @@ void Data_MC_Comparison::Envelope()
         float x = gr_variation[i][index_mc_nominal][j]->GetPointX(k);
 
         int bin = histo->FindBin(x);
-        float stat_error = histo->GetBinError(bin);
 
+        float stat_error = histo->GetBinError(bin);
         float variation_up = 0;
         float variation_down = 0;
+
+        float stat_error_signal = histo_signal->GetBinError(bin);
+        float variation_up_signal = 0;
+        float variation_down_signal = 0;
 
         for (int l = 0; l < n_syst; l++)
         {
@@ -606,16 +733,22 @@ void Data_MC_Comparison::Envelope()
           float ey_h = gr_variation[i][l][j]->GetErrorYhigh(k);
           float ey_l = gr_variation[i][l][j]->GetErrorYlow(k);
 
-          // cout << "l= " << l << ", ey_h= " << ey_h << ", ey_l= " << ey_l << endl;
-
           variation_up = TMath::Sqrt(TMath::Power(variation_up, 2.) + TMath::Power(ey_h, 2.));
           variation_down = TMath::Sqrt(TMath::Power(variation_down, 2.) + TMath::Power(ey_l, 2.));
 
+          float ey_h_signal = gr_variation_signal[i][l][j]->GetErrorYhigh(k);
+          float ey_l_signal = gr_variation_signal[i][l][j]->GetErrorYlow(k);
+
+          variation_up_signal = TMath::Sqrt(TMath::Power(variation_up, 2.) + TMath::Power(ey_h, 2.));
+          variation_down_signal = TMath::Sqrt(TMath::Power(variation_down, 2.) + TMath::Power(ey_l, 2.));
+
+          // cout << "l= " << l << ", ey_h= " << ey_h << ", ey_l= " << ey_l << endl;
           // if (variable_conf[j].variable_title.Contains("N_Vertex"))
           //   cout << l << ", x = " << x << ", ey_h = " << ey_h << ", variation_up = " << variation_up << ", ey_l = " << ey_l << ", variation_down = " << variation_down << endl;
         } // loop over n_syst -1
           // if (variable_conf[j].variable_title.Contains("N_Vertex"))
           // cout << "x = " << x << ", stat = " << stat_error << ", down = " << variation_down << ", up = " << variation_up << endl;
+
         variation_up = TMath::Sqrt(TMath::Power(stat_error, 2.) + TMath::Power(variation_up, 2.));
         variation_down = TMath::Sqrt(TMath::Power(stat_error, 2.) + TMath::Power(variation_down, 2.));
 
@@ -623,7 +756,12 @@ void Data_MC_Comparison::Envelope()
 
         gr_variation_merged[i][j]->SetPoint(k, x, histo->GetBinContent(bin));
         gr_variation_merged[i][j]->SetPointError(k, 0, 0, variation_down, variation_up);
-        // gr_variation_merged[i][j]->SetPointError(k, 0, 0, 100, 100);
+
+        variation_up_signal = TMath::Sqrt(TMath::Power(stat_error_signal, 2.) + TMath::Power(variation_up_signal, 2.));
+        variation_down_signal = TMath::Sqrt(TMath::Power(stat_error_signal, 2.) + TMath::Power(variation_down_signal, 2.));
+
+        gr_variation_merged_signal[i][j]->SetPoint(k, x, histo_signal->GetBinContent(bin));
+        gr_variation_merged_signal[i][j]->SetPointError(k, 0, 0, variation_down_signal, variation_up_signal);
       } // loop over n_bin
     }   // loop over n_variable
   }     // loop over n_region
@@ -641,7 +779,7 @@ vector<int> Data_MC_Comparison::Get_Histo_Group(const TString &sample_name_merge
 
   for (unsigned i = 0; i < sample_name.size(); i++)
   {
-    if (samples.map_short_name_mc[sample_name[i]] == sample_name_merged)
+    if (samples.map_short_short_name[sample_name[i]] == sample_name_merged)
       vec_histo_group.push_back(i);
   }
 
@@ -664,27 +802,90 @@ void Data_MC_Comparison::Ordering_Sample_Name()
 
   if (analyser == "Vcb")
   {
-  }
+    if (chk_simple)
+    {
+      sample_name_order[0] = "QCD_bEn";
+      sample_name_order[1] = "VV";
+      sample_name_order[2] = "ttV";
+      sample_name_order[3] = "VJets";
+      sample_name_order[4] = "ST";
+      sample_name_order[5] = "TTLL";
+      sample_name_order[6] = "TTLL_CC";
+      sample_name_order[7] = "TTLL_BB";
+      sample_name_order[8] = "TTLJ_2";
+      sample_name_order[9] = "TTLJ_CC_2";
+      sample_name_order[10] = "TTLJ_BB_2";
+      sample_name_order[11] = "TTLJ_4";
+      sample_name_order[12] = "TTLJ_CC_4";
+      sample_name_order[13] = "TTLJ_BB_4";
+      sample_name_order[14] = "TTLJ_45";
+      sample_name_order[15] = "TTLJ_CC_45";
+      sample_name_order[16] = "TTLJ_BB_45";
+    }
+    else
+    {
+      sample_name_order[0] = "QCD_bEn";
+      sample_name_order[1] = "VV";
+      sample_name_order[2] = "ttV";
+      sample_name_order[3] = "VJets";
+      sample_name_order[4] = "ST";
+      sample_name_order[5] = "TTLL";
+      sample_name_order[6] = "TTLJ_2";
+      sample_name_order[7] = "TTLJ_4";
+      sample_name_order[8] = "TTLJ_45";
+      sample_name_order[9] = "TTLL_CC";
+      sample_name_order[10] = "TTLJ_CC_2";
+      sample_name_order[11] = "TTLJ_CC_4";
+      sample_name_order[12] = "TTLJ_CC_45";
+      sample_name_order[13] = "TTLL_BB";
+      sample_name_order[14] = "TTLJ_BB_2";
+      sample_name_order[15] = "TTLJ_BB_4";
+      sample_name_order[16] = "TTLJ_BB_45";
+    }
+  } // if (analyser == "Vcb")
   else if (analyser == "Vcb_DL")
   {
-    sample_name_order[0] = "QCD_bEn";
-    sample_name_order[1] = "VV";
-    sample_name_order[2] = "ttV";
-    sample_name_order[3] = "VJets";
-    sample_name_order[4] = "ST";
-    sample_name_order[5] = "TTLJ_JJ_4";
-    sample_name_order[6] = "TTLJ_JJ_2";
-    sample_name_order[7] = "TTLJ_JJ_45";
-    sample_name_order[8] = "TTLL_JJ";
-    sample_name_order[9] = "TTLJ_CC_4";
-    sample_name_order[10] = "TTLJ_CC_2";
-    sample_name_order[11] = "TTLJ_CC_45";
-    sample_name_order[12] = "TTLL_CC";
-    sample_name_order[13] = "TTLJ_CC_4";
-    sample_name_order[14] = "TTLJ_BB_2";
-    sample_name_order[15] = "TTLJ_BB_45";
-    sample_name_order[16] = "TTLL_BB";
-  }
+    if (chk_simple)
+    {
+      sample_name_order[0] = "QCD_bEn";
+      sample_name_order[1] = "VV";
+      sample_name_order[2] = "ttV";
+      sample_name_order[3] = "VJets";
+      sample_name_order[4] = "ST";
+      sample_name_order[5] = "TTLJ_JJ_2";
+      sample_name_order[6] = "TTLJ_JJ_4";
+      sample_name_order[7] = "TTLL_JJ";
+      sample_name_order[8] = "TTLJ_CC_2";
+      sample_name_order[9] = "TTLJ_CC_4";
+      sample_name_order[10] = "TTLL_CC";
+      sample_name_order[11] = "TTLJ_BB_2";
+      sample_name_order[12] = "TTLJ_BB_4";
+      sample_name_order[13] = "TTLL_BB";
+      sample_name_order[14] = "TTLJ_JJ_45";
+      sample_name_order[15] = "TTLJ_CC_45";
+      sample_name_order[16] = "TTLJ_BB_45";
+    }
+    else
+    {
+      sample_name_order[0] = "QCD_bEn";
+      sample_name_order[1] = "VV";
+      sample_name_order[2] = "ttV";
+      sample_name_order[3] = "VJets";
+      sample_name_order[4] = "ST";
+      sample_name_order[5] = "TTLJ_JJ_4";
+      sample_name_order[6] = "TTLJ_JJ_2";
+      sample_name_order[7] = "TTLJ_JJ_45";
+      sample_name_order[8] = "TTLL_JJ";
+      sample_name_order[9] = "TTLJ_CC_4";
+      sample_name_order[10] = "TTLJ_CC_2";
+      sample_name_order[11] = "TTLJ_CC_45";
+      sample_name_order[12] = "TTLL_CC";
+      sample_name_order[13] = "TTLJ_CC_4";
+      sample_name_order[14] = "TTLJ_BB_2";
+      sample_name_order[15] = "TTLJ_BB_45";
+      sample_name_order[16] = "TTLL_BB";
+    }
+  } // else if (analyser == "Vcb_DL")
 
   for (auto it = sample_name_order.begin(); it != sample_name_order.end(); it++)
     cout << it->first << ", " << it->second << endl;
@@ -849,16 +1050,19 @@ void Data_MC_Comparison::Stack_MC()
   cout << "[Data_MC_Comparison::Stack_MC] Init" << endl;
 
   stack_mc = new THStack ***[n_region];
+  stack_mc_signal = new THStack ***[n_region];
   for (int i = 0; i < n_region; i++)
   {
     // cout << "i = " << i << " " << region_name[i] << endl;
 
     stack_mc[i] = new THStack **[n_syst];
+    stack_mc_signal[i] = new THStack **[n_syst];
     for (int j = 0; j < n_syst; j++)
     {
       // cout << "j = " << j << " " << syst_name[j] << endl;
 
       stack_mc[i][j] = new THStack *[n_variable];
+      stack_mc_signal[i][j] = new THStack *[n_variable];
       for (int k = 0; k < n_variable; k++)
       {
         // cout << "k = " << k << " " << variable_name[k] << endl;
@@ -867,6 +1071,7 @@ void Data_MC_Comparison::Stack_MC()
         // cout << stack_name << endl;
 
         stack_mc[i][j][k] = new THStack(stack_name, stack_name);
+        stack_mc_signal[i][j][k] = new THStack("Signal_" + stack_name, "Signal_" + stack_name);
 
         for (auto it = sample_name_order.begin(); it != sample_name_order.end(); it++)
         {
@@ -878,13 +1083,71 @@ void Data_MC_Comparison::Stack_MC()
           {
             cout << vec_sample_index[l] << " ";
 
+            histo_mc[i][j][vec_sample_index[l]][k]->SetLineColor(color[it->second]);
+            histo_mc[i][j][vec_sample_index[l]][k]->SetLineWidth(2);
+
             histo_mc[i][j][vec_sample_index[l]][k]->SetFillColor(color[it->second]);
-            stack_mc[i][j][k]->Add(histo_mc[i][j][vec_sample_index[l]][k]);
+
+            if (it->second.Contains("_45"))
+            {
+              // scale signal
+              histo_mc[i][j][vec_sample_index[l]][k]->Scale(signal_scale);
+
+              stack_mc_signal[i][j][k]->Add(histo_mc[i][j][vec_sample_index[l]][k]);
+            }
+            else
+              stack_mc[i][j][k]->Add(histo_mc[i][j][vec_sample_index[l]][k]);
           } // loop over histo group
           cout << endl;
 
-           if (i == 0 && j == 0 && k == 0)
-             tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], it->second, "f");
+          if (i == 0 && j == 0 && k == 0)
+          {
+            if (analyser == "Vcb")
+            {
+              if (chk_simple)
+              {
+                if (!it->second.Contains("_CC") && !it->second.Contains("_BB"))
+                {
+                  if (it->second.Contains("_45"))
+                    tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], "TTLJ, W#rightarrowcb#times" + (TString)to_string(signal_scale), "l");
+                  else
+                  {
+                    if (it->second.Contains("_2"))
+                      tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], "TTLJ, W#rightarrowud (us)", "f");
+                    else if (it->second.Contains("_4"))
+                      tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], "TTLJ, W#rightarrowcs (cd)", "f");
+                    else
+                      tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], it->second, "f");
+                  }
+                }
+              } // if (chk_simple)
+              else
+                tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], it->second, "f");
+            } // if (analyser == "Vcb")
+            else if (analyser == "Vcb_DL")
+            {
+              if (chk_simple)
+              {
+                if (it->second.Contains("_JJ"))
+                {
+                  if (it->second.Contains("_JJ_2"))
+                    tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], "TT+JJ", "f");
+                }
+                else if (it->second.Contains("_CC"))
+                {
+                  if (it->second.Contains("_CC_2"))
+                    tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], "TT+C/CC", "f");
+                }
+                else if (it->second.Contains("_BB"))
+                {
+                  if (it->second.Contains("_BB_2"))
+                    tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], "TT+B/BB", "f");
+                }
+                else
+                  tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], it->second, "f");
+              } // if(chk_simple)
+            }   // else if (analyser == "Vcb_DL")
+          }
         }
 
         /*

@@ -23,6 +23,8 @@ public:
   map<TString, TString> map_short_name_mc;
   map<TString, TString> map_short_name_data;
 
+  map<TString, TString> map_short_short_name;
+
 protected:
   TString era;
   TString channel;

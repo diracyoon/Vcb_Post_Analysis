@@ -36,4 +36,4 @@ if args.draw_validation == True:
 
 if args.application == True:
     tagging_rf = ROOT.Tagging_RF(args.era, "Application")
-    print(tagging_rf.Get_Tagging_RF("TTLJ", "B_Tag_Nominal", 5, 180.)) 
+    print(tagging_rf.Get_Tagging_RF_C_Tag("VJets", "C_Tag_LHE_Scale_MuR_Up", 22, 800)) 

@@ -46,6 +46,9 @@ protected:
   TString analyser;
   TString extension;
 
+  bool chk_simple = false;
+  int signal_scale = 1;
+
   Samples samples;
 
   float lumi;
@@ -75,17 +78,20 @@ protected:
 
   map<TString, int> color;
 
-  TH1D *****histo_mc;   // n_region, n_syst, n_sample, n_variable
-  THStack ****stack_mc; // n_region, n_syst, n_variable
+  TH1D *****histo_mc;          // n_region, n_syst, n_sample, n_variable
+  THStack ****stack_mc;        // n_region, n_syst, n_variable
+  THStack ****stack_mc_signal; // n_region, n_syst, n_variable
 
   TH1D ***histo_data; // n_region, n_variable
 
   TH1D ***histo_ratio;           // n_region, n_variable
   TGraphAsymmErrors ***gr_ratio; // n_region, n_variable
 
-  TGraphAsymmErrors ****gr_variation;       // n_region, n_syst, n_variable
-  TGraphAsymmErrors ***gr_variation_merged; // n_region, n_variable
-  TList ***list_variation;                  // n_region, n_variable
+  TGraphAsymmErrors ****gr_variation;              // n_region, n_syst, n_variable
+  TGraphAsymmErrors ***gr_variation_merged;        // n_region, n_variable
+  TGraphAsymmErrors ****gr_variation_signal;       // n_region, n_syst, n_variable
+  TGraphAsymmErrors ***gr_variation_merged_signal; //  n_region, n_variable
+  TList ***list_variation;                         // n_region, n_variable
 
   TCanvas ***canvas; // n_region, n_variable
   TPad ****pad;      // n_region, n_variable, 2

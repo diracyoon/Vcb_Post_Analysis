@@ -58,21 +58,11 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   }
 
   for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
-  {
-    cout << it->first << endl;
-    vec_short_name_mc.push_back(it->second);
-  }
+    vec_histo_sample.push_back(it->second);
 
-  // remove redundancy
-  sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
-  vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
-  n_sample_merge_mc = vec_short_name_mc.size();
+  vec_histo_sample.erase(remove(vec_histo_sample.begin(), vec_histo_sample.end(), "TTLJ"));
+  vec_histo_sample.erase(remove(vec_histo_sample.begin(), vec_histo_sample.end(), "TTLJ_WtoCB"));
 
-  for (auto it = vec_short_name_mc.begin(); it != vec_short_name_mc.end(); it++)
-  {
-    if (*it != "TTLJ" && *it != "TTLJ_WtoCB")
-      vec_histo_sample.push_back(*it);
-  }
   vec_histo_sample.push_back("TTLJ_ud");
   vec_histo_sample.push_back("TTLJ_us");
   vec_histo_sample.push_back("TTLJ_cd");
@@ -80,7 +70,12 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   vec_histo_sample.push_back("TTLJ_cb");
   n_histo_sample = vec_histo_sample.size();
 
-  cout << "n_sample_merge_mc = " << n_sample_merge_mc << ", n_histo_sample = " << n_histo_sample << endl;
+  // remove redundancy
+  sort(vec_histo_sample.begin(), vec_histo_sample.end(), Comparing_TString);
+  vec_histo_sample.erase(unique(vec_histo_sample.begin(), vec_histo_sample.end()), vec_histo_sample.end());
+  n_histo_sample = vec_histo_sample.size();
+
+  cout << "n_histo_sample = " << n_histo_sample << endl;
 
   n_fail_reason = sizeof(fail_reason) / sizeof(TString);
   n_histo_type = n_fail_reason + 1;
@@ -193,8 +188,12 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 
   gr_significance = new TGraphErrors();
 
+  // output root file to save histogram
+  TString fout_name = "Vcb_" + era + "_" + channel + ".root";
+  fout = new TFile(fout_name, "RECREATE");
+
   // output tree for template maker training
-  TString fout_name = "Vcb_" + era + "_" + channel + "_Reco_Tree.root";
+  fout_name = "Vcb_" + era + "_" + channel + "_Reco_Tree.root";
   fout_tree = new TFile(fout_name, "RECREATE");
 
   for (int i = 0; i < 5; i++)
@@ -291,6 +290,8 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 
 Reco_Eval::~Reco_Eval()
 {
+  fout->Close();
+
   fout_tree->cd();
   for (int i = 0; i < n_histo_sample; i++)
   {
@@ -322,7 +323,7 @@ void Reco_Eval::Run()
   Read_Tree();
   Calculate_Significance();
   Calculate_Prob();
-  Draw_Raw();
+  Draw_Reco();
   // Draw_Sample_By_Sample();
   // Draw_Significance();
   Draw_Swap();
@@ -427,6 +428,9 @@ void Reco_Eval::Draw_DV()
 
       canvas_dv[i]->cd(j + 1);
       stack_dv[i][j]->Draw("BAR");
+
+      fout->cd();
+      stack_dv[i][j]->Write();
     } // loop over # of disriminating variables
 
     canvas_dv[i]->Print(vec_histo_sample[i] + "_DV_" + era + "_" + channel + "." + draw_extension, draw_extension);
@@ -439,19 +443,19 @@ void Reco_Eval::Draw_DV()
 
 //////////
 
-void Reco_Eval::Draw_Raw()
+void Reco_Eval::Draw_Reco()
 {
-  cout << "[Reco_Eval::Draw]: start drawing raw distributions " << endl;
+  cout << "[Reco_Eval::Draw_Reco]: start drawing raw distributions " << endl;
 
   /* Raw distributions */
-  TCanvas *canvas_mva_pre[2];
-  TCanvas *canvas_mva[2];
-  TCanvas *canvas_had_w[2];
-  TCanvas *canvas_had_t[2];
-  TCanvas *canvas_lep_w[2];
-  TCanvas *canvas_lep_t[2];
-  TCanvas *canvas_template[2];
-  for (int i = 0; i < 2; i++)
+  TCanvas *canvas_mva_pre[3];
+  TCanvas *canvas_mva[3];
+  TCanvas *canvas_had_w[3];
+  TCanvas *canvas_had_t[3];
+  TCanvas *canvas_lep_w[3];
+  TCanvas *canvas_lep_t[3];
+  TCanvas *canvas_template[3];
+  for (int i = 0; i < 3; i++)
   {
     TString name = "Permutation_MVA_Pre_" + to_string(i);
     canvas_mva_pre[i] = new TCanvas(name, name, 1300, 800);
@@ -508,13 +512,13 @@ void Reco_Eval::Draw_Raw()
     TString name = vec_histo_sample[i];
     cout << name << endl;
 
-    stack_mva_pre[i] = new THStack(name, name);
-    stack_mva[i] = new THStack(name, name);
-    stack_had_w[i] = new THStack(name, name);
-    stack_had_t[i] = new THStack(name, name);
-    stack_lep_w[i] = new THStack(name, name);
-    stack_lep_t[i] = new THStack(name, name);
-    stack_template[i] = new THStack(name, name);
+    stack_mva_pre[i] = new THStack(name + "_MVA_Pre_Score", name + "_MVA_Pre_Score");
+    stack_mva[i] = new THStack(name + "_MVA_Score", name + "_MVA_Score");
+    stack_had_w[i] = new THStack(name + "_Had_W", name + "_Had_W");
+    stack_had_t[i] = new THStack(name + "_Had_T", name + "_Had_T");
+    stack_lep_w[i] = new THStack(name + "_Lep_W", name + "_Lep_W");
+    stack_lep_t[i] = new THStack(name + "_Lep_T", name + "_Lep_T");
+    stack_template[i] = new THStack(name + "_Template_MVA_Score", name + "_Template_MVA_Score");
 
     for (int j = 0; j < 5; j++)
     {
@@ -586,19 +590,61 @@ void Reco_Eval::Draw_Raw()
     }
     else
     {
-      canvas_index = 1;
       if (name.Contains("TTLL"))
+      {
+        canvas_index = 1;
         subpad_index = 1;
-      else if (name.Contains("ST"))
+      }
+      else if (name.Contains("ST_sch"))
+      {
+        canvas_index = 1;
         subpad_index = 2;
-      else if (name.Contains("VJets"))
+      }
+      else if (name.Contains("ST_tch"))
+      {
+        canvas_index = 1;
         subpad_index = 3;
-      else if (name.Contains("ttV"))
+      }
+      else if (name.Contains("ST_tw"))
+      {
+        canvas_index = 1;
         subpad_index = 4;
-      else if (name.Contains("VV"))
+      }
+      else if (name.Contains("WJets"))
+      {
+        canvas_index = 1;
         subpad_index = 5;
-      else if (name.Contains("QCD"))
+      }
+      else if (name.Contains("DYJets"))
+      {
+        canvas_index = 1;
         subpad_index = 6;
+      }
+      else if (name.Contains("QCD_bEn"))
+      {
+        canvas_index = 2;
+        subpad_index = 1;
+      }
+      else if (name.Contains("ttH"))
+      {
+        canvas_index = 2;
+        subpad_index = 2;
+      }
+      else if (name.Contains("ttW"))
+      {
+        canvas_index = 2;
+        subpad_index = 3;
+      }
+      else if (name.Contains("ttZ"))
+      {
+        canvas_index = 2;
+        subpad_index = 4;
+      }
+      else if (name.Contains("VV"))
+      {
+        canvas_index = 2;
+        subpad_index = 5;
+      }
     }
 
     canvas_mva_pre[canvas_index]->cd(subpad_index);
@@ -621,6 +667,10 @@ void Reco_Eval::Draw_Raw()
 
     canvas_template[canvas_index]->cd(subpad_index);
     stack_template[i]->Draw("BAR");
+
+    fout->cd();
+    stack_mva[i]->Write();
+    stack_template[i]->Write();
   }
 
   legend = new TLegend(0.2, 0.2, 0.8, 0.8);
@@ -675,7 +725,7 @@ void Reco_Eval::Draw_Raw()
     legend->Draw("SAME");
   }
 
-  for (int i = 0; i < 2; i++)
+  for (int i = 0; i < 3; i++)
   {
     canvas_mva_pre[i]->Update();
     canvas_mva[i]->Update();
@@ -686,14 +736,15 @@ void Reco_Eval::Draw_Raw()
     canvas_template[i]->Update();
   }
 
-  for (int i = 0; i < 2; i++)
+  for (int i = 0; i < 3; i++)
   {
     TString name = "Permutation_MVA_Pre_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
-    // canvas_mva_pre[i]->Print(name, draw_extension);
-    canvas_mva_pre[i]->SaveAs(name);
+    canvas_mva_pre[i]->Print(name, draw_extension);
 
     name = "Permutation_MVA_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
-    // canvas_mva[i]->Print(name, draw_extension);
+    canvas_mva[i]->Print(name, draw_extension);
+
+    name = "Permutation_MVA_" + to_string(i) + "_" + era + "_" + channel + ".cpp";
     canvas_mva[i]->SaveAs(name);
 
     name = "Had_W_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
@@ -715,7 +766,7 @@ void Reco_Eval::Draw_Raw()
   cout << ttlj_correct << " " << ttlj_wrong << " " << ttlj_wrong_not_sel << " " << ttlj_cb_correct << " " << ttlj_cb_wrong << " " << ttlj_cb_wrong_not_sel << endl;
 
   return;
-} // void Reco_Eval::Draw_Raw
+} // void Reco_Eval::Draw_Reco
 
 //////////
 
@@ -999,14 +1050,14 @@ int Reco_Eval::Get_Index(const TString &short_name, const int &index_decay_mode)
 
 //////////
 
-TString Reco_Eval::Histo_Name_RF(const TString &short_name)
+TString Reco_Eval::Histo_Name_RF(const TString &sample_name)
 {
   // This method serves the same purpose as the Histo_Index() method in a different class.
   // To apply Tagging_RF
 
-  TString histo_name_rf = short_name;
+  TString histo_name_rf;
 
-  if (histo_name_rf.Contains("TTLL") || histo_name_rf.Contains("TTLJ"))
+  if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   {
     bool chk_b = false;
     bool chk_c = false;
@@ -1014,6 +1065,8 @@ TString Reco_Eval::Histo_Name_RF(const TString &short_name)
     // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
     for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
     {
+      histo_name_rf = sample_name;
+
       int flavour = event.vec_sel_gen_hf_flavour->at(i);
       int origin = event.vec_sel_gen_hf_origin->at(i);
 
@@ -1049,6 +1102,8 @@ TString Reco_Eval::Histo_Name_RF(const TString &short_name)
     else if (event.decay_mode == 45)
       histo_name_rf += "_45";
   }
+  else
+    histo_name_rf = samples.map_short_short_name[sample_name];
 
   return histo_name_rf;
 } // TString& Reco_Eval::Histo_Name_RF()

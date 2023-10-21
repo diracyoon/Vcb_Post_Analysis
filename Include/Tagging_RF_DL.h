@@ -235,7 +235,7 @@ protected:
   void Fill_Histo_MC(const TString &sample_name, const TString &syst_type);
   void Fill_Histo_Validation_MC(const TString &sample_name, const TString &syst_type);
   int Histo_Index(const TString &sample_name);
-  int Histo_Index_RF(const TString &sample_name);
+  TString Histo_Name_RF(const TString &sample_name);
   void Ratio();
   void Read_Tree();
   void Run_Analysis();

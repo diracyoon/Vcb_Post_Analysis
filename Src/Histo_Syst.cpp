@@ -11,13 +11,26 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const boo
 
   cout << "[Histo_Syst::Histo_Syst]: Init analysis" << endl;
 
-  reduction = 1000;
+  reduction = 1;
 
   era = a_era;
   channel = a_channel;
   chk_merge = a_chk_merge;
   run_flag = a_run_flag;
   chk_template_on = a_chk_template_on;
+
+  chk_cut_best_mva_score = false;
+ 
+  if (chk_cut_best_mva_score)
+  {
+    nbin_best_mva_score = 50;
+    cut_best_score = 0;
+  }
+  else
+  {
+    nbin_best_mva_score = 100;
+    cut_best_score = -1;
+  }
 
   if (era == "2016preVFP")
   {
@@ -52,36 +65,36 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const boo
   n_region = region_name.size();
 
   // number of merged MC
-  for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
+  for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
   {
     cout << it->first << " " << it->second << endl;
-    vec_name_mc.push_back(it->first);
+    vec_short_name_mc.push_back(it->second);
   }
 
-  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLJ"));
-  vec_name_mc.push_back("TTLJ_2");    // TTLJ, w->ud or w->us
-  vec_name_mc.push_back("TTLJ_4");    // TTLJ, w->cd or w->cs
-  vec_name_mc.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
-  vec_name_mc.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
-  vec_name_mc.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
-  vec_name_mc.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
+  vec_short_name_mc.push_back("TTLJ_2");    // TTLJ, w->ud or w->us
+  vec_short_name_mc.push_back("TTLJ_4");    // TTLJ, w->cd or w->cs
+  vec_short_name_mc.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
+  vec_short_name_mc.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
+  vec_short_name_mc.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
+  vec_short_name_mc.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
 
-  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLJ_WtoCB"));
-  vec_name_mc.push_back("TTLJ_45");    // TTLJ, w->cb
-  vec_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
-  vec_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
+  vec_short_name_mc.push_back("TTLJ_45");    // TTLJ, w->cb
+  vec_short_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
+  vec_short_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
 
-  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLL"));
-  vec_name_mc.push_back("TTLL");    // TTLL+cc, w->ud or w->us
-  vec_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
-  vec_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL"));
+  vec_short_name_mc.push_back("TTLL");    // TTLL+cc, w->ud or w->us
+  vec_short_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
+  vec_short_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
 
   // remove redundancy
-  sort(vec_name_mc.begin(), vec_name_mc.end(), Comparing_TString);
-  vec_name_mc.erase(unique(vec_name_mc.begin(), vec_name_mc.end()), vec_name_mc.end());
+  sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
+  vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
 
-  n_sample_mc = vec_name_mc.size();
-  cout << "n_sample_mc = " << n_sample_mc << endl;
+  n_sample_merge_mc = vec_short_name_mc.size();
+  cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
 
   // Systs
   syst_name = {"Nominal",
@@ -155,7 +168,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const boo
                    {"CvsL_Subleading_Jet", 50, 0, 1},
                    {"Met_Pt", 50, 0, 300},
                    {"Met_Phi", 80, -4, 4},
-                   {"Best_MVA_Score", 100, -1, 1}};
+                   {"Best_MVA_Score", nbin_best_mva_score, cut_best_score, 1}};
   //{"Had_W_Mass", 60, 60, 120},
   //{"Had_T_Mass", 80, 130, 210}};
 
@@ -174,15 +187,21 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const boo
 
 Histo_Syst::~Histo_Syst()
 {
+  cout << "[Histo_Syst::~Histo_Syst]: Init" << endl;
+
   if (!chk_merge)
   {
     // Save histos
     for (int i = 0; i < n_region; i++)
     {
+      cout << "Region " << i << endl;
+
       TDirectory *dir_region = fout->mkdir(region_name[i]);
 
       if ((run_flag == "Data" || run_flag == "All") && region_name[i] != "Signal")
       {
+        cout << "Data" << endl;
+
         // for Data
         TDirectory *dir_data = dir_region->mkdir("Data");
         for (int j = 0; j < n_variable; j++)
@@ -197,6 +216,8 @@ Histo_Syst::~Histo_Syst()
       // for MC
       for (int j = 0; j < n_syst; j++)
       {
+        cout << "syst_name = " << syst_name[j] << endl;
+
         if (run_flag != "All" && run_flag != "Central" && run_flag != syst_name[j])
           continue;
 
@@ -204,19 +225,24 @@ Histo_Syst::~Histo_Syst()
 
         for (int k = 0; k < n_sample_merge_mc; k++)
         {
+          // cout << vec_short_name_mc[k] << endl;
+
           TDirectory *dir_sample = dir_syst->mkdir(vec_short_name_mc[k]);
 
           for (int l = 0; l < n_variable; l++)
           {
             dir_sample->cd();
+
             histo_mc[i][j][k][l]->SetTitle(variable_conf[l].variable_title);
             histo_mc[i][j][k][l]->SetName(variable_conf[l].variable_title);
             histo_mc[i][j][k][l]->Write();
           } // loop over variable
         }   // loop over sample
       }     // loop over syst
-    }       // loop over n_region
-  }         // if(!chk_merge)
+      cout << "MC done" << endl;
+    } // loop over n_region
+    cout << "Region done" << endl;
+  } // if(!chk_merge)
   // PDF error set
   else
   {
@@ -252,7 +278,10 @@ Histo_Syst::~Histo_Syst()
     }     // loop over n_region
   }       // else
 
+  cout << "[Histo_Syst::~Histo_Syst]: Closing root file" << endl;
   fout->Close();
+
+  cout << "[Histo_Syst::~Histo_Syst]: Done" << endl;
 } // Histo_Syst::~Histo_Syst()
 
 //////////
@@ -311,9 +340,11 @@ void Histo_Syst::Fill_Histo_Data(const int &region_index)
 
 void Histo_Syst::Fill_Histo_MC(const int &region_index, const TString &sample_name, const TString &syst_fix)
 {
-  // int sample_index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name_short) - vec_short_name_mc.begin();
+  int sample_index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name) - vec_short_name_mc.begin();
   int histo_index = Histo_Index(sample_name);
   TString histo_name_rf = Histo_Name_RF(sample_name);
+
+  // cout << "test " << sample_name << " " << sample_index << " " << histo_name_rf << endl;
 
   for (int i = 0; i < n_syst; i++)
   {
@@ -706,10 +737,10 @@ int Histo_Syst::Histo_Index(const TString &sample_name)
     else if (event.decay_mode == 45)
       histo_name += "_45";
 
-    index = find(vec_name_mc.begin(), vec_name_mc.end(), histo_name) - vec_name_mc.begin();
+    index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), histo_name) - vec_short_name_mc.begin();
   } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   else
-    index = find(vec_name_mc.begin(), vec_name_mc.end(), sample_name) - vec_name_mc.begin();
+    index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name) - vec_short_name_mc.begin();
 
   // cout << "test Histo_Index: " << sample_name << " " << index << endl;
 
@@ -720,10 +751,13 @@ int Histo_Syst::Histo_Index(const TString &sample_name)
 
 TString Histo_Syst::Histo_Name_RF(const TString &sample_name)
 {
-  TString histo_name_rf = samples.map_short_name_mc[sample_name];
+  TString histo_name_rf;
+  // = samples.map_short_name_mc[sample_name];
 
-  if (histo_name_rf.Contains("TTLL") || histo_name_rf.Contains("TTLJ"))
+  if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   {
+    histo_name_rf = sample_name;
+
     bool chk_b = false;
     bool chk_c = false;
 
@@ -765,6 +799,8 @@ TString Histo_Syst::Histo_Name_RF(const TString &sample_name)
     else if (event.decay_mode == 45)
       histo_name_rf += "_45";
   }
+  else
+    histo_name_rf = samples.map_short_short_name[sample_name];
 
   return histo_name_rf;
 } // TString Histo_Syst::Histo_name_RF(const TString &sample_name)
@@ -1086,13 +1122,13 @@ void Histo_Syst::Init_Histo_Syst()
     histo_mc[i] = new TH1D ***[n_syst];
     for (int j = 0; j < n_syst; j++)
     {
-      histo_mc[i][j] = new TH1D **[n_sample_mc];
-      for (int k = 0; k < n_sample_mc; k++)
+      histo_mc[i][j] = new TH1D **[n_sample_merge_mc];
+      for (int k = 0; k < n_sample_merge_mc; k++)
       {
         histo_mc[i][j][k] = new TH1D *[n_variable];
         for (int l = 0; l < n_variable; l++)
         {
-          TString histo_name = region_name[i] + "_" + syst_name[j] + "_" + vec_name_mc[k] + "_" + variable_conf[l].variable_title;
+          TString histo_name = region_name[i] + "_" + syst_name[j] + "_" + vec_short_name_mc[k] + "_" + variable_conf[l].variable_title;
           histo_mc[i][j][k][l] = new TH1D(histo_name, variable_conf[l].variable_title, variable_conf[l].n_bin, variable_conf[l].x_low, variable_conf[l].x_up);
         } // loop over n_variable
       }   // loop over n_sample_merge_mc
@@ -1131,11 +1167,11 @@ void Histo_Syst::Init_Merge_PDF_Error_Set()
 {
   cout << "Histo_Syst::Init_Merge_PDF_Error_Set" << endl;
 
-  TString fout_name = "Vcb_Histos_" + era + "_" + channel + "_All.root";
+  TString fout_name = path_base + "/Workplace/Histo_Syst/Vcb_Histos_" + era + "_" + channel + "_All.root";
   fout = new TFile(fout_name, "UPDATE");
 
   // to check Template_MVA_Score is included
-  TList *list_variable = ((TDirectory *)fout->Get("Control0/Nominal/TTLJ"))->GetListOfKeys();
+  TList *list_variable = ((TDirectory *)fout->Get("Control0/Nominal/TTLJ_2"))->GetListOfKeys();
   TObject *obj = list_variable->FindObject("Template_MVA_Score");
   if (obj != NULL)
   {
@@ -1161,6 +1197,8 @@ void Histo_Syst::Init_Merge_PDF_Error_Set()
       }   // loop over n_sample_merge_mc
     }     // loop over n_syst
   }       // loop over n_region
+
+  cout << "Histo_Syst::Init_Merge_PDF_Error_Set: Done" << endl;
 
   return;
 } // void Histo_Syst::Init_Merge_PDF_Error_Set()
@@ -1265,11 +1303,8 @@ void Histo_Syst::Read_Tree()
     for (auto it = map_tree->begin(); it != map_tree->end(); it++)
     {
       cout << it->first << endl;
-      // TString sample_name_short = samples.map_short_name_mc[it->first];
-      // cout << sample_name_short << endl;
 
-      // int sample_index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), samples.map_short_name_mc[it->first]) - vec_short_name_mc.begin();
-      //  cout << it->first << " Sample_Index = " << sample_index << endl;
+      TString sample_name_short = samples.map_short_name_mc[it->first];
 
       Long64_t n_entries = it->second->GetEntries();
       n_entries /= reduction;
@@ -1303,6 +1338,9 @@ void Histo_Syst::Read_Tree()
 
         it->second->GetEntry(i);
 
+        if (chk_cut_best_mva_score && event.best_mva_score < cut_best_score)
+          continue;
+
         // event veto
         if (100 < TMath::Abs(event.weight_pdf_alternative))
         {
@@ -1321,7 +1359,7 @@ void Histo_Syst::Read_Tree()
 
         int region_index = Get_Region_Index(region);
 
-        Fill_Histo_MC(region_index, it->first, syst_fix);
+        Fill_Histo_MC(region_index, sample_name_short, syst_fix);
         // if (syst_fix == "None") Fill_Histo_Weight(region_index, sample_index);
       } // loop over entries
     }   // loop over map_tree_mc
@@ -1348,7 +1386,10 @@ void Histo_Syst::Read_Tree()
 
       it->second->GetEntry(i);
 
-      event.Swap();
+      if (chk_cut_best_mva_score && event.best_mva_score < cut_best_score)
+        continue;
+
+      // event.Swap();
 
       TString region = Set_Region();
 
