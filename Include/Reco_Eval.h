@@ -96,6 +96,8 @@ protected:
 
   bool chk_swap;
 
+  TFile *fout;
+
   TFile *fout_tree;
   TTree *out_tree[5];
   // TTree *out_tree[5][5];
@@ -126,7 +128,7 @@ protected:
   void Calculate_Significance();
   void Calculate_Prob();
   void Draw_DV();
-  void Draw_Raw();
+  void Draw_Reco();
   void Draw_Sample_By_Sample();
   void Draw_Significance();
   void Draw_Swap();
@@ -138,7 +140,7 @@ protected:
   void Fill_Output_Tree(const TString &short_name, const int &index_decay_mode, const int &index_fail_reason);
   int Get_Index(const TString &name);
   int Get_Index(const TString &short_name, const int &index_decay_mode);
-  TString Histo_Name_RF(const TString &short_name);
+  TString Histo_Name_RF(const TString &sample_name);
   void Read_Tree();
 
   ClassDef(Reco_Eval, 1);

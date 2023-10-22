@@ -11,7 +11,7 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
 
   cout << "[CR_DL::CR_DL]: Init analysis" << endl;
 
-  reduction = 1000;
+  reduction = 1;
 
   era = a_era;
   channel = a_channel;
@@ -204,35 +204,36 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
   }
 
   // number of MC
-  for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
+  for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
   {
-    cout << it->first << endl;
-    vec_name_mc.push_back(it->first);
+    cout << it->first << " " << it->second << endl;
+    vec_short_name_mc.push_back(it->second);
   }
-  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLJ"));
-  vec_name_mc.push_back("TTLJ_JJ_2"); // TTLJ, w->ud or w->us
-  vec_name_mc.push_back("TTLJ_JJ_4"); // TTLJ, w->cd or w->cs
-  vec_name_mc.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
-  vec_name_mc.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
-  vec_name_mc.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
-  vec_name_mc.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
 
-  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLJ_WtoCB"));
-  vec_name_mc.push_back("TTLJ_JJ_45"); // TTLJ, w->cb
-  vec_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
-  vec_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
+  vec_short_name_mc.push_back("TTLJ_JJ_2"); // TTLJ, w->ud or w->us
+  vec_short_name_mc.push_back("TTLJ_JJ_4"); // TTLJ, w->cd or w->cs
+  vec_short_name_mc.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
+  vec_short_name_mc.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
+  vec_short_name_mc.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
+  vec_short_name_mc.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
 
-  vec_name_mc.erase(remove(vec_name_mc.begin(), vec_name_mc.end(), "TTLL"));
-  vec_name_mc.push_back("TTLL_JJ"); // TTLL+cc, w->ud or w->us
-  vec_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
-  vec_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
+  vec_short_name_mc.push_back("TTLJ_JJ_45"); // TTLJ, w->cb
+  vec_short_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
+  vec_short_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
+
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL"));
+  vec_short_name_mc.push_back("TTLL_JJ"); // TTLL+cc, w->ud or w->us
+  vec_short_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
+  vec_short_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
 
   // remove redundancy
-  sort(vec_name_mc.begin(), vec_name_mc.end(), Comparing_TString);
-  vec_name_mc.erase(unique(vec_name_mc.begin(), vec_name_mc.end()), vec_name_mc.end());
+  sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
+  vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
 
-  n_sample_mc = vec_name_mc.size();
-  cout << "n_sample_mc = " << n_sample_mc << endl;
+  n_sample_merge_mc = vec_short_name_mc.size();
+  cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
 
   // Systs
   syst_name = {"Nominal",
@@ -370,15 +371,15 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
   // histo_mc_2d = new TH2D ***[n_syst];
   for (int i = 0; i < n_syst; i++)
   {
-    histo_mc[i] = new TH1D **[n_sample_mc];
+    histo_mc[i] = new TH1D **[n_sample_merge_mc];
     // histo_mc_2d[i] = new TH2D **[n_sample_merge_mc];
-    for (int j = 0; j < n_sample_mc; j++)
+    for (int j = 0; j < n_sample_merge_mc; j++)
     {
       histo_mc[i][j] = new TH1D *[n_variable];
       // histo_mc_2d[i][j] = new TH2D *[n_variable];
       for (int k = 0; k < n_variable; k++)
       {
-        TString histo_name = syst_name[i] + "_" + vec_name_mc[j] + "_" + variable_conf[k].variable_title;
+        TString histo_name = syst_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
         histo_mc[i][j][k] = new TH1D(histo_name, histo_name, variable_conf[k].n_bin, variable_conf[k].x_low, variable_conf[k].x_up);
 
         // histo_name = syst_name[i] + "_" + vec_short_name_mc[j] + "_" + histo_type[k];
@@ -408,6 +409,8 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
 
 CR_DL::~CR_DL()
 {
+  cout << "[CR_DL::~CR_DL]: Init" << endl;
+
   // Save histos
   TDirectory *dir_region = fout->mkdir("Control_DL");
 
@@ -430,9 +433,9 @@ CR_DL::~CR_DL()
   for (int i = 0; i < n_syst; i++)
   {
     TDirectory *dir_syst = dir_region->mkdir(syst_name[i]);
-    for (int j = 0; j < n_sample_mc; j++)
+    for (int j = 0; j < n_sample_merge_mc; j++)
     {
-      TDirectory *dir_sample = dir_syst->mkdir(vec_name_mc[j]);
+      TDirectory *dir_sample = dir_syst->mkdir(vec_short_name_mc[j]);
       for (int k = 0; k < n_variable; k++)
       {
         dir_sample->cd();
@@ -452,9 +455,9 @@ CR_DL::~CR_DL()
   if (chk_merge_pdf_error_set)
   {
     TDirectory *dir_syst = dir_region->mkdir("PDF_Error_Set_Down");
-    for (int i = 0; i < n_sample_mc; i++)
+    for (int i = 0; i < n_sample_merge_mc; i++)
     {
-      TDirectory *dir_sample = dir_syst->mkdir(vec_name_mc[i]);
+      TDirectory *dir_sample = dir_syst->mkdir(vec_short_name_mc[i]);
       for (int j = 0; j < n_variable; j++)
       {
         dir_sample->cd();
@@ -465,9 +468,9 @@ CR_DL::~CR_DL()
     }
 
     dir_syst = dir_region->mkdir("PDF_Error_Set_Up");
-    for (int i = 0; i < n_sample_mc; i++)
+    for (int i = 0; i < n_sample_merge_mc; i++)
     {
-      TDirectory *dir_sample = dir_syst->mkdir(vec_name_mc[i]);
+      TDirectory *dir_sample = dir_syst->mkdir(vec_short_name_mc[i]);
       for (int j = 0; j < n_variable; j++)
       {
         dir_sample->cd();
@@ -478,6 +481,7 @@ CR_DL::~CR_DL()
     }
   } //  if (chk_merge_pdf_error_set)
 
+  cout << "[CR_DL::~CR_DL]: Done" << endl;
 } // CR_DL::~CR_DL()
 
 //////////
@@ -514,6 +518,8 @@ void CR_DL::Read_Tree()
     {
       cout << it->first << endl;
 
+      TString sample_name_short = samples.map_short_name_mc[it->first];
+
       Long64_t n_entries = it->second->GetEntries();
       n_entries /= reduction;
       cout << "N_Entries = " << it->second->GetEntries() << ", Reduction = " << reduction << ", N_Entries/Reduction = " << n_entries << endl;
@@ -528,7 +534,7 @@ void CR_DL::Read_Tree()
         if ((channel == "MM" || channel == "EE") && abs(event.dilepton_mass - Z_MASS) < 15)
           continue;
 
-        Fill_Histo_MC(it->first, syst_fix);
+        Fill_Histo_MC(sample_name_short, syst_fix);
       } // loop over entries
     }   // for (auto it = map_tree->begin(); it != map_tree->end(); it++)
   }     // loop over map_map_tree_mc
@@ -1004,10 +1010,10 @@ int CR_DL::Histo_Index(const TString &sample_name)
     else if (event.decay_mode == 45)
       histo_name += "_45";
 
-    index = find(vec_name_mc.begin(), vec_name_mc.end(), histo_name) - vec_name_mc.begin();
+    index = index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), histo_name) - vec_short_name_mc.begin();
   } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   else
-    index = find(vec_name_mc.begin(), vec_name_mc.end(), sample_name) - vec_name_mc.begin();
+    index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name) - vec_short_name_mc.begin();
 
   // cout << "test Histo_Index: " << sample_name << " " << index << endl;
 
@@ -1018,10 +1024,12 @@ int CR_DL::Histo_Index(const TString &sample_name)
 
 TString CR_DL::Histo_Name_RF(const TString &sample_name)
 {
-  TString histo_name_rf = samples.map_short_name_mc[sample_name];
+  TString histo_name_rf;
 
-  if (histo_name_rf.Contains("TTLL") || histo_name_rf.Contains("TTLJ"))
+  if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   {
+    histo_name_rf = sample_name;
+
     bool chk_b = false;
     bool chk_c = false;
 
@@ -1065,6 +1073,8 @@ TString CR_DL::Histo_Name_RF(const TString &sample_name)
     else if (event.decay_mode == 45)
       histo_name_rf += "_45";
   }
+  else
+    histo_name_rf = samples.map_short_short_name[sample_name];
 
   return histo_name_rf;
 } // TString CR_DL::Histo_name_RF(const TString &sample_name)
@@ -1144,24 +1154,24 @@ void CR_DL::Merge_PDF_Error_Set()
     }   // loop over n_variable
   */
 
-  histo_mc_pdf_error_set_down = new TH1D **[n_sample_mc];
-  histo_mc_pdf_error_set_up = new TH1D **[n_sample_mc];
-  for (int i = 0; i < n_sample_mc; i++)
+  histo_mc_pdf_error_set_down = new TH1D **[n_sample_merge_mc];
+  histo_mc_pdf_error_set_up = new TH1D **[n_sample_merge_mc];
+  for (int i = 0; i < n_sample_merge_mc; i++)
   {
     histo_mc_pdf_error_set_down[i] = new TH1D *[n_variable];
     histo_mc_pdf_error_set_up[i] = new TH1D *[n_variable];
     for (int j = 0; j < n_variable; j++)
     {
-      TString histo_name_pdf_error = "PDF_Error_Set_Down_" + vec_name_mc[i] + "_" + variable_conf[j].variable_title;
+      TString histo_name_pdf_error = "PDF_Error_Set_Down_" + vec_short_name_mc[i] + "_" + variable_conf[j].variable_title;
       histo_mc_pdf_error_set_down[i][j] = new TH1D(histo_name_pdf_error, histo_name_pdf_error, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up);
 
-      histo_name_pdf_error = "PDF_Error_Set_Up_" + vec_name_mc[i] + "_" + variable_conf[j].variable_title;
+      histo_name_pdf_error = "PDF_Error_Set_Up_" + vec_short_name_mc[i] + "_" + variable_conf[j].variable_title;
       histo_mc_pdf_error_set_up[i][j] = new TH1D(histo_name_pdf_error, histo_name_pdf_error, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up);
     }
   }
 
   // find min and max and fill histo
-  for (int i = 0; i < n_sample_mc; i++)
+  for (int i = 0; i < n_sample_merge_mc; i++)
   {
     // cout << vec_short_name_mc[i] << endl;
     for (int j = 0; j < n_variable; j++)

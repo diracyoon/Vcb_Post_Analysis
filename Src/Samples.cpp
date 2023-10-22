@@ -41,13 +41,13 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_short_name_mc["TTLJ_WtoCB"] = "TTLJ_WtoCB";
   map_short_name_mc["TTLJ"] = "TTLJ";
   map_short_name_mc["TTLL"] = "TTLL";
-  map_short_name_mc["SingleTop_sch_Lep"] = "ST";
-  map_short_name_mc["SingleTop_tch_top_Incl"] = "ST";
-  map_short_name_mc["SingleTop_tch_antitop_Incl"] = "ST";
-  map_short_name_mc["SingleTop_tW_top"] = "ST";
-  map_short_name_mc["SingleTop_tW_antitop"] = "ST";
-  map_short_name_mc["WJets"] = "VJets";
-  map_short_name_mc["DYJets"] = "VJets";
+  map_short_name_mc["SingleTop_sch_Lep"] = "ST_sch";
+  map_short_name_mc["SingleTop_tch_top_Incl"] = "ST_tch";
+  map_short_name_mc["SingleTop_tch_antitop_Incl"] = "ST_tch";
+  map_short_name_mc["SingleTop_tW_top"] = "ST_tw";
+  map_short_name_mc["SingleTop_tW_antitop"] = "ST_tw";
+  map_short_name_mc["WJets"] = "WJets";
+  map_short_name_mc["DYJets"] = "DYJets";
   map_short_name_mc["QCD_bEn_HT100to200"] = "QCD_bEn";
   map_short_name_mc["QCD_bEn_HT200to300"] = "QCD_bEn";
   map_short_name_mc["QCD_bEn_HT300to500"] = "QCD_bEn";
@@ -56,15 +56,29 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_short_name_mc["QCD_bEn_HT1000to1500"] = "QCD_bEn";
   map_short_name_mc["QCD_bEn_HT1500to2000"] = "QCD_bEn";
   map_short_name_mc["QCD_bEn_HT2000toInf"] = "QCD_bEn";
-  map_short_name_mc["ttHTobb"] = "ttV";
-  map_short_name_mc["ttHToNonbb"] = "ttV";
-  map_short_name_mc["ttWToLNu"] = "ttV";
-  map_short_name_mc["ttWToQQ"] = "ttV";
-  map_short_name_mc["ttZToLLNuNu"] = "ttV";
-  map_short_name_mc["ttZToQQ"] = "ttV";
+  map_short_name_mc["ttHTobb"] = "ttH";
+  map_short_name_mc["ttHToNonbb"] = "ttH";
+  map_short_name_mc["ttWToLNu"] = "ttW";
+  map_short_name_mc["ttWToQQ"] = "ttW";
+  map_short_name_mc["ttZToLLNuNu"] = "ttZ";
+  map_short_name_mc["ttZToQQ"] = "ttZ";
   map_short_name_mc["WW"] = "VV";
   map_short_name_mc["WZ"] = "VV";
   map_short_name_mc["ZZ"] = "VV";
+
+  map_short_short_name["TTLJ_WtoCB"] = "TTLJ_WtoCB";
+  map_short_short_name["TTLJ"] = "TTLJ";
+  map_short_short_name["TTLL"] = "TTLL";
+  map_short_short_name["ST_sch"] = "ST";
+  map_short_short_name["ST_tch"] = "ST";
+  map_short_short_name["ST_tw"] = "ST";
+  map_short_short_name["WJets"] = "VJets";
+  map_short_short_name["DYJets"] = "VJets";
+  map_short_short_name["QCD_bEn"] = "QCD_bEn";
+  map_short_short_name["ttH"] = "ttV";
+  map_short_short_name["ttW"] = "ttV";
+  map_short_short_name["ttZ"] = "ttV";
+  map_short_short_name["VV"] = "VV";
 
   map_top_syst["TTLJ_CP5down"] = "Vcb_TTLJ_powheg_CP5Down.root";
   map_top_syst["TTLJ_CP5up"] = "Vcb_TTLJ_powheg_CP5Up.root";
@@ -158,7 +172,7 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     map_short_name_mc["TTLL_CP5Up"] = "TTLL_CP5Up";
     map_short_name_mc["TTLL_mtop171p5"] = "TTLL_mtop171p5";
     map_short_name_mc["TTLL_mtop173p5"] = "TTLL_mtop173p5";
-  
+
     for (auto it = map_mc.begin(); it != map_mc.end(); it++)
       it->second.ReplaceAll("Vcb", "Vcb_Tagging_RF");
     /*

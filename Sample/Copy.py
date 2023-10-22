@@ -128,7 +128,7 @@ if args.data == True:
         elif args.Analyser == "Vcb_DL": des = f"{out_path}/Vcb_DL_{data}.root"
         
         goal = f"{flag_base}/RunResult/DATA/"
-        #print(des, goal, "\n")
+        print(des, goal, "\n")
 
         if os.path.isfile(des):
             os.makedirs(os.path.dirname(goal), exist_ok=True)

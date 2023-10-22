@@ -59,6 +59,10 @@ protected:
   TString run_flag;
   bool chk_template_on;
 
+  bool chk_cut_best_mva_score = false;
+  int nbin_best_mva_score = 100;
+  float cut_best_score = -1;
+
   TString path_base;
 
   Samples samples;
