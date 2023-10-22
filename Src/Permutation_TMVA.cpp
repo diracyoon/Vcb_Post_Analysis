@@ -4,7 +4,7 @@ ClassImp(Permutation_TMVA);
 
 //////////
 
-Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channel, const int &a_n_jet, const bool &a_chk_pre_cut, const bool &a_chk_final_kin)
+Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channel, const int &a_n_jet, const bool &a_chk_prekin_cut, const bool &a_chk_permutation_pre)
 {
   ROOT::EnableImplicitMT(8);
 
@@ -15,10 +15,10 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   era = a_era;
   channel = a_channel;
   n_jet = a_n_jet;
-  chk_pre_cut = a_chk_pre_cut;
-  chk_final_kin = a_chk_final_kin;
+  chk_prekin_cut = a_chk_prekin_cut;
+  chk_permutation_pre = a_chk_permutation_pre;
 
-  cout << "Era = " << era << ", Channel = " << channel << ", N_Jets = " << n_jet << ", Chk_Pre_Cut = " << chk_pre_cut << ", Chk_Final_Kin = " << chk_final_kin << endl;
+  cout << "Era = " << era << ", Channel = " << channel << ", N_Jets = " << n_jet << ", Chk_PreKin_Cut = " << chk_prekin_cut << ", Chk_Permutation_Pre = " << chk_permutation_pre << endl;
 
   TMVA::gConfig().GetVariablePlotting().fNbins1D = 200;
   TMVA::gConfig().GetVariablePlotting().fMaxNumOfAllowedVariablesForScatterPlots = 1;
@@ -31,12 +31,20 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   tree_wrong = (TTree *)fin->Get("Permutation_Wrong");
 
   TString fout_name;
-  if (chk_pre_cut)
-    fout_name = Form("Vcb_PreCut_TTLJ_WtoCB_%dJets.root", n_jet);
-  else if (chk_final_kin)
-    fout_name = Form("Vcb_Permutation_TTLJ_WtoCB_%dJets.root", n_jet);
+  if (chk_prekin_cut)
+  {
+    if (chk_permutation_pre)
+      fout_name = Form("Vcb_PreKin_Cut_Pre_TTLJ_WtoCB_%dJets.root", n_jet);
+    else
+      fout_name = Form("Vcb_PreKin_Cut_TTLJ_WtoCB_%dJets.root", n_jet);
+  }
   else
-    fout_name = Form("Vcb_PrePermutation_TTLJ_WtoCB_%dJets.root", n_jet);
+  {
+    if (chk_permutation_pre)
+      fout_name = Form("Vcb_Permutation_Pre_TTLJ_WtoCB_%dJets.root", n_jet);
+    else
+      fout_name = Form("Vcb_Permutation_TTLJ_WtoCB_%dJets.root", n_jet);
+  }
 
   fout = TFile::Open(fout_name, "RECREATE");
 
@@ -71,7 +79,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   data_loader->AddVariable("cvsb_had_t_b", "cvsb_had_t_b", "", 'F');
   data_loader->AddVariable("cvsl_had_t_b", "cvsl_had_t_b", "", 'F');
 
-  if (chk_final_kin)
+  if (!chk_permutation_pre)
   {
     data_loader->AddVariable("bvsc_w_u", "bvsc_w_u", "", 'F');
     data_loader->AddVariable("cvsb_w_u", "cvsb_w_u", "", 'F');
@@ -116,7 +124,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   data_loader->AddVariable("lep_t_mass", "lep_t_mass", "GeV", 'F');
   data_loader->AddVariable("lep_t_partial_mass", "lep_t_partial_mass", "GeV", 'F');
 
-  if (!chk_pre_cut)
+  if (!chk_prekin_cut)
   {
     data_loader->AddVariable("chi2_jet_had_t_b", "chi2_jet_had_t_b", "", 'F');
     data_loader->AddVariable("chi2_jet_w_u", "chi2_jet_w_u", "", 'F');
@@ -181,7 +189,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
 
   // Gradient Boost
   int n_tree;
-  if (strcmp(getenv("NTREE"), "")!=0)
+  if (strcmp(getenv("NTREE"), "") != 0)
     n_tree = atoi(getenv("NTREE"));
   else
     n_tree = 200;

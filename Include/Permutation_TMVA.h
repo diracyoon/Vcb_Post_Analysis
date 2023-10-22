@@ -18,18 +18,18 @@ using namespace std;
 class Permutation_TMVA : public TObject
 {
 public:
-  Permutation_TMVA(const TString &a_era = "2018", const TString &a_channel = "Mu", const int &a_n_jet = 4, const bool &a_chk_pre_cut = false, const bool &a_chk_final_kin = false);
+  Permutation_TMVA(const TString &a_era = "2018", const TString &a_channel = "Mu", const int &a_n_jet = 4, const bool &a_chk_prekin_cut = false, const bool &a_chk_permutation_pre = false);
   ~Permutation_TMVA();
 
 protected:
   TString era;
   TString channel;
-  
+
   int reduction;
 
   int n_jet;
-  bool chk_pre_cut;
-  bool chk_final_kin;
+  bool chk_prekin_cut;      // no chi2
+  bool chk_permutation_pre; // no tagging info. of W candidates
 
   TFile *fin;
   TTree *tree_correct;
