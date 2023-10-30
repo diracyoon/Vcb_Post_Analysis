@@ -196,7 +196,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   cout << "N_Tree = " << n_tree << endl;
 
   factory->BookMethod(data_loader, TMVA::Types::kBDT, "BDTG",
-                      Form("!H:!V:NTrees=%d:MinNodeSize=5%:BoostType=Grad:Shrinkage=0.10:UseBaggedBoost=True:BaggedSampleFraction=0.5:nCuts=200:MaxDepth=2", n_tree));
+                      Form("!H:!V:NTrees=%d:MinNodeSize=5%:BoostType=Grad:Shrinkage=0.05:UseBaggedBoost=True:BaggedSampleFraction=0.5:nCuts=200:MaxDepth=2", n_tree));
 
   // Fisher
   // factory->BookMethod(data_loader, TMVA::Types::kFisher, "Fisher", "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=100:NsmoothMVAPdf=10" );
