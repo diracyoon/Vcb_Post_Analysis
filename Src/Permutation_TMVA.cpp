@@ -230,6 +230,10 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
 
 Permutation_TMVA::~Permutation_TMVA()
 {
+  TDirectory *dir_dataset = (TDirectory *)fout->Get("dataset");
+  dir_dataset->Delete("TestTree");
+  dir_dataset->Delete("TrainTree");
+
   fout->Close();
 } // Permutation_TMVA::~Permutation_TMVA()
 
