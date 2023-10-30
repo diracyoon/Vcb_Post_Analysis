@@ -230,9 +230,11 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
 
 Permutation_TMVA::~Permutation_TMVA()
 {
+  delete factory;
+
   TDirectory *dir_dataset = (TDirectory *)fout->Get("dataset");
-  dir_dataset->Delete("TestTree");
-  dir_dataset->Delete("TrainTree");
+  dir_dataset->Delete("TestTree;1");
+  dir_dataset->Delete("TrainTree;1");
 
   fout->Close();
 } // Permutation_TMVA::~Permutation_TMVA()
