@@ -47,6 +47,12 @@ def set_var(input_root_file):
     
     regions = ['Control0', 'Signal']
     
+    pattern = r'_(201[^_]+)_'
+    match = re.search(pattern, input_root_file)
+    
+    if match:
+        era = match.group(1)
+    
     rebinN = 2
     
     if 'DL' in input_root_file: #harcoded
@@ -77,7 +83,7 @@ def get_syst_name(syst):
 
     for decorr_syst in decorr_systs:
         if decorr_syst in syst:
-            syst.replace(decorr_syst,decorr_syst+"_"+era)
+            syst = syst.replace(decorr_syst,decorr_syst+"_"+era)
     if syst == 'Top_Pt_Reweight':
         return'Top_Pt_Reweight_Up'
     elif syst == 'mTop_171p5':
