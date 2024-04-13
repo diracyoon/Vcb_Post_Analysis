@@ -25,15 +25,21 @@ protected:
   TString era;
   TString channel;
 
+  bool chk_bvsc_only = false;
+
   int reduction;
 
   int n_jet;
   bool chk_prekin_cut;      // no chi2
   bool chk_permutation_pre; // no tagging info. of W candidates
 
-  TFile *fin;
-  TTree *tree_correct;
-  TTree *tree_wrong;
+  TFile *fin_el;
+  TTree *tree_correct_el;
+  TTree *tree_wrong_el;
+
+  TFile *fin_mu;
+  TTree *tree_correct_mu;
+  TTree *tree_wrong_mu;
 
   TFile *fout;
 
@@ -43,8 +49,8 @@ protected:
   TCut cut_s;
   TCut cut_b;
 
-  int n_train_signal;
-  int n_train_back;
+  int n_train_signal = 0;
+  int n_train_back = 0;
 
   ClassDef(Permutation_TMVA, 1);
 };

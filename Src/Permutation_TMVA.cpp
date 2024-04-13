@@ -6,11 +6,13 @@ ClassImp(Permutation_TMVA);
 
 Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channel, const int &a_n_jet, const bool &a_chk_prekin_cut, const bool &a_chk_permutation_pre)
 {
-  ROOT::EnableImplicitMT(8);
+  ROOT::EnableImplicitMT(20);
 
   cout << "[Permutation_TMVA::Permutation_TMVA]: Init analysis" << endl;
 
   reduction = 1;
+
+  chk_bvsc_only = true;
 
   era = a_era;
   channel = a_channel;
@@ -24,11 +26,18 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   TMVA::gConfig().GetVariablePlotting().fMaxNumOfAllowedVariablesForScatterPlots = 1;
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
-  path_base += "/Sample/" + era + "/" + channel + "/RunPermutationTree/";
+  path_base += "/Sample/" + era + "/El/RunPermutationTree/";
 
-  fin = new TFile(path_base + "Vcb_TTLJ_WtoCB_powheg.root");
-  tree_correct = (TTree *)fin->Get("Permutation_Correct");
-  tree_wrong = (TTree *)fin->Get("Permutation_Wrong");
+  fin_el = new TFile(path_base + "Vcb_TTLJ_WtoCB_powheg.root");
+  tree_correct_el = (TTree *)fin_el->Get("Permutation_Correct");
+  tree_wrong_el = (TTree *)fin_el->Get("Permutation_Wrong");
+
+  path_base = getenv("Vcb_Post_Analysis_WD");
+  path_base += "/Sample/" + era + "/Mu/RunPermutationTree/";
+
+  fin_mu = new TFile(path_base + "Vcb_TTLJ_WtoCB_powheg.root");
+  tree_correct_mu = (TTree *)fin_mu->Get("Permutation_Correct");
+  tree_wrong_mu = (TTree *)fin_mu->Get("Permutation_Wrong");
 
   TString fout_name;
   if (chk_prekin_cut)
@@ -50,6 +59,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
 
   factory = new TMVA::Factory("TMVAClassification", fout,
                               "!V:!Silent:Color:DrawProgressBar:Transformations=I:AnalysisType=Classification");
+  //factory->SetOptions("SaveState=kFALSE");
 
   data_loader = new TMVA::DataLoader("dataset");
   // data_loader->AddVariable( "weight",       "weight",       "units", 'F');
@@ -62,8 +72,8 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   // data_loader->AddVariable("lepton_pt", "lepton_pt", 'F');
   data_loader->AddVariable("met_pt", "met_pt", "GeV", 'F');
   data_loader->AddVariable("neutrino_p", "neutrino_p", "GeV", 'F');
-  data_loader->AddVariable("lepton_pt", "lepton_pt", "GeV", 'F');
-  data_loader->AddVariable("pt_ratio", "pt_ratio", "", 'F');
+  //data_loader->AddVariable("lepton_pt", "lepton_pt", "GeV", 'F');
+  //data_loader->AddVariable("pt_ratio", "pt_ratio", "", 'F');
 
   data_loader->AddVariable("pt_had_t_b", "pt_had_t_b", "GeV", 'F');
   data_loader->AddVariable("pt_w_u", "pt_w_u", "GeV", 'F');
@@ -76,23 +86,35 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   // data_loader->AddVariable("eta_lep_t_b", "eta_lep_t_b", "units", 'F');
 
   data_loader->AddVariable("bvsc_had_t_b", "bvsc_had_t_b", "", 'F');
-  data_loader->AddVariable("cvsb_had_t_b", "cvsb_had_t_b", "", 'F');
-  data_loader->AddVariable("cvsl_had_t_b", "cvsl_had_t_b", "", 'F');
+  if(!chk_bvsc_only)
+    {
+      data_loader->AddVariable("cvsb_had_t_b", "cvsb_had_t_b", "", 'F');
+      data_loader->AddVariable("cvsl_had_t_b", "cvsl_had_t_b", "", 'F');
+    }
 
   if (!chk_permutation_pre)
   {
     data_loader->AddVariable("bvsc_w_u", "bvsc_w_u", "", 'F');
-    data_loader->AddVariable("cvsb_w_u", "cvsb_w_u", "", 'F');
-    data_loader->AddVariable("cvsl_w_u", "cvsl_w_u", "", 'F');
+    if(!chk_bvsc_only)
+      {
+	data_loader->AddVariable("cvsb_w_u", "cvsb_w_u", "", 'F');
+	data_loader->AddVariable("cvsl_w_u", "cvsl_w_u", "", 'F');
+      }
 
     data_loader->AddVariable("bvsc_w_d", "bvsc_w_d", "", 'F');
-    data_loader->AddVariable("cvsb_w_d", "cvsb_w_d", "", 'F');
-    data_loader->AddVariable("cvsl_w_d", "cvsl_w_d", "", 'F');
+    if(!chk_bvsc_only)
+      {
+	data_loader->AddVariable("cvsb_w_d", "cvsb_w_d", "", 'F');
+	data_loader->AddVariable("cvsl_w_d", "cvsl_w_d", "", 'F');
+      }
   }
 
   data_loader->AddVariable("bvsc_lep_t_b", "bvsc_lep_t_b", "", 'F');
-  data_loader->AddVariable("cvsb_lep_t_b", "cvsb_lep_t_b", "", 'F');
-  data_loader->AddVariable("cvsl_lep_t_b", "cvsl_lep_t_b", "", 'F');
+  if(!chk_bvsc_only)
+    {
+      data_loader->AddVariable("cvsb_lep_t_b", "cvsb_lep_t_b", "", 'F');
+      data_loader->AddVariable("cvsl_lep_t_b", "cvsl_lep_t_b", "", 'F');
+    }
 
   // data_loader->AddVariable("del_phi_w_u_w_d", "del_phi_w_u_w_d", "units", 'F');
   // data_loader->AddVariable("del_eta_w_u_w_d", "del_eta_w_u_w_d", "units", 'F');
@@ -144,11 +166,14 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
     // data_loader->AddVariable("chi2",         "chi2",   "units", 'F');
   }
 
-  data_loader->AddSignalTree(tree_correct, 1.0);
-  data_loader->AddBackgroundTree(tree_wrong, 1.0);
+  data_loader->AddSignalTree(tree_correct_el, 1.0);
+  data_loader->AddBackgroundTree(tree_wrong_el, 1.0);
+  
+  data_loader->AddSignalTree(tree_correct_mu, 1.0);
+  data_loader->AddBackgroundTree(tree_wrong_mu, 1.0);
 
   TCut cut_base;
-  if (7 == n_jet)
+  if (6 == n_jet)
     cut_base = Form("%d>=n_jets&&met_pt<200&&neutrino_p<600&&lepton_pt<250&&pt_had_t_b<300&&pt_w_u<250&&pt_w_d<250&&pt_lep_t_b<300&&had_t_mass<600&&had_w_mass<300&&lep_t_mass<600&&lep_t_partial_mass<400", n_jet);
   else
     cut_base = Form("%d==n_jets&&met_pt<200&&neutrino_p<600&&lepton_pt<250&&pt_had_t_b<300&&pt_w_u<250&&pt_w_d<250&&pt_lep_t_b<300&&had_t_mass<600&&had_w_mass<300&&lep_t_mass<600&&lep_t_partial_mass<400", n_jet);
@@ -167,14 +192,20 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   cut_b = cut_base;
 
   // to save time
-  if (7 == n_jet)
+  if (6 == n_jet)
   {
     cut_s += "0<n_matched_jets";
     cut_b += "0<n_matched_jets";
   }
 
-  n_train_signal = tree_correct->GetEntries(cut_s) / 2 / reduction;
-  n_train_back = tree_wrong->GetEntries(cut_b) / 2 / reduction;
+  n_train_signal = 0;
+  n_train_back = 0;
+
+  n_train_signal += tree_correct_el->GetEntries(cut_s) / 2 / reduction;
+  n_train_back += tree_wrong_el->GetEntries(cut_b) / 2 / reduction;
+
+  n_train_signal += tree_correct_mu->GetEntries(cut_s) / 2 / reduction;
+  n_train_back += tree_wrong_mu->GetEntries(cut_b) / 2 / reduction;
 
   // for debugging
   // n_train_signal = 100;
@@ -196,7 +227,7 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   cout << "N_Tree = " << n_tree << endl;
 
   factory->BookMethod(data_loader, TMVA::Types::kBDT, "BDTG",
-                      Form("!H:!V:NTrees=%d:MinNodeSize=5%:BoostType=Grad:Shrinkage=0.05:UseBaggedBoost=True:BaggedSampleFraction=0.5:nCuts=200:MaxDepth=2", n_tree));
+                      Form("!H:!V:NTrees=%d:MinNodeSize=2.5%:BoostType=Grad:Shrinkage=0.1:UseBaggedBoost=True:BaggedSampleFraction=0.5:nCuts=200:MaxDepth=2", n_tree));
 
   // Fisher
   // factory->BookMethod(data_loader, TMVA::Types::kFisher, "Fisher", "H:!V:Fisher:VarTransform=None:CreateMVAPdfs:PDFInterpolMVAPdf=Spline2:NbinsMVAPdf=100:NsmoothMVAPdf=10" );
@@ -231,11 +262,16 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
 Permutation_TMVA::~Permutation_TMVA()
 {
   delete factory;
+  delete data_loader;
 
   TDirectory *dir_dataset = (TDirectory *)fout->Get("dataset");
-  dir_dataset->Delete("TestTree;1");
-  dir_dataset->Delete("TrainTree;1");
+  dir_dataset->Delete("TestTree;*");
+  dir_dataset->Delete("TrainTree;*");
+  
+  //fout->cd();
+  //dir_dataset->Write();
 
+  fout->Write();
   fout->Close();
 } // Permutation_TMVA::~Permutation_TMVA()
 
