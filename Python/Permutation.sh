@@ -21,7 +21,7 @@ echo $n_jet $chk_permutation_pre $type_name
 dir_python=${Vcb_Post_Analysis_WD}"/Python"
 dir_permutation=${Vcb_Post_Analysis_WD}"/Workplace/Permutation"
 
-${dir_python}/Permutation.py -e ${ERA} -ch ${CHANNEL} -njet ${n_jet} -permutation_pre $chk_permutation_pre
+${dir_python}/Permutation.py -e ${ERA} -njet ${n_jet} -permutation_pre $chk_permutation_pre
 
 mkdir -p ${dir_permutation}/${ERA}/${CHANNEL}/nTree_${NTREE}/${type_name}_${n_jet}Jets/weights/
 
