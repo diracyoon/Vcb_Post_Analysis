@@ -4,7 +4,7 @@ ClassImp(Permutation_TMVA);
 
 //////////
 
-Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channel, const int &a_n_jet, const bool &a_chk_permutation_pre)
+Permutation_TMVA::Permutation_TMVA(const TString &a_era, const int &a_n_jet, const bool &a_chk_permutation_pre)
 {
   ROOT::EnableImplicitMT(20);
 
@@ -15,13 +15,13 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   chk_bvsc_only = true;
 
   era = a_era;
-  channel = a_channel;
+  //channel = a_channel;
   n_jet = a_n_jet;
   // chk_prekin_cut = a_chk_prekin_cut;
   chk_permutation_pre = a_chk_permutation_pre;
 
   // cout << "Era = " << era << ", Channel = " << channel << ", N_Jets = " << n_jet << ", Chk_PreKin_Cut = " << chk_prekin_cut << ", Chk_Permutation_Pre = " << chk_permutation_pre << endl;
-  cout << "Era = " << era << ", Channel = " << channel << ", N_Jets = " << n_jet << ", Chk_Permutation_Pre = " << chk_permutation_pre << endl;
+  cout << "Era = " << era << ", N_Jets = " << n_jet << ", Chk_Permutation_Pre = " << chk_permutation_pre << endl;
 
   TMVA::gConfig().GetVariablePlotting().fNbins1D = 200;
   TMVA::gConfig().GetVariablePlotting().fMaxNumOfAllowedVariablesForScatterPlots = 1;
