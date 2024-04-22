@@ -16,5 +16,5 @@ error = job_$ENV(NTREE)_$(Process).err
 #output = job_$ENV(NTREE)_7.log
 #error = job_$ENV(NTREE)_7.err
 
-queue 12
+queue 6
 #queue 1

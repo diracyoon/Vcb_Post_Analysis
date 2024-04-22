@@ -5,7 +5,7 @@ parser = argparse.ArgumentParser(description='Vcb_Post_Analysis Command')
 parser.add_argument('-e', dest='Era', default="2018")
 parser.add_argument('-ch', dest='Channel', default="Mu")
 parser.add_argument('-njet', dest='NJet', default=4)
-parser.add_argument('-prekin_cut', dest='PreKin_Cut', default=False)
+#parser.add_argument('-prekin_cut', dest='PreKin_Cut', default=False)
 parser.add_argument('-permutation_pre', dest='Permutation_Pre', default=False)
 args = parser.parse_args()
 
@@ -18,4 +18,4 @@ path=os.environ['Vcb_Post_Analysis_WD']
 import ROOT
 ROOT.gSystem.Load(f"{path}/Build/libVcb_Post_Analysis.so")
 
-permutation = ROOT.Permutation_TMVA(args.Era, args.Channel, int(args.NJet), bool(int(args.PreKin_Cut)), bool(int(args.Permutation_Pre)))
+permutation = ROOT.Permutation_TMVA(args.Era, args.Channel, int(args.NJet) bool(int(args.Permutation_Pre)))
