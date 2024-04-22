@@ -4,7 +4,7 @@ ClassImp(Permutation_TMVA);
 
 //////////
 
-Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channel, const int &a_n_jet, const bool &a_chk_prekin_cut, const bool &a_chk_permutation_pre)
+Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channel, const int &a_n_jet, const bool &a_chk_permutation_pre)
 {
   ROOT::EnableImplicitMT(20);
 
@@ -17,10 +17,11 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   era = a_era;
   channel = a_channel;
   n_jet = a_n_jet;
-  chk_prekin_cut = a_chk_prekin_cut;
+  // chk_prekin_cut = a_chk_prekin_cut;
   chk_permutation_pre = a_chk_permutation_pre;
 
-  cout << "Era = " << era << ", Channel = " << channel << ", N_Jets = " << n_jet << ", Chk_PreKin_Cut = " << chk_prekin_cut << ", Chk_Permutation_Pre = " << chk_permutation_pre << endl;
+  // cout << "Era = " << era << ", Channel = " << channel << ", N_Jets = " << n_jet << ", Chk_PreKin_Cut = " << chk_prekin_cut << ", Chk_Permutation_Pre = " << chk_permutation_pre << endl;
+  cout << "Era = " << era << ", Channel = " << channel << ", N_Jets = " << n_jet << ", Chk_Permutation_Pre = " << chk_permutation_pre << endl;
 
   TMVA::gConfig().GetVariablePlotting().fNbins1D = 200;
   TMVA::gConfig().GetVariablePlotting().fMaxNumOfAllowedVariablesForScatterPlots = 1;
@@ -40,26 +41,16 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   tree_wrong_mu = (TTree *)fin_mu->Get("Permutation_Wrong");
 
   TString fout_name;
-  if (chk_prekin_cut)
-  {
-    if (chk_permutation_pre)
-      fout_name = Form("Vcb_PreKin_Cut_Pre_TTLJ_WtoCB_%dJets.root", n_jet);
-    else
-      fout_name = Form("Vcb_PreKin_Cut_TTLJ_WtoCB_%dJets.root", n_jet);
-  }
+  if (chk_permutation_pre)
+    fout_name = Form("Vcb_Permutation_Pre_TTLJ_WtoCB_%dJets.root", n_jet);
   else
-  {
-    if (chk_permutation_pre)
-      fout_name = Form("Vcb_Permutation_Pre_TTLJ_WtoCB_%dJets.root", n_jet);
-    else
-      fout_name = Form("Vcb_Permutation_TTLJ_WtoCB_%dJets.root", n_jet);
-  }
+    fout_name = Form("Vcb_Permutation_TTLJ_WtoCB_%dJets.root", n_jet);
 
   fout = TFile::Open(fout_name, "RECREATE");
 
   factory = new TMVA::Factory("TMVAClassification", fout,
                               "!V:!Silent:Color:DrawProgressBar:Transformations=I:AnalysisType=Classification");
-  //factory->SetOptions("SaveState=kFALSE");
+  // factory->SetOptions("SaveState=kFALSE");
 
   data_loader = new TMVA::DataLoader("dataset");
   // data_loader->AddVariable( "weight",       "weight",       "units", 'F');
@@ -70,10 +61,10 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   // data_loader->AddVariable("n_cjets",       "n_cjets",       "units", 'I');
 
   // data_loader->AddVariable("lepton_pt", "lepton_pt", 'F');
-  data_loader->AddVariable("met_pt", "met_pt", "GeV", 'F');
+  // data_loader->AddVariable("met_pt", "met_pt", "GeV", 'F');
   data_loader->AddVariable("neutrino_p", "neutrino_p", "GeV", 'F');
-  //data_loader->AddVariable("lepton_pt", "lepton_pt", "GeV", 'F');
-  //data_loader->AddVariable("pt_ratio", "pt_ratio", "", 'F');
+  // data_loader->AddVariable("lepton_pt", "lepton_pt", "GeV", 'F');
+  // data_loader->AddVariable("pt_ratio", "pt_ratio", "", 'F');
 
   data_loader->AddVariable("pt_had_t_b", "pt_had_t_b", "GeV", 'F');
   data_loader->AddVariable("pt_w_u", "pt_w_u", "GeV", 'F');
@@ -86,35 +77,35 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   // data_loader->AddVariable("eta_lep_t_b", "eta_lep_t_b", "units", 'F');
 
   data_loader->AddVariable("bvsc_had_t_b", "bvsc_had_t_b", "", 'F');
-  if(!chk_bvsc_only)
-    {
-      data_loader->AddVariable("cvsb_had_t_b", "cvsb_had_t_b", "", 'F');
-      data_loader->AddVariable("cvsl_had_t_b", "cvsl_had_t_b", "", 'F');
-    }
+  if (!chk_bvsc_only)
+  {
+    data_loader->AddVariable("cvsb_had_t_b", "cvsb_had_t_b", "", 'F');
+    data_loader->AddVariable("cvsl_had_t_b", "cvsl_had_t_b", "", 'F');
+  }
 
   if (!chk_permutation_pre)
   {
     data_loader->AddVariable("bvsc_w_u", "bvsc_w_u", "", 'F');
-    if(!chk_bvsc_only)
-      {
-	data_loader->AddVariable("cvsb_w_u", "cvsb_w_u", "", 'F');
-	data_loader->AddVariable("cvsl_w_u", "cvsl_w_u", "", 'F');
-      }
+    if (!chk_bvsc_only)
+    {
+      data_loader->AddVariable("cvsb_w_u", "cvsb_w_u", "", 'F');
+      data_loader->AddVariable("cvsl_w_u", "cvsl_w_u", "", 'F');
+    }
 
     data_loader->AddVariable("bvsc_w_d", "bvsc_w_d", "", 'F');
-    if(!chk_bvsc_only)
-      {
-	data_loader->AddVariable("cvsb_w_d", "cvsb_w_d", "", 'F');
-	data_loader->AddVariable("cvsl_w_d", "cvsl_w_d", "", 'F');
-      }
+    if (!chk_bvsc_only)
+    {
+      data_loader->AddVariable("cvsb_w_d", "cvsb_w_d", "", 'F');
+      data_loader->AddVariable("cvsl_w_d", "cvsl_w_d", "", 'F');
+    }
   }
 
   data_loader->AddVariable("bvsc_lep_t_b", "bvsc_lep_t_b", "", 'F');
-  if(!chk_bvsc_only)
-    {
-      data_loader->AddVariable("cvsb_lep_t_b", "cvsb_lep_t_b", "", 'F');
-      data_loader->AddVariable("cvsl_lep_t_b", "cvsl_lep_t_b", "", 'F');
-    }
+  if (!chk_bvsc_only)
+  {
+    data_loader->AddVariable("cvsb_lep_t_b", "cvsb_lep_t_b", "", 'F');
+    data_loader->AddVariable("cvsl_lep_t_b", "cvsl_lep_t_b", "", 'F');
+  }
 
   // data_loader->AddVariable("del_phi_w_u_w_d", "del_phi_w_u_w_d", "units", 'F');
   // data_loader->AddVariable("del_eta_w_u_w_d", "del_eta_w_u_w_d", "units", 'F');
@@ -146,29 +137,9 @@ Permutation_TMVA::Permutation_TMVA(const TString &a_era, const TString &a_channe
   data_loader->AddVariable("lep_t_mass", "lep_t_mass", "GeV", 'F');
   data_loader->AddVariable("lep_t_partial_mass", "lep_t_partial_mass", "GeV", 'F');
 
-  if (!chk_prekin_cut)
-  {
-    data_loader->AddVariable("chi2_jet_had_t_b", "chi2_jet_had_t_b", "", 'F');
-    data_loader->AddVariable("chi2_jet_w_u", "chi2_jet_w_u", "", 'F');
-    data_loader->AddVariable("chi2_jet_w_d", "chi2_jet_w_d", "", 'F');
-    data_loader->AddVariable("chi2_jet_lep_t_b", "chi2_jet_lep_t_b", "", 'F');
-
-    if (n_jet == 4)
-      data_loader->AddSpectator("chi2_jet_extra", "chi2_jet_extra", "", 'F');
-    else
-      data_loader->AddVariable("chi2_jet_extra", "chi2_jet_extra", "", 'F');
-
-    data_loader->AddVariable("chi2_constraint_had_t", "chi2_constraint_had_t", "", 'F');
-    data_loader->AddVariable("chi2_constraint_had_w", "chi2_constraint_had_w", "", 'F');
-    data_loader->AddVariable("chi2_constraint_lep_t", "chi2_constraint_lep_t", "", 'F');
-    data_loader->AddVariable("chi2_constraint_lep_w", "chi2_constraint_lep_w", "", 'F');
-
-    // data_loader->AddVariable("chi2",         "chi2",   "units", 'F');
-  }
-
   data_loader->AddSignalTree(tree_correct_el, 1.0);
   data_loader->AddBackgroundTree(tree_wrong_el, 1.0);
-  
+
   data_loader->AddSignalTree(tree_correct_mu, 1.0);
   data_loader->AddBackgroundTree(tree_wrong_mu, 1.0);
 
@@ -267,9 +238,9 @@ Permutation_TMVA::~Permutation_TMVA()
   TDirectory *dir_dataset = (TDirectory *)fout->Get("dataset");
   dir_dataset->Delete("TestTree;*");
   dir_dataset->Delete("TrainTree;*");
-  
-  //fout->cd();
-  //dir_dataset->Write();
+
+  // fout->cd();
+  // dir_dataset->Write();
 
   fout->Write();
   fout->Close();

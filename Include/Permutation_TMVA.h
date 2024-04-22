@@ -18,7 +18,7 @@ using namespace std;
 class Permutation_TMVA : public TObject
 {
 public:
-  Permutation_TMVA(const TString &a_era = "2018", const TString &a_channel = "Mu", const int &a_n_jet = 4, const bool &a_chk_prekin_cut = false, const bool &a_chk_permutation_pre = false);
+  Permutation_TMVA(const TString &a_era = "2018", const TString &a_channel = "Mu", const int &a_n_jet = 4, const bool &a_chk_permutation_pre = false);
   ~Permutation_TMVA();
 
 protected:
