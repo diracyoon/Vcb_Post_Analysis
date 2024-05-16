@@ -4,7 +4,7 @@ ClassImp(CR_DL);
 
 //////////
 
-CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_run_flag)
+CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_tagger, const TString &a_run_flag)
     : samples(a_era, a_channel, "Vcb_DL"), tagging_rf_dl(a_era)
 {
   ROOT::EnableImplicitMT(10);
@@ -15,6 +15,7 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
 
   era = a_era;
   channel = a_channel;
+  tagger = a_tagger;
   run_flag = a_run_flag; // stats in DL region are not too many. Jobsplitting is not much needed. Thus run_flag is not used.
 
   path_base = getenv("Vcb_Post_Analysis_WD");
@@ -85,78 +86,26 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
   } // for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
 
   // CP5 down
-  map_fin_mc_cp5_down = map_fin_mc;
-  map_tree_mc_cp5_down = map_tree_mc;
-
-  map_fin_mc_cp5_down["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_CP5down"]);
-  map_tree_mc_cp5_down["TTLJ"] = (TTree *)map_fin_mc_cp5_down["TTLJ"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_cp5_down["TTLJ"], Syst::Central);
-
-  map_fin_mc_cp5_down["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_CP5down"]);
-  map_tree_mc_cp5_down["TTLL"] = (TTree *)map_fin_mc_cp5_down["TTLL"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_cp5_down["TTLL"], Syst::Central);
+  Register_Top_Syst(map_fin_mc_cp5_down, map_tree_mc_cp5_down, "CP5Down");
 
   // CP5 up
-  map_fin_mc_cp5_up = map_fin_mc;
-  map_tree_mc_cp5_up = map_tree_mc;
-
-  map_fin_mc_cp5_up["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_CP5up"]);
-  map_tree_mc_cp5_up["TTLJ"] = (TTree *)map_fin_mc_cp5_up["TTLJ"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_cp5_up["TTLJ"], Syst::Central);
-
-  map_fin_mc_cp5_up["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_CP5up"]);
-  map_tree_mc_cp5_up["TTLL"] = (TTree *)map_fin_mc_cp5_up["TTLL"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_cp5_up["TTLL"], Syst::Central);
+  Register_Top_Syst(map_fin_mc_cp5_up, map_tree_mc_cp5_up, "CP5Up");
 
   // hDamp down
-  map_fin_mc_hdamp_down = map_fin_mc;
-  map_tree_mc_hdamp_down = map_tree_mc;
-
-  map_fin_mc_hdamp_down["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_hdampdown"]);
-  map_tree_mc_hdamp_down["TTLJ"] = (TTree *)map_fin_mc_hdamp_down["TTLJ"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_hdamp_down["TTLJ"], Syst::Central);
-
-  map_fin_mc_hdamp_down["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_hdampdown"]);
-  map_tree_mc_hdamp_down["TTLL"] = (TTree *)map_fin_mc_hdamp_down["TTLL"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_hdamp_down["TTLL"], Syst::Central);
+  Register_Top_Syst(map_fin_mc_hdamp_down, map_tree_mc_hdamp_down, "hdampDown");
 
   // hDamp up
-  map_fin_mc_hdamp_up = map_fin_mc;
-  map_tree_mc_hdamp_up = map_tree_mc;
-
-  map_fin_mc_hdamp_up["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_hdampup"]);
-  map_tree_mc_hdamp_up["TTLJ"] = (TTree *)map_fin_mc_hdamp_up["TTLJ"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_hdamp_up["TTLJ"], Syst::Central);
-
-  map_fin_mc_hdamp_up["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_hdampup"]);
-  map_tree_mc_hdamp_up["TTLL"] = (TTree *)map_fin_mc_hdamp_up["TTLL"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_hdamp_up["TTLL"], Syst::Central);
+  Register_Top_Syst(map_fin_mc_hdamp_up, map_tree_mc_hdamp_up, "hdampUp");
 
   // mTop 171.5
-  map_fin_mc_mtop_171p5 = map_fin_mc;
-  map_tree_mc_mtop_171p5 = map_tree_mc;
-
-  map_fin_mc_mtop_171p5["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_mtop_171p5"]);
-  map_tree_mc_mtop_171p5["TTLJ"] = (TTree *)map_fin_mc_mtop_171p5["TTLJ"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_mtop_171p5["TTLJ"], Syst::Central);
-
-  map_fin_mc_mtop_171p5["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_mtop_171p5"]);
-  map_tree_mc_mtop_171p5["TTLL"] = (TTree *)map_fin_mc_mtop_171p5["TTLL"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_mtop_171p5["TTLL"], Syst::Central);
+  Register_Top_Syst(map_fin_mc_mtop_171p5, map_tree_mc_mtop_171p5, "mtop171p5");
 
   // mTop 173.5
-  map_fin_mc_mtop_173p5 = map_fin_mc;
-  map_tree_mc_mtop_173p5 = map_tree_mc;
-
-  map_fin_mc_mtop_173p5["TTLJ"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_mtop_173p5"]);
-  map_tree_mc_mtop_173p5["TTLJ"] = (TTree *)map_fin_mc_mtop_173p5["TTLJ"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_mtop_173p5["TTLJ"], Syst::Central);
-
-  map_fin_mc_mtop_173p5["TTLL"] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_mtop_173p5"]);
-  map_tree_mc_mtop_173p5["TTLL"] = (TTree *)map_fin_mc_mtop_173p5["TTLL"]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_mc_mtop_173p5["TTLL"], Syst::Central);
+  Register_Top_Syst(map_fin_mc_mtop_173p5, map_tree_mc_mtop_173p5, "mtop173p5");
 
   // TFile and TTree handlers
+  cout << "Registering handlers" << endl;
+
   map_map_fin_mc["Central"] = &map_fin_mc;
 
   map_map_tree_mc["Central"] = &map_tree_mc;
@@ -237,11 +186,6 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
 
   // Systs
   syst_name = {"Nominal",
-               //"B_Tag_HF_Down", "B_Tag_HF_Up", "B_Tag_JES_Down", "B_Tag_JES_Up", "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up", "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up", "B_Tag_CFErr1_Down", "B_Tag_CFErr1_Up", "B_Tag_CFErr2_Down", "B_Tag_CFErr2_Up", "B_Tag_HFStats1_Down", "B_Tag_HFStats1_Up", "B_Tag_HFStats2_Down", "B_Tag_HFStats2_Up",
-               "C_Tag_Extrap_Down", "C_Tag_Extrap_Up", "C_Tag_Interp_Down", "C_Tag_Interp_Up",
-               //"C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up", "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up", "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up", "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up", "C_Tag_PU_Down", "C_Tag_PU_Up",
-               "C_Tag_Stat_Down", "C_Tag_Stat_Up", "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up", "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up", "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
-               //"C_Tag_JER_Down", "C_Tag_JER_Up", "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up",
                "Jet_En_Down", "Jet_En_Up",
                "Jet_Res_Down", "Jet_Res_Up",
                "UE_Down", "UE_Up",
@@ -258,6 +202,39 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
                "CP5_Down", "CP5_Up",
                "hDamp_Down", "hDamp_Up",
                "mTop_171p5", "mTop_173p5"};
+
+  if (tagger == "B")
+  {
+    vector<TString> syst_tagger = {"B_Tag_HF_Down", "B_Tag_HF_Up",
+                                   "B_Tag_LF_Down", "B_Tag_LF_Up",
+                                   // "B_Tag_JES_Down", "B_Tag_JES_Up",
+                                   "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up",
+                                   "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up",
+                                   "B_Tag_CFErr1_Down", "B_Tag_CFErr1_Up",
+                                   "B_Tag_CFErr2_Down", "B_Tag_CFErr2_Up",
+                                   "B_Tag_HFStats1_Down", "B_Tag_HFStats1_Up",
+                                   "B_Tag_HFStats2_Down", "B_Tag_HFStats2_Up"};
+
+    syst_name.insert(syst_name.end(), syst_tagger.begin(), syst_tagger.end());
+  }
+  else if (tagger == "C")
+  {
+    vector<TString> syst_tagger = {"C_Tag_Extrap_Down", "C_Tag_Extrap_Up",
+                                   "C_Tag_Interp_Down", "C_Tag_Interp_Up",
+                                   //"C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up",
+                                   //"C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up",
+                                   //"C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up",
+                                   //"C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up",
+                                   //"C_Tag_PU_Down", "C_Tag_PU_Up",
+                                   "C_Tag_Stat_Down", "C_Tag_Stat_Up",
+                                   "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up",
+                                   "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up",
+                                   "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up"};
+    //"C_Tag_JER_Down", "C_Tag_JER_Up",
+    //"C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up",};
+
+    syst_name.insert(syst_name.end(), syst_tagger.begin(), syst_tagger.end());
+  }
 
   if (channel == "MM")
   {
@@ -314,7 +291,6 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
   cout << "N_Syst = " << n_syst << endl;
 
   bin_bvsc.push_back(0);
-  bin_bvsc.push_back(1);
   if (era == "2016preVFP")
   {
     bin_bvsc.push_back(bvsc_wp_l_2016preVFP);
@@ -339,11 +315,11 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
     bin_bvsc.push_back(bvsc_wp_m_2018);
     bin_bvsc.push_back(bvsc_wp_t_2018);
   }
+  bin_bvsc.push_back(1);
   sort(bin_bvsc.begin(), bin_bvsc.end());
   int n_bin_bvsc = bin_bvsc.size() - 1;
 
   // set variables to be drawn
-
   variable_conf = {{"BvsC_3rd_4th_Jets_Unrolled", n_bin_bvsc * n_bin_bvsc, 0., (float)n_bin_bvsc * n_bin_bvsc},
                    {"N_Vertex", 100, 0, 100},
                    {"Leading_Lepton_Eta", 60, -3, 3},
@@ -366,38 +342,47 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ru
                    {"Subleading_jet_Charge", 40, -2, 2}};
   n_variable = variable_conf.size();
 
+  variable_conf_2d = {{"BvsC_3rd_4th_Jets", n_bin_bvsc, bin_bvsc.data(), n_bin_bvsc, bin_bvsc.data()}};
+  n_variable_2d = variable_conf_2d.size();
+
   // histo for MC
   histo_mc = new TH1D ***[n_syst];
-  // histo_mc_2d = new TH2D ***[n_syst];
+  histo_mc_2d = new TH2D ***[n_syst];
   for (int i = 0; i < n_syst; i++)
   {
     histo_mc[i] = new TH1D **[n_sample_merge_mc];
-    // histo_mc_2d[i] = new TH2D **[n_sample_merge_mc];
+    histo_mc_2d[i] = new TH2D **[n_sample_merge_mc];
     for (int j = 0; j < n_sample_merge_mc; j++)
     {
       histo_mc[i][j] = new TH1D *[n_variable];
-      // histo_mc_2d[i][j] = new TH2D *[n_variable];
       for (int k = 0; k < n_variable; k++)
       {
         TString histo_name = syst_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
         histo_mc[i][j][k] = new TH1D(histo_name, histo_name, variable_conf[k].n_bin, variable_conf[k].x_low, variable_conf[k].x_up);
+      }
 
-        // histo_name = syst_name[i] + "_" + vec_short_name_mc[j] + "_" + histo_type[k];
-        // histo_mc_2d[i][j][k] = new TH2D(histo_name, histo_name, bin_bvsc.size() - 1, bin_bvsc.data(), bin_bvsc.size() - 1, bin_bvsc.data());
+      histo_mc_2d[i][j] = new TH2D *[n_variable_2d];
+      for (int k = 0; k < n_variable_2d; k++)
+      {
+        TString histo_name = syst_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf_2d[k].variable_title;
+        histo_mc_2d[i][j][k] = new TH2D(histo_name, histo_name, variable_conf_2d[k].n_bin_x, variable_conf_2d[k].binning_x, variable_conf_2d[k].n_bin_y, variable_conf_2d[k].binning_y);
       }
     } // loop over n_sample_merge_mc
   }   // loop over n_syst
 
   // histo for data
   histo_data = new TH1D *[n_variable];
-  // histo_data_2d = new TH2D *[n_variable];
   for (int i = 0; i < n_variable; i++)
   {
     TString histo_name = variable_conf[i].variable_title;
     histo_data[i] = new TH1D(histo_name, histo_name, variable_conf[i].n_bin, variable_conf[i].x_low, variable_conf[i].x_up);
+  }
 
-    // histo_name = histo_type[i];
-    // histo_data_2d[i] = new TH2D(histo_name, histo_name, bin_bvsc.size() - 1, bin_bvsc.data(), bin_bvsc.size() - 1, bin_bvsc.data());
+  histo_data_2d = new TH2D *[n_variable_2d];
+  for (int i = 0; i < n_variable_2d; i++)
+  {
+    TString histo_name = variable_conf_2d[i].variable_title;
+    histo_data_2d[i] = new TH2D(histo_name, histo_name, variable_conf_2d[i].n_bin_x, variable_conf_2d[i].binning_x, variable_conf_2d[i].n_bin_y, variable_conf_2d[i].binning_y);
   }
 
   TString fout_name = "Vcb_DL_Histos_" + era + "_" + channel;
@@ -429,6 +414,15 @@ CR_DL::~CR_DL()
     // histo_data_2d[i]->Write();
   }
 
+  for (int i = 0; i < n_variable_2d; i++)
+  {
+    dir_data->cd();
+
+    histo_data_2d[i]->SetTitle(variable_conf_2d[i].variable_title);
+    histo_data_2d[i]->SetName(variable_conf_2d[i].variable_title);
+    histo_data_2d[i]->Write();
+  }
+
   // for MC
   for (int i = 0; i < n_syst; i++)
   {
@@ -447,6 +441,15 @@ CR_DL::~CR_DL()
         // histo_mc_2d[i][j][k]->SetTitle(histo_type[k]);
         // histo_mc_2d[i][j][k]->SetName(histo_type[k]);
         // histo_mc_2d[i][j][k]->Write();
+      }
+
+      for (int k = 0; k < n_variable_2d; k++)
+      {
+        dir_sample->cd();
+
+        histo_mc_2d[i][j][k]->SetTitle(variable_conf_2d[k].variable_title);
+        histo_mc_2d[i][j][k]->SetName(variable_conf_2d[k].variable_title);
+        histo_mc_2d[i][j][k]->Write();
       }
     }
   }
@@ -489,6 +492,7 @@ CR_DL::~CR_DL()
 void CR_DL::Run()
 {
   Read_Tree();
+  Unroller();
   Merge_PDF_Error_Set();
 
   return;
@@ -518,7 +522,11 @@ void CR_DL::Read_Tree()
     {
       cout << it->first << endl;
 
-      TString sample_name_short = samples.map_short_name_mc[it->first];
+      TString sample_name_short;
+      if (it->first.Contains("TTLJ") || it->first.Contains("TTLL"))
+        sample_name_short = it->first;
+      else
+        sample_name_short = samples.map_short_name_mc[it->first];
 
       Long64_t n_entries = it->second->GetEntries();
       n_entries /= reduction;
@@ -568,11 +576,62 @@ void CR_DL::Read_Tree()
 
 //////////
 
+void CR_DL::Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TString, TTree *> &map_tree_syst, const TString &type)
+{
+  cout << "[CR_DL::Register_Top_Syst]:" << type << endl;
+
+  map_fin_syst = map_fin_mc;
+  map_tree_syst = map_tree_mc;
+
+  map_fin_syst.erase("TTLJ");
+  map_tree_syst.erase("TTLJ");
+
+  map_fin_syst.erase("TTLL");
+  map_tree_syst.erase("TTLL");
+
+  TString result_path = path_base + "/Sample/" + era + "/" + channel + "/RunResult/";
+
+  map_fin_syst["TTLJ_" + type] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_" + type]);
+  map_tree_syst["TTLJ_" + type] = (TTree *)map_fin_syst["TTLJ_" + type]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_syst["TTLJ_" + type], Syst::Central);
+
+  map_fin_syst["TTLL_" + type] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_" + type]);
+  map_tree_syst["TTLL_" + type] = (TTree *)map_fin_syst["TTLL_" + type]->Get(key_base + "Central" + tree_name);
+  event.Setup_Tree(map_tree_syst["TTLL_" + type], Syst::Central);
+
+  return;
+} // void CR_DL::Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TString, TTree *> &map_tree_syst, const TString &type)
+
+//////////
+
+float CR_DL::Reweight_CKM(const TString &sample_name)
+{
+  float reweight = 1;
+
+  if (sample_name.Contains("TTLJ"))
+  {
+    if (event.decay_mode == 21)
+      reweight = Vud_pdg * Vud_pdg / Vud_squared_powheg;
+    else if (event.decay_mode == 23)
+      reweight = Vus_pdg * Vus_pdg / Vus_squared_powheg;
+    else if (event.decay_mode == 41)
+      reweight = Vcd_pdg * Vcd_pdg / Vcd_squared_powheg;
+    else if (event.decay_mode == 43)
+      reweight = Vcs_pdg * Vcs_pdg / Vcs_squared_powheg;
+  }
+  else
+    return 1.0;
+
+  return reweight;
+} // void CR_DL::Reweight_CKM(const TString& sample_name)
+
+//////////
+
 void CR_DL::Fill_Histo_Data()
 {
   int unrolled_bin = Unroller(event.bvsc_third, event.bvsc_fourth);
 
-  histo_data[0]->Fill(unrolled_bin, 1.);
+  // histo_data[0]->Fill(unrolled_bin, 1.);
   histo_data[1]->Fill(event.n_pv, 1.);
   histo_data[2]->Fill(event.leading_lepton_eta, 1.);
   histo_data[3]->Fill(event.leading_lepton_pt, 1.);
@@ -593,7 +652,7 @@ void CR_DL::Fill_Histo_Data()
   histo_data[18]->Fill(event.leading_jet_charge, 1);
   histo_data[19]->Fill(event.subleading_jet_charge, 1);
 
-  // histo_data_2d[0]->Fill(event.bvsc_third, event.bvsc_fourth, 1.);
+  histo_data_2d[0]->Fill(event.bvsc_third, event.bvsc_fourth, 1.);
 
   return;
 } // void CR_DL::Fill_Histo_Data()
@@ -606,6 +665,8 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
 
   int histo_index = Histo_Index(sample_name);
   TString histo_name_rf = Histo_Name_RF(sample_name);
+
+  float weight_ckm = Reweight_CKM(sample_name);
 
   // cout << "test sample_name = " << sample_name << ", histo_index = " << histo_index << ", histo_index_rf = " << histo_name_rf << endl;
 
@@ -633,6 +694,8 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
     event.weight *= event.weight_lumi;
     event.weight *= event.weight_mc;
     event.weight *= event.weight_hem_veto;
+
+    event.weight *= weight_ckm;
 
     // PDF errors
     if (syst_type == "PDF_Alternative")
@@ -717,7 +780,7 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
     else if (syst_type == "Mu_Trig_Up")
       event.weight *= event.weight_sl_trig_mu_up;
     else if (syst_type == "El_Trig_Up")
-      event.weight *= event.weight_sl_trig_el_down;
+      event.weight *= event.weight_sl_trig_el_up;
     else if (syst_type == "El_Trig_Down")
       event.weight *= event.weight_sl_trig_el_down;
     else
@@ -751,197 +814,254 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
     else
       event.weight *= event.weight_el_reco;
 
-    /*
-       if (syst_type == "B_Tag_HF_Down")
-         event.weight *= event.weight_b_tag_hf_down;
-       else if (syst_type == "B_Tag_HF_Up")
-         event.weight *= event.weight_b_tag_hf_up;
-       else if (syst_type == "B_Tag_JES_Down")
-         event.weight *= event.weight_b_tag_jes_down;
-       else if (syst_type == "B_Tag_JES_Up")
-         event.weight *= event.weight_b_tag_jes_up;
-       else if (syst_type == "B_Tag_LFStats1_Down")
-         event.weight *= event.weight_b_tag_lfstats1_down;
-       else if (syst_type == "B_Tag_LFStats1_Up")
-         event.weight *= event.weight_b_tag_lfstats1_up;
-       else if (syst_type == "B_Tag_LFStats2_Down")
-         event.weight *= event.weight_b_tag_lfstats2_down;
-       else if (syst_type == "B_Tag_LFStats2_Up")
-         event.weight *= event.weight_b_tag_lfstats2_up;
-       else if (syst_type == "B_Tag_CFErr1_Down")
-         event.weight *= event.weight_b_tag_cferr1_down;
-       else if (syst_type == "B_Tag_CFErr1_Up")
-         event.weight *= event.weight_b_tag_cferr1_up;
-       else if (syst_type == "B_Tag_CFErr2_Down")
-         event.weight *= event.weight_b_tag_cferr2_down;
-       else if (syst_type == "B_Tag_CFErr2_Up")
-         event.weight *= event.weight_b_tag_cferr2_up;
-       else if (syst_type == "B_Tag_HFStats1_Down")
-         event.weight *= event.weight_b_tag_hfstats1_down;
-       else if (syst_type == "B_Tag_HFStats1_Up")
-         event.weight *= event.weight_b_tag_hfstats1_up;
-       else if (syst_type == "B_Tag_HFStats2_Down")
-         event.weight *= event.weight_b_tag_hfstats2_down;
-       else if (syst_type == "B_Tag_HFStats2_Up")
-         event.weight *= event.weight_b_tag_hfstats2_up;
-       else
-         event.weight *= event.weight_b_tag;
+    if (tagger == "B")
+    {
+      TString b_tagging_rf_type;
 
-       // b-tag renormalization factor
-       TString short_name_mc = samples.map_short_name_mc[sample_name];
-       TString b_tag_syst_name;
-       if (syst_type.Contains("B_Tag"))
-         b_tag_syst_name = syst_type;
-       else
-         b_tag_syst_name = "B_Tag_Nominal";
+      if (syst_type == "B_Tag_HF_Down")
+      {
+        event.weight *= event.weight_b_tag_hf_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_HF_Up")
+      {
+        event.weight *= event.weight_b_tag_hf_up;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_LF_Down")
+      {
+        event.weight *= event.weight_b_tag_lf_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_LF_Up")
+      {
+        event.weight *= event.weight_b_tag_lf_up;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_LFStats1_Down")
+      {
+        event.weight *= event.weight_b_tag_lfstats1_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_LFStats1_Up")
+      {
+        event.weight *= event.weight_b_tag_lfstats1_up;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_LFStats2_Down")
+      {
+        event.weight *= event.weight_b_tag_lfstats2_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_LFStats2_Up")
+      {
+        event.weight *= event.weight_b_tag_lfstats2_up;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_CFErr1_Down")
+      {
+        event.weight *= event.weight_b_tag_cferr1_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_CFErr1_Up")
+      {
+        event.weight *= event.weight_b_tag_cferr1_up;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_CFErr2_Down")
+      {
+        event.weight *= event.weight_b_tag_cferr2_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_CFErr2_Up")
+      {
+        event.weight *= event.weight_b_tag_cferr2_up;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_HFStats1_Down")
+      {
+        event.weight *= event.weight_b_tag_hfstats1_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_HFStats1_Up")
+      {
+        event.weight *= event.weight_b_tag_hfstats1_up;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_HFStats2_Down")
+      {
+        event.weight *= event.weight_b_tag_hfstats2_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_HFStats2_Up")
+      {
+        event.weight *= event.weight_b_tag_hfstats2_up;
+        b_tagging_rf_type = syst_type;
+      }
+      // fully correlated b-tagging scale factors
+      else if (syst_type == "Jet_En_Down")
+      {
+        event.weight *= event.weight_b_tag_jes_down;
+        b_tagging_rf_type = "B_Tag_JES_Down";
+      }
+      else if (syst_type == "Jet_En_Up")
+      {
+        event.weight *= event.weight_b_tag_jes_up;
+        b_tagging_rf_type = "B_Tag_JES_Up";
+      }
+      else
+      {
+        event.weight *= event.weight_b_tag;
+        b_tagging_rf_type = "B_Tag_Nominal";
+      }
 
-       b_tag_rf = tagging_rf.Get_Tagging_RF(short_name_mc, b_tag_syst_name, event.n_jet, event.ht);
-       // cout << "test " << short_name_mc << " " << c_tag_syst_name << " " << event.n_pv << " " << c_tag_rf << endl;
+      // cout << "test " << histo_name_rf << " " << b_tagging_rf_type << endl;
+      event.weight *= tagging_rf_dl.Get_Tagging_RF_DL_B_Tag(histo_name_rf, b_tagging_rf_type, event.n_jet, event.ht);
+    } // if (tagger == "B")
+    else if (tagger == "C")
+    {
+      TString c_tagging_rf_type;
+      if (syst_type == "C_Tag_Extrap_Down")
+      {
+        event.weight *= event.weight_c_tag_extrap_down;
+        c_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "C_Tag_Extrap_Up")
+      {
+        event.weight *= event.weight_c_tag_extrap_up;
+        c_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "C_Tag_Interp_Down")
+      {
+        event.weight *= event.weight_c_tag_interp_down;
+        c_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "C_Tag_Interp_Up")
+      {
+        event.weight *= event.weight_c_tag_interp_up;
+        c_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "C_Tag_Stat_Down")
+      {
+        event.weight *= event.weight_c_tag_stat_down;
+        c_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "C_Tag_Stat_Up")
+      {
+        event.weight *= event.weight_c_tag_stat_up;
+        c_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "C_Tag_XSec_Br_Unc_DYJets_B_Down")
+      {
+        event.weight *= event.weight_c_tag_xsec_br_unc_dyjets_b_down;
+        c_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "C_Tag_XSec_Br_Unc_DYJets_B_Up")
+      {
+        event.weight *= event.weight_c_tag_xsec_br_unc_dyjets_b_up;
+        c_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "C_Tag_XSec_Br_Unc_DYJets_C_Down")
+      {
+        event.weight *= event.weight_c_tag_xsec_br_unc_dyjets_c_down;
+        c_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "C_Tag_XSec_Br_Unc_DYJets_C_Up")
+      {
+        event.weight *= event.weight_c_tag_xsec_br_unc_dyjets_c_up;
+        c_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "C_Tag_XSec_Br_Unc_WJets_C_Down")
+      {
+        event.weight *= event.weight_c_tag_xsec_br_unc_wjets_c_down;
+        c_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "C_Tag_XSec_Br_Unc_WJets_C_Up")
+      {
+        event.weight *= event.weight_c_tag_xsec_br_unc_wjets_c_up;
+        c_tagging_rf_type = syst_type;
+      }
+      // fully correlated c-tagging scale factors
+      else if (syst_type == "Jet_Res_Down")
+      {
+        event.weight *= event.weight_c_tag_jer_down;
+        c_tagging_rf_type = "C_Tag_JER_Down";
+      }
+      else if (syst_type == "Jet_Res_Up")
+      {
+        event.weight *= event.weight_c_tag_jer_up;
+        c_tagging_rf_type = "C_Tag_JER_Up";
+      }
+      else if (syst_type == "Jet_En_Down")
+      {
+        event.weight *= event.weight_c_tag_jes_total_down;
+        c_tagging_rf_type = "C_Tag_JES_Total_Down";
+      }
+      else if (syst_type == "Jet_En_Up")
+      {
+        event.weight *= event.weight_c_tag_jes_total_up;
+        c_tagging_rf_type = "C_Tag_JES_Total_Up";
+      }
+      else if (syst_type == "MuF_Down")
+      {
+        event.weight *= event.weight_c_tag_lhe_scale_muf_down;
+        c_tagging_rf_type = "C_Tag_LHE_Scale_MuF_Down";
+      }
+      else if (syst_type == "MuF_Up")
+      {
+        event.weight *= event.weight_c_tag_lhe_scale_muf_up;
+        c_tagging_rf_type = "C_Tag_LHE_Scale_MuF_Up";
+      }
+      else if (syst_type == "MuR_Down")
+      {
+        event.weight *= event.weight_c_tag_lhe_scale_mur_down;
+        c_tagging_rf_type = "C_Tag_LHE_Scale_MuR_Down";
+      }
+      else if (syst_type == "MuR_Up")
+      {
+        event.weight *= event.weight_c_tag_lhe_scale_mur_up;
+        c_tagging_rf_type = "C_Tag_LHE_Scale_MuR_Up";
+      }
+      else if (syst_type == "FSR_Down")
+      {
+        event.weight *= event.weight_c_tag_ps_fsr_fixed_down;
+        c_tagging_rf_type = "C_Tag_PS_FSR_Fixed_Down";
+      }
+      else if (syst_type == "FSR_Up")
+      {
+        event.weight *= event.weight_c_tag_ps_fsr_fixed_up;
+        c_tagging_rf_type = "C_Tag_PS_FSR_Fixed_Up";
+      }
+      else if (syst_type == "ISR_Down")
+      {
+        event.weight *= event.weight_c_tag_ps_isr_fixed_down;
+        c_tagging_rf_type = "C_Tag_PS_ISR_Fixed_Down";
+      }
+      else if (syst_type == "ISR_Up")
+      {
+        event.weight *= event.weight_c_tag_ps_isr_fixed_up;
+        c_tagging_rf_type = "C_Tag_PS_ISR_Fixed_Up";
+      }
+      else if (syst_type == "Pileup_Down")
+      {
+        event.weight *= event.weight_c_tag_pu_down;
+        c_tagging_rf_type = "C_Tag_PU_Down";
+      }
+      else if (syst_type == "Pileup_Up")
+      {
+        event.weight *= event.weight_c_tag_pu_up;
+        c_tagging_rf_type = "C_Tag_PU_Up";
+      }
+      else
+      {
+        event.weight *= event.weight_c_tag;
+        c_tagging_rf_type = "C_Tag_Nominal";
+      }
 
-       event.weight *= b_tag_rf;
-   */
-
-    TString c_tagging_rf_type;
-    if (syst_type == "C_Tag_Extrap_Down")
-    {
-      event.weight *= event.weight_c_tag_extrap_down;
-      c_tagging_rf_type = syst_type;
-    }
-    else if (syst_type == "C_Tag_Extrap_Up")
-    {
-      event.weight *= event.weight_c_tag_extrap_up;
-      c_tagging_rf_type = syst_type;
-    }
-    else if (syst_type == "C_Tag_Interp_Down")
-    {
-      event.weight *= event.weight_c_tag_interp_down;
-      c_tagging_rf_type = syst_type;
-    }
-    else if (syst_type == "C_Tag_Interp_Up")
-    {
-      event.weight *= event.weight_c_tag_interp_up;
-      c_tagging_rf_type = syst_type;
-    }
-    else if (syst_type == "C_Tag_Stat_Down")
-    {
-      event.weight *= event.weight_c_tag_stat_down;
-      c_tagging_rf_type = syst_type;
-    }
-    else if (syst_type == "C_Tag_Stat_Up")
-    {
-      event.weight *= event.weight_c_tag_stat_up;
-      c_tagging_rf_type = syst_type;
-    }
-    else if (syst_type == "C_Tag_XSec_Br_Unc_DYJets_B_Down")
-    {
-      event.weight *= event.weight_c_tag_xsec_br_unc_dyjets_b_down;
-      c_tagging_rf_type = syst_type;
-    }
-    else if (syst_type == "C_Tag_XSec_Br_Unc_DYJets_B_Up")
-    {
-      event.weight *= event.weight_c_tag_xsec_br_unc_dyjets_b_up;
-      c_tagging_rf_type = syst_type;
-    }
-    else if (syst_type == "C_Tag_XSec_Br_Unc_DYJets_C_Down")
-    {
-      event.weight *= event.weight_c_tag_xsec_br_unc_dyjets_c_down;
-      c_tagging_rf_type = syst_type;
-    }
-    else if (syst_type == "C_Tag_XSec_Br_Unc_DYJets_C_Up")
-    {
-      event.weight *= event.weight_c_tag_xsec_br_unc_dyjets_c_up;
-      c_tagging_rf_type = syst_type;
-    }
-    else if (syst_type == "C_Tag_XSec_Br_Unc_WJets_C_Down")
-    {
-      event.weight *= event.weight_c_tag_xsec_br_unc_wjets_c_down;
-      c_tagging_rf_type = syst_type;
-    }
-    else if (syst_type == "C_Tag_XSec_Br_Unc_WJets_C_Up")
-    {
-      event.weight *= event.weight_c_tag_xsec_br_unc_wjets_c_up;
-      c_tagging_rf_type = syst_type;
-    }
-    // fully correlated c-tagging scale factors
-    else if (syst_type == "Jet_Res_Down")
-    {
-      event.weight *= event.weight_c_tag_jer_down;
-      c_tagging_rf_type = "C_Tag_JER_Down";
-    }
-    else if (syst_type == "Jet_Res_Up")
-    {
-      event.weight *= event.weight_c_tag_jer_up;
-      c_tagging_rf_type = "C_Tag_JER_Up";
-    }
-    else if (syst_type == "Jet_En_Down")
-    {
-      event.weight *= event.weight_c_tag_jes_total_down;
-      c_tagging_rf_type = "C_Tag_JES_Total_Down";
-    }
-    else if (syst_type == "Jet_En_Up")
-    {
-      event.weight *= event.weight_c_tag_jes_total_up;
-      c_tagging_rf_type = "C_Tag_JES_Total_Up";
-    }
-    else if (syst_type == "MuF_Down")
-    {
-      event.weight *= event.weight_c_tag_lhe_scale_muf_down;
-      c_tagging_rf_type = "C_Tag_LHE_Scale_MuF_Down";
-    }
-    else if (syst_type == "MuF_Up")
-    {
-      event.weight *= event.weight_c_tag_lhe_scale_muf_up;
-      c_tagging_rf_type = "C_Tag_LHE_Scale_MuF_Up";
-    }
-    else if (syst_type == "MuR_Down")
-    {
-      event.weight *= event.weight_c_tag_lhe_scale_mur_down;
-      c_tagging_rf_type = "C_Tag_LHE_Scale_MuR_Down";
-    }
-    else if (syst_type == "MuR_Up")
-    {
-      event.weight *= event.weight_c_tag_lhe_scale_mur_up;
-      c_tagging_rf_type = "C_Tag_LHE_Scale_MuR_Up";
-    }
-    else if (syst_type == "FSR_Down")
-    {
-      event.weight *= event.weight_c_tag_ps_fsr_fixed_down;
-      c_tagging_rf_type = "C_Tag_PS_FSR_Fixed_Down";
-    }
-    else if (syst_type == "FSR_Up")
-    {
-      event.weight *= event.weight_c_tag_ps_fsr_fixed_up;
-      c_tagging_rf_type = "C_Tag_PS_FSR_Fixed_Up";
-    }
-    else if (syst_type == "ISR_Down")
-    {
-      event.weight *= event.weight_c_tag_ps_isr_fixed_down;
-      c_tagging_rf_type = "C_Tag_PS_ISR_Fixed_Down";
-    }
-    else if (syst_type == "ISR_Up")
-    {
-      event.weight *= event.weight_c_tag_ps_isr_fixed_up;
-      c_tagging_rf_type = "C_Tag_PS_ISR_Fixed_Up";
-    }
-    else if (syst_type == "Pileup_Down")
-    {
-      event.weight *= event.weight_c_tag_pu_down;
-      c_tagging_rf_type = "C_Tag_PU_Down";
-    }
-    else if (syst_type == "Pileup_Up")
-    {
-      event.weight *= event.weight_c_tag_pu_up;
-      c_tagging_rf_type = "C_Tag_PU_Up";
-    }
-    else
-    {
-      event.weight *= event.weight_c_tag;
-      c_tagging_rf_type = "C_Tag_Nominal";
+      event.weight *= tagging_rf_dl.Get_Tagging_RF_DL_C_Tag(histo_name_rf, c_tagging_rf_type, event.n_pv, event.ht);
     }
 
-    event.weight *= tagging_rf_dl.Get_Tagging_RF_DL_C_Tag(histo_name_rf, c_tagging_rf_type, event.n_pv, event.ht);
-
-    histo_mc[i][histo_index][0]->Fill(unrolled_bin, event.weight);
+    // histo_mc[i][histo_index][0]->Fill(unrolled_bin, event.weight);
     histo_mc[i][histo_index][1]->Fill(event.n_pv, event.weight);
     histo_mc[i][histo_index][2]->Fill(event.leading_lepton_eta, event.weight);
     histo_mc[i][histo_index][3]->Fill(event.leading_lepton_pt, event.weight);
@@ -961,6 +1081,8 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
     histo_mc[i][histo_index][17]->Fill(event.met_phi, event.weight);
     histo_mc[i][histo_index][18]->Fill(event.leading_jet_charge, event.weight);
     histo_mc[i][histo_index][19]->Fill(event.subleading_jet_charge, event.weight);
+
+    histo_mc_2d[i][histo_index][0]->Fill(event.bvsc_third, event.bvsc_fourth, event.weight);
   } // loop over n_syst
 
   return;
@@ -995,6 +1117,14 @@ int CR_DL::Histo_Index(const TString &sample_name)
     TString histo_name = sample_name;
     if (histo_name.Contains("WtoCB"))
       histo_name = "TTLJ";
+
+    if (histo_name.Contains("CP5") || histo_name.Contains("hdamp") || histo_name.Contains("mtop"))
+    {
+      if (histo_name.Contains("TTLJ"))
+        histo_name = "TTLJ";
+      else if (histo_name.Contains("TTLL"))
+        histo_name = "TTLL";
+    }
 
     if (chk_b)
       histo_name += "_BB";
@@ -1050,14 +1180,6 @@ TString CR_DL::Histo_Name_RF(const TString &sample_name)
 
     if (histo_name_rf.Contains("WtoCB"))
       histo_name_rf = "TTLJ";
-
-    // if (histo_name.Contains("CP5") || histo_name.Contains("hdamp") || histo_name.Contains("mtop"))
-    // {
-    //   if (histo_name.Contains("TTLJ"))
-    //     histo_name = "TTLJ";
-    //   else if (histo_name.Contains("TTLL"))
-    //     histo_name = "TTLL";
-    // }
 
     if (chk_b)
       histo_name_rf += "_BB";
@@ -1211,6 +1333,51 @@ void CR_DL::Merge_PDF_Error_Set()
 
   return;
 } // void CR_DL::Merge_PDF_Error_Set()
+
+//////////
+
+void CR_DL::Unroller()
+{
+  cout << "[CR_DL::Unroller]: Init" << endl;
+
+  // mc
+  for (int i = 0; i < n_syst; i++)
+  {
+    for (int j = 0; j < n_sample_merge_mc; j++)
+    {
+      for (int k = 0; k < histo_mc_2d[i][j][0]->GetNbinsX(); k++)
+      {
+        for (int l = 0; l < histo_mc_2d[i][j][0]->GetNbinsY(); l++)
+        {
+          float content = histo_mc_2d[i][j][0]->GetBinContent(k + 1, l + 1);
+          float error = histo_mc_2d[i][j][0]->GetBinError(k + 1, l + 1);
+          int unrolled_bin = 4 * l + k + 1;
+
+          histo_mc[i][j][0]->SetBinContent(unrolled_bin, content);
+          histo_mc[i][j][0]->SetBinError(unrolled_bin, error);
+        } // loop over nbiny
+      }   // loop over nbinx
+    }     // loop over n_sample_merge_mc
+  }       // loop over n_syst
+
+  // data
+  for (int i = 0; i < histo_data_2d[0]->GetNbinsX(); i++)
+  {
+    for (int j = 0; j < histo_data_2d[0]->GetNbinsY(); j++)
+    {
+      float content = histo_data_2d[0]->GetBinContent(i + 1, j + 1);
+      float error = histo_data_2d[0]->GetBinError(i + 1, j + 1);
+      int unrolled_bin = 4 * j + i + 1;
+
+      histo_data[0]->SetBinContent(unrolled_bin, content);
+      histo_data[0]->SetBinError(unrolled_bin, error);
+    } // loop over nbiny
+  }   // loop over nbinx
+
+  cout << "[CR_DL::Unroller]: Done" << endl;
+
+  return;
+} // void CR_DL::Unroller()
 
 //////////
 

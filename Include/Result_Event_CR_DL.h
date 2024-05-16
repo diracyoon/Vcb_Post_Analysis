@@ -62,6 +62,8 @@ protected:
   float weight_b_tag;
   float weight_b_tag_hf_down;
   float weight_b_tag_hf_up;
+  float weight_b_tag_lf_down;
+  float weight_b_tag_lf_up;
   float weight_b_tag_jes_down;
   float weight_b_tag_jes_up;
   float weight_b_tag_lfstats1_down;

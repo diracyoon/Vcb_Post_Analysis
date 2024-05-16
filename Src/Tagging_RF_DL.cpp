@@ -4,7 +4,7 @@ ClassImp(Tagging_RF_DL);
 
 //////////
 
-Tagging_RF_DL::Tagging_RF_DL(const TString &a_era, const TString &a_mode, const TString &a_channel, const TString &a_extension) : samples(a_era, a_channel, "Vcb_Tagging_RF_DL")
+Tagging_RF_DL::Tagging_RF_DL(const TString &a_era, const TString &a_mode, const TString &a_channel, const TString &a_tagger, const TString &a_extension) : samples(a_era, a_channel, "Vcb_Tagging_RF_DL")
 {
   ROOT::EnableImplicitMT(10);
 
@@ -13,10 +13,17 @@ Tagging_RF_DL::Tagging_RF_DL(const TString &a_era, const TString &a_mode, const 
   era = a_era;
   mode = a_mode;
   channel = a_channel;
+  tagger = a_tagger;
   extension = a_extension;
+
+  if (tagger.Contains("C"))
+    tagger = "C_Tagger";
+  else if (tagger.Contains("B"))
+    tagger = "B_Tagger";
 
   syst_name_b = {"B_Tag_Nominal",
                  "B_Tag_HF_Down", "B_Tag_HF_Up",
+                 "B_Tag_LF_Down", "B_Tag_LF_Up",
                  "B_Tag_JES_Down", "B_Tag_JES_Up",
                  "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up",
                  "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up",
@@ -226,7 +233,7 @@ Tagging_RF_DL::~Tagging_RF_DL()
   }
   else if (mode == "Validation")
   {
-    TString fout_name = "Vcb_Tagging_RF_DL_Validation_" + era + "_" + channel + ".root";
+    TString fout_name = "Vcb_Tagging_RF_DL_Validation_" + era + "_" + channel + "_" + tagger + ".root";
     fout = new TFile(fout_name, "RECREATE");
 
     fout->cd();
@@ -234,7 +241,13 @@ Tagging_RF_DL::~Tagging_RF_DL()
     {
       TDirectory *dir = fout->mkdir(vec_short_name_mc[i]);
 
-      for (int j = 0; j < n_syst_c; j++)
+      int n_syst;
+      if (tagger == "B_Tagger")
+        n_syst = n_syst_b;
+      else if (tagger == "C_Tagger")
+        n_syst = n_syst_c;
+
+      for (int j = 0; j < n_syst; j++)
       {
         for (int k = 0; k < 3; k++)
         {
@@ -264,32 +277,48 @@ Tagging_RF_DL::~Tagging_RF_DL()
 
 //////////
 
-float Tagging_RF_DL::Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const int &n_jet, const float &ht)
+float Tagging_RF_DL::Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const int &n_jets_, const float &ht_)
 {
   if (!syst.Contains("B_Tag"))
   {
-    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL] Input B_Tag" << endl;
+    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL_B_Tag] Input B_Tag" << endl;
     exit(1);
 
     return -1;
   }
 
-  int sample_index = find(sample_name.begin(), sample_name.end(), sample) - sample_name.begin();
+  int sample_index = find(vec_sample_tagging_rf.begin(), vec_sample_tagging_rf.end(), sample) - vec_sample_tagging_rf.begin();
   int syst_index = find(syst_name_b.begin(), syst_name_b.end(), syst) - syst_name_b.begin();
 
-  if (sample_index == sample_name.size())
+  if (sample_index == vec_sample_tagging_rf.size())
   {
-    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL] Can not find " << sample << " Check it." << endl;
+    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL_B_Tag] Can not find " << sample << " Check it." << endl;
     exit(1);
   }
 
   if (syst_index == syst_name_b.size())
   {
-    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL] Can not find " << syst << " Check it." << endl;
+    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL_B_Tag] Can not find " << syst << " Check it." << endl;
     exit(1);
   }
 
-  int bin = ratio_b[sample_index][syst_index]->FindBin(n_jet, ht);
+  float n_jets = n_jets_;
+  float ht = ht_;
+
+  // handle underflow
+  if (n_jets_ < bin_njet[0])
+    n_jets = bin_njet[0] + 0.1;
+  if (ht_ < bin_ht[0])
+    ht = bin_ht[0] + 0.1;
+
+  // handle overflow
+  if (bin_njet[bin_njet.size() - 1] < n_jets_)
+    n_jets = bin_njet[bin_njet.size() - 1] - 0.1;
+  if (bin_ht[bin_ht.size() - 1] < ht_)
+    ht = bin_ht[bin_ht.size() - 1] - 0.1;
+
+  int bin = ratio_b[sample_index][syst_index]->FindBin(n_jets, ht);
+
   return ratio_b[sample_index][syst_index]->GetBinContent(bin);
 } // float Tagging_RF_DL::Get_Tagging_RF_DL_B_Tag(const TString &syst_name, const int &n_jet)
 
@@ -299,7 +328,7 @@ float Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag(const TString &sample, const TStrin
 {
   if (!syst.Contains("C_Tag"))
   {
-    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL] Input C_Tag" << endl;
+    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag] Input C_Tag" << endl;
     exit(1);
   }
 
@@ -308,13 +337,13 @@ float Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag(const TString &sample, const TStrin
 
   if (sample_index == vec_sample_tagging_rf.size())
   {
-    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL] Can not find " << sample << " Check it." << endl;
+    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag] Can not find " << sample << " Check it." << endl;
     exit(1);
   }
 
   if (syst_index == syst_name_c.size())
   {
-    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL] Can not find " << syst << " Check it." << endl;
+    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag] Can not find " << syst << " Check it." << endl;
     exit(1);
   }
 
@@ -324,7 +353,6 @@ float Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag(const TString &sample, const TStrin
   // handle underflow
   if (n_pv_ < bin_npv[0])
     n_pv = bin_npv[0] + 0.1;
-
   if (ht_ < bin_ht[0])
     ht = bin_ht[0] + 0.1;
 
@@ -611,20 +639,33 @@ void Tagging_RF_DL::Draw_Result()
   gStyle->SetPaintTextFormat("0.3f");
   gStyle->SetOptStat(0);
 
+  vector<TString> syst_to_draw = {"B_Tag_Nominal",
+                                  "B_Tag_HF_Down", "B_Tag_HF_Up",
+                                  "B_Tag_JES_Down", "B_Tag_JES_Up",
+                                  "B_Tag_LF_Down", "B_Tag_LF_Up",
+                                  "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up",
+                                  "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up",
+                                  "B_Tag_CFErr1_Down", "B_Tag_CFErr1_Up",
+                                  "B_Tag_CFErr2_Down", "B_Tag_CFErr2_Up",
+                                  "B_Tag_HFStats1_Down", "B_Tag_HFStats1_Up",
+                                  "B_Tag_HFStats2_Down", "B_Tag_HFStats2_Up"};
+
+  /*
   vector<TString> syst_to_draw = {"C_Tag_Nominal",
-                                  "C_Tag_Extrap_Down", "C_Tag_Extrap_Up",
-                                  "C_Tag_Interp_Down", "C_Tag_Interp_Up",
-                                  "C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up",
-                                  "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up",
-                                  "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up",
-                                  "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up",
-                                  "C_Tag_PU_Down", "C_Tag_PU_Up",
-                                  "C_Tag_Stat_Down", "C_Tag_Stat_Up",
-                                  "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up",
-                                  "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up",
-                                  "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
-                                  "C_Tag_JER_Down", "C_Tag_JER_Up",
-                                  "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up"};
+                                    "C_Tag_Extrap_Down", "C_Tag_Extrap_Up",
+                                    "C_Tag_Interp_Down", "C_Tag_Interp_Up",
+                                    "C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up",
+                                    "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up",
+                                    "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up",
+                                    "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up",
+                                    "C_Tag_PU_Down", "C_Tag_PU_Up",
+                                    "C_Tag_Stat_Down", "C_Tag_Stat_Up",
+                                    "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up",
+                                    "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up",
+                                    "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
+                                    "C_Tag_JER_Down", "C_Tag_JER_Up",
+                                    "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up"};
+                                    */
 
   // compare decay mode
   vector<TString> sample_to_draw = {"TTLJ_JJ", "TTLJ_CC", "TTLJ_BB"};
@@ -633,8 +674,8 @@ void Tagging_RF_DL::Draw_Result()
   {
     cout << sample_to_draw[i] << endl;
 
-    // for (unsigned int j = 0; j < syst_to_draw.size(); j++)
-    for (unsigned int j = 0; j < 1; j++)
+    for (unsigned int j = 0; j < syst_to_draw.size(); j++)
+    // for (unsigned int j = 0; j < 1; j++)
     {
       cout << syst_to_draw[j] << endl;
 
@@ -665,7 +706,10 @@ void Tagging_RF_DL::Draw_Result()
         canvas->cd(1);
         if (k == 0)
         {
-          histo_proj_x[k]->GetXaxis()->SetTitle("NPV");
+          if (tagger == "B_Tagger")
+            histo_proj_x[k]->GetXaxis()->SetTitle("Jet Multiplicity");
+          else if (tagger == "C_Tagger")
+            histo_proj_x[k]->GetXaxis()->SetTitle("NPV");
           histo_proj_x[k]->GetYaxis()->SetRangeUser(0.6, 1.4);
           histo_proj_x[k]->Draw();
         }
@@ -699,7 +743,10 @@ void Tagging_RF_DL::Draw_Result()
       TCanvas *canvas = new TCanvas(can_name, can_name, 1600, 1000);
       canvas->Draw();
 
-      histo->GetXaxis()->SetTitle("Number of Primary Vertex");
+      if (tagger == "B_Tagger")
+        histo->GetXaxis()->SetTitle("Jet Multiplicity");
+      else if (tagger == "C_Tagger")
+        histo->GetXaxis()->SetTitle("Number of Primary Vertex");
       histo->GetYaxis()->SetTitle("HT [GeV]");
       histo->GetZaxis()->SetRangeUser(0.6, 1.1);
       histo->Draw("COLZ texte");
@@ -785,7 +832,7 @@ void Tagging_RF_DL::Draw_Validation()
   TString path_base = getenv("Vcb_Post_Analysis_WD");
   path_base = path_base + "/Workplace/Tagging_RF_DL";
 
-  TFile *fin = new TFile(Form("%s/Vcb_Tagging_RF_DL_Validation_%s_%s.root", path_base.Data(), era.Data(), channel.Data()));
+  TFile *fin = new TFile(Form("%s/Vcb_Tagging_RF_DL_Validation_%s_%s_%s.root", path_base.Data(), era.Data(), channel.Data(), tagger.Data()));
 
   gStyle->SetOptStat(0);
 
@@ -808,19 +855,38 @@ void Tagging_RF_DL::Draw_Validation()
     TString sample_to_draw = vec_sample_to_draw[i];
     cout << sample_to_draw << endl;
 
-    // for (int j = 0; j < n_syst_c; j++)
+    int n_syst;
+    if (tagger == "B_Tagger")
+      n_syst = n_syst_b;
+    else if (tagger == "C_Tagger")
+      n_syst = n_syst_c;
+
+    // for (int j = 0; j < n_syst; j++)
     for (int j = 0; j < 3; j++)
     {
-      TString can_name = "Validation_DL_" + era + "_" + channel + "_" + syst_name_c[j] + "_" + sample_to_draw;
+      TString syst_name;
+      if (tagger == "B_Tagger")
+        syst_name = syst_name_b[j];
+      else if (tagger == "C_Tagger")
+        syst_name = syst_name_c[j];
+
+      TString can_name = "Validation_DL_" + channel + "_" + syst_name + "_" + sample_to_draw + "_" + era;
       cout << can_name << endl;
 
       TCanvas *canvas = new TCanvas(can_name, can_name, 1600, 1000);
-      canvas->Divide(3, 1);
+      if (tagger == "C_Tagger")
+        canvas->Divide(3, 1);
       canvas->Draw();
 
-      TPad *pad[3][2];
+      int n_scores;
+      if (tagger == "B_Tagger")
+        n_scores = 1;
+      else if (tagger == "C_Tagger")
+        n_scores = 3;
+
+      TPad *pad[n_scores][2];
       TH1D *histo_closure[3];
-      for (int k = 0; k < 3; k++)
+      for (int k = 0; k < n_scores; k++)
       {
         TString score_type;
         if (k == 0)
@@ -838,12 +904,16 @@ void Tagging_RF_DL::Draw_Validation()
           else if (l == 1)
             pad[k][l] = new TPad(pad_name, pad_name, 0, 0, 1, 0.3);
 
-          TString histo_name = "Closure_" + sample_to_draw + "_" + syst_name_c[j] + "_Leading_Jet_" + score_type + "_" + to_string(l);
+          TString histo_name = "Closure_" + sample_to_draw + "_" + syst_name + "_Leading_Jet_" + score_type + "_" + to_string(l);
           cout << histo_name << endl;
           histo_closure[l] = (TH1D *)fin->Get(sample_to_draw + "/" + histo_name);
         }
 
-        canvas->cd(k + 1);
+        if (tagger == "B_Tagger")
+          canvas->cd();
+        else if (tagger == "C_Tagger")
+          canvas->cd(k + 1);
+
         pad[k][0]->Draw();
         pad[k][0]->cd();
 
@@ -881,12 +951,24 @@ void Tagging_RF_DL::Draw_Validation()
           TLegend *tl = new TLegend(0.3, 0.6, 0.8, 0.8);
           tl->SetBorderSize(0);
           tl->AddEntry(histo_closure[0], "Raw", "lep");
-          tl->AddEntry(histo_closure[1], "+ C-Tagging SF", "lep");
-          tl->AddEntry(histo_closure[2], "+ C-Tagging SF + C-Tagging Patch", "lep");
+          if (tagger == "B_Tagger")
+          {
+            tl->AddEntry(histo_closure[1], "+ B-Tagging SF", "lep");
+            tl->AddEntry(histo_closure[2], "+ B-Tagging SF + B-Tagging Patch", "lep");
+          }
+          else if (tagger == "C_Tagger")
+          {
+            tl->AddEntry(histo_closure[1], "+ C-Tagging SF", "lep");
+            tl->AddEntry(histo_closure[2], "+ C-Tagging SF + C-Tagging Patch", "lep");
+          }
           tl->Draw("same");
         }
 
-        canvas->cd(k + 1);
+        if (tagger == "B_Tagger")
+          canvas->cd();
+        else if (tagger == "C_Tagger")
+          canvas->cd(k + 1);
+
         pad[k][1]->Draw();
         pad[k][1]->cd();
 
@@ -975,65 +1057,73 @@ void Tagging_RF_DL::Fill_Histo_MC(const TString &sample_name, const TString &sys
 
     histo_mc_before_b[sample_index][2]->Fill(n_jets, ht, weight);
     histo_mc_after_b[sample_index][2]->Fill(n_jets, ht, weight * weight_b_tag_hf_up);
+
+    // lf
+    // hf
+    histo_mc_before_b[sample_index][3]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][3]->Fill(n_jets, ht, weight * weight_b_tag_lf_down);
+
+    histo_mc_before_b[sample_index][4]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][4]->Fill(n_jets, ht, weight * weight_b_tag_lf_up);
   }
 
   // jet en down
   if (syst_type == "JetEnDown")
   {
-    histo_mc_before_b[sample_index][3]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][3]->Fill(n_jets, ht, weight * weight_b_tag_jes_down);
+    histo_mc_before_b[sample_index][5]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][5]->Fill(n_jets, ht, weight * weight_b_tag_jes_down);
   }
 
   // jet en up
   if (syst_type == "JetEnUp")
   {
-    histo_mc_before_b[sample_index][4]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][4]->Fill(n_jets, ht, weight * weight_b_tag_jes_up);
+    histo_mc_before_b[sample_index][6]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][6]->Fill(n_jets, ht, weight * weight_b_tag_jes_up);
   }
 
   if (syst_type == "Central")
   {
     // lfstats1
-    histo_mc_before_b[sample_index][5]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][5]->Fill(n_jets, ht, weight * weight_b_tag_lfstats1_down);
-
-    histo_mc_before_b[sample_index][6]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][6]->Fill(n_jets, ht, weight * weight_b_tag_lfstats1_up);
-
-    // lfstats1
     histo_mc_before_b[sample_index][7]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][7]->Fill(n_jets, ht, weight * weight_b_tag_lfstats2_down);
+    histo_mc_after_b[sample_index][7]->Fill(n_jets, ht, weight * weight_b_tag_lfstats1_down);
 
     histo_mc_before_b[sample_index][8]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][8]->Fill(n_jets, ht, weight * weight_b_tag_lfstats2_up);
+    histo_mc_after_b[sample_index][8]->Fill(n_jets, ht, weight * weight_b_tag_lfstats1_up);
 
-    // cferr1
+    // lfstats2
     histo_mc_before_b[sample_index][9]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][9]->Fill(n_jets, ht, weight * weight_b_tag_cferr1_down);
+    histo_mc_after_b[sample_index][9]->Fill(n_jets, ht, weight * weight_b_tag_lfstats2_down);
 
     histo_mc_before_b[sample_index][10]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][10]->Fill(n_jets, ht, weight * weight_b_tag_cferr1_up);
+    histo_mc_after_b[sample_index][10]->Fill(n_jets, ht, weight * weight_b_tag_lfstats2_up);
 
-    // cferr2
+    // cferr1
     histo_mc_before_b[sample_index][11]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][11]->Fill(n_jets, ht, weight * weight_b_tag_cferr2_down);
+    histo_mc_after_b[sample_index][11]->Fill(n_jets, ht, weight * weight_b_tag_cferr1_down);
 
     histo_mc_before_b[sample_index][12]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][12]->Fill(n_jets, ht, weight * weight_b_tag_cferr2_up);
+    histo_mc_after_b[sample_index][12]->Fill(n_jets, ht, weight * weight_b_tag_cferr1_up);
 
-    // hfstats1
+    // cferr2
     histo_mc_before_b[sample_index][13]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][13]->Fill(n_jets, ht, weight * weight_b_tag_hfstats1_down);
+    histo_mc_after_b[sample_index][13]->Fill(n_jets, ht, weight * weight_b_tag_cferr2_down);
 
     histo_mc_before_b[sample_index][14]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][14]->Fill(n_jets, ht, weight * weight_b_tag_hfstats1_up);
+    histo_mc_after_b[sample_index][14]->Fill(n_jets, ht, weight * weight_b_tag_cferr2_up);
 
-    // hfstats2
+    // hfstats1
     histo_mc_before_b[sample_index][15]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][15]->Fill(n_jets, ht, weight * weight_b_tag_hfstats2_down);
+    histo_mc_after_b[sample_index][15]->Fill(n_jets, ht, weight * weight_b_tag_hfstats1_down);
 
     histo_mc_before_b[sample_index][16]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][16]->Fill(n_jets, ht, weight * weight_b_tag_hfstats2_up);
+    histo_mc_after_b[sample_index][16]->Fill(n_jets, ht, weight * weight_b_tag_hfstats1_up);
+
+    // hfstats2
+    histo_mc_before_b[sample_index][17]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][17]->Fill(n_jets, ht, weight * weight_b_tag_hfstats2_down);
+
+    histo_mc_before_b[sample_index][18]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][18]->Fill(n_jets, ht, weight * weight_b_tag_hfstats2_up);
   }
 
   if (syst_type == "Central")
@@ -1151,7 +1241,122 @@ void Tagging_RF_DL::Fill_Histo_MC(const TString &sample_name, const TString &sys
 
 //////////
 
-void Tagging_RF_DL::Fill_Histo_Validation_MC(const TString &sample_name, const TString &syst_type)
+void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name, const TString &syst_type)
+{
+  int sample_index = Histo_Index(sample_name);
+  TString histo_name_rf = Histo_Name_RF(sample_name);
+
+  for (int i = 0; i < n_syst_b; i++)
+  {
+    TString b_tag_type = syst_name_b[i];
+
+    if (syst_type == "Central")
+    {
+      if (b_tag_type == "B_Tag_JES_Down" || b_tag_type == "B_Tag_JES_Up")
+        continue;
+    }
+    else if (syst_type == "JetEnDown")
+    {
+      if (b_tag_type != "B_Tag_JES_Down")
+        continue;
+    }
+    else if (syst_type == "JetEnUp")
+    {
+      if (b_tag_type != "B_Tag_JES_Up")
+        continue;
+    }
+    else if (syst_type == "JetResDown" || syst_type == "JetResUp")
+      continue;
+
+    float weight_raw = weight_hem_veto;
+    weight_raw *= weight_lumi;
+    weight_raw *= weight_mc;
+    weight_raw *= weight_prefire;
+    weight_raw *= weight_pujet_veto;
+    weight_raw *= weight_top_pt;
+
+    weight_raw *= weight_sl_trig;
+
+    weight_raw *= weight_mu_id;
+    weight_raw *= weight_mu_iso;
+
+    weight_raw *= weight_el_id;
+    weight_raw *= weight_el_reco;
+
+    float weight_b_sf;
+    if (b_tag_type == "B_Tag_Nominal")
+      weight_b_sf = weight_b_tag;
+    else if (b_tag_type == "B_Tag_HF_Down")
+      weight_b_sf = weight_b_tag_hf_down;
+    else if (b_tag_type == "B_Tag_HF_Up")
+      weight_b_sf = weight_b_tag_hf_up;
+    else if (b_tag_type == "B_Tag_LF_Down")
+      weight_b_sf = weight_b_tag_lf_down;
+    else if (b_tag_type == "B_Tag_LF_Up")
+      weight_b_sf = weight_b_tag_lf_up;
+    else if (b_tag_type == "B_Tag_JES_Down")
+      weight_b_sf = weight_b_tag_jes_down;
+    else if (b_tag_type == "B_Tag_JES_Up")
+      weight_b_sf = weight_b_tag_jes_up;
+    else if (b_tag_type == "B_Tag_LFStats1_Down")
+      weight_b_sf = weight_b_tag_lfstats1_down;
+    else if (b_tag_type == "B_Tag_LFStats1_Up")
+      weight_b_sf = weight_b_tag_lfstats1_up;
+    else if (b_tag_type == "B_Tag_LFStats2_Down")
+      weight_b_sf = weight_b_tag_lfstats2_down;
+    else if (b_tag_type == "B_Tag_LFStats2_Up")
+      weight_b_sf = weight_b_tag_lfstats2_up;
+    else if (b_tag_type == "B_Tag_CFErr1_Down")
+      weight_b_sf = weight_b_tag_cferr1_down;
+    else if (b_tag_type == "B_Tag_CFErr1_Up")
+      weight_b_sf = weight_b_tag_cferr1_up;
+    else if (b_tag_type == "B_Tag_CFErr2_Down")
+      weight_b_sf = weight_b_tag_cferr2_down;
+    else if (b_tag_type == "B_Tag_CFErr2_Up")
+      weight_b_sf = weight_b_tag_cferr2_up;
+    else if (b_tag_type == "B_Tag_HFStats1_Down")
+      weight_b_sf = weight_b_tag_hfstats1_down;
+    else if (b_tag_type == "B_Tag_HFStats1_Up")
+      weight_b_sf = weight_b_tag_hfstats1_up;
+    else if (b_tag_type == "B_Tag_HFStats2_Down")
+      weight_b_sf = weight_b_tag_hfstats2_down;
+    else if (b_tag_type == "B_Tag_HFStats2_Up")
+      weight_b_sf = weight_b_tag_hfstats2_up;
+
+    float weight_sf = weight_raw * weight_b_sf;
+
+    float b_rf = Get_Tagging_RF_DL_B_Tag(histo_name_rf, b_tag_type, n_jets, ht);
+    float weight_rf = weight_sf * b_rf;
+
+    for (int j = 0; j < 3; j++)
+    {
+      float weight;
+      if (j == 0)
+        weight = weight_raw;
+      else if (j == 1)
+        weight = weight_sf;
+      else if (j == 2)
+        weight = weight_rf;
+
+      histo_closure_n_jet[sample_index][i][j]->Fill(n_jets, weight);
+      histo_closure_ht[sample_index][i][j]->Fill(ht, weight);
+      histo_closure_n_pv[sample_index][i][j]->Fill(n_pv, weight);
+
+      histo_closure_bvsc[sample_index][i][j]->Fill(leading_jet_bvsc, weight);
+      histo_closure_cvsb[sample_index][i][j]->Fill(leading_jet_cvsb, weight);
+      histo_closure_cvsl[sample_index][i][j]->Fill(leading_jet_cvsl, weight);
+
+      histo_closure_eta[sample_index][i][j]->Fill(leading_jet_eta, weight);
+      histo_closure_pt[sample_index][i][j]->Fill(leading_jet_pt, weight);
+    }
+  }
+
+  return;
+} // void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name, const TString &syst_type)
+
+//////////
+
+void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &syst_type)
 {
 
   int sample_index = Histo_Index(sample_name);
@@ -1298,7 +1503,7 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC(const TString &sample_name, const T
   }
 
   return;
-} // void Tagging_RF_DL::Fill_Histo_Validation_MC(const int& sample_index)
+} // void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const int& sample_index)
 
 //////////
 
@@ -1306,7 +1511,7 @@ int Tagging_RF_DL::Histo_Index(const TString &sample_name)
 {
   int index = -999;
 
-  if ((sample_name.Contains("TTLL") || sample_name.Contains("TTLJ")))
+  if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   {
     bool chk_b = false;
     bool chk_c = false;
@@ -1331,6 +1536,12 @@ int Tagging_RF_DL::Histo_Index(const TString &sample_name)
     if (histo_name.Contains("WtoCB"))
       histo_name = "TTLJ";
 
+    // // for top syst
+    // if (sample_name.Contains("TTLJ"))
+    //   histo_name = "TTLJ";
+    // if (sample_name.Contains("TTLL"))
+    //   histo_name = "TTLL";
+
     if (chk_b)
       histo_name += "_BB";
     else if (chk_c)
@@ -1347,14 +1558,10 @@ int Tagging_RF_DL::Histo_Index(const TString &sample_name)
 
     index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), histo_name) - vec_short_name_mc.begin();
 
-    // cout << "test Histo_Index: " << sample_name << " " << histo_name << " " << index << endl;
+    // cout << "test Histo_Index: " << sample_name << " " << histo_name << " " << index << " " << vec_short_name_mc.size() << endl;
   } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   else
-  {
     index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), samples.map_short_short_name[sample_name]) - vec_short_name_mc.begin();
-
-    // cout << "test Histo_Index: " << sample_name << " " << index << endl;
-  }
 
   return index;
 } // int Tagging_RF_DL::Histo_Index(const TString &sample_name)
@@ -1390,12 +1597,12 @@ TString Tagging_RF_DL::Histo_Name_RF(const TString &sample_name)
     if (histo_name_rf.Contains("WtoCB"))
       histo_name_rf = "TTLJ";
 
-    // if (histo_name.Contains("CP5") || histo_name.Contains("hdamp") || histo_name.Contains("mtop"))
+    // if (histo_name_rf.Contains("CP5") || histo_name_rf.Contains("hdamp") || histo_name_rf.Contains("mtop"))
     // {
-    //   if (histo_name.Contains("TTLJ"))
-    //     histo_name = "TTLJ";
-    //   else if (histo_name.Contains("TTLL"))
-    //     histo_name = "TTLL";
+    //   if (histo_name_rf.Contains("TTLJ"))
+    //     histo_name_rf = "TTLJ";
+    //   else if (histo_name_rf.Contains("TTLL"))
+    //     histo_name_rf = "TTLL";
     // }
 
     if (chk_b)
@@ -1523,7 +1730,12 @@ void Tagging_RF_DL::Read_Tree()
         if (mode == "Analysis")
           Fill_Histo_MC(sample_name_short, syst_type);
         else if (mode == "Validation")
-          Fill_Histo_Validation_MC(sample_name_short, syst_type);
+        {
+          if (tagger == "B_Tagger")
+            Fill_Histo_Validation_MC_B_Tagger(sample_name_short, syst_type);
+          else if (tagger == "C_Tagger")
+            Fill_Histo_Validation_MC_C_Tagger(sample_name_short, syst_type);
+        }
       } // loop over entries
     }   // loop over map_mc
   }     // loop over map_map_mc
@@ -1650,7 +1862,7 @@ void Tagging_RF_DL::Setup_Application()
   TString path_base = getenv("Vcb_Post_Analysis_WD");
   fin = new TFile(path_base + "/Corrections/Vcb_Tagging_RF_DL_" + era + ".root");
 
-  TList *list_dir = fin->GetListOfKeys();
+  /*TList *list_dir = fin->GetListOfKeys();
 
   for (int i = 0; i < list_dir->GetEntries(); i++)
   {
@@ -1660,36 +1872,46 @@ void Tagging_RF_DL::Setup_Application()
     vec_sample_tagging_rf.push_back(dir_name);
   }
   n_sample_tagging_rf = vec_sample_tagging_rf.size();
+  */
 
-  /*
-  //manual
+  // set this manually
   vec_sample_tagging_rf = {"ttV", "VV", "VJets", "ST", "QCD_bEn",
                            "TTLJ_JJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
                            "TTLJ_JJ_4", "TTLJ_CC_4", "TTLJ_BB_4",
                            "TTLJ_JJ_45", "TTLJ_CC_45", "TTLJ_BB_45",
-                           //"TTLJ_JJ", "TTLJ_CC", "TTLJ_BB",
+                           /* CP5 */
+                           "TTLJ_CP5Down_JJ_2", "TTLJ_CP5Down_CC_2", "TTLJ_CP5Down_BB_2",
+                           "TTLJ_CP5Down_JJ_4", "TTLJ_CP5Down_CC_4", "TTLJ_CP5Down_BB_4",
+                           //"TTLJ_CP5Down_JJ_45", "TTLJ_CP5Down_CC_45", "TTLJ_CP5Down_BB_45",
+                           "TTLJ_CP5Up_JJ_2", "TTLJ_CP5Up_CC_2", "TTLJ_CP5Up_BB_2",
+                           "TTLJ_CP5Up_JJ_4", "TTLJ_CP5Up_CC_4", "TTLJ_CP5Up_BB_4",
+                           //"TTLJ_CP5Up_JJ_45", "TTLJ_CP5Up_CC_45", "TTLJ_CP5Up_BB_45",
+                           /* mtop */
+                           "TTLJ_mtop171p5_JJ_2", "TTLJ_mtop171p5_CC_2", "TTLJ_mtop171p5_BB_2",
+                           "TTLJ_mtop171p5_JJ_4", "TTLJ_mtop171p5_CC_4", "TTLJ_mtop171p5_BB_4",
+                           //"TTLJ_mtop171p5_JJ_45", "TTLJ_mtop171p5_CC_45", "TTLJ_mtop171p5_BB_45",
+                           "TTLJ_mtop173p5_JJ_2", "TTLJ_mtop173p5_CC_2", "TTLJ_mtop173p5_BB_2",
+                           "TTLJ_mtop173p5_JJ_4", "TTLJ_mtop173p5_CC_4", "TTLJ_mtop173p5_BB_4",
+                           //"TTLJ_mtop173p5_JJ_45", "TTLJ_mtop173p5_CC_45", "TTLJ_mtop173p5_BB_45",
+                           /* hdamp */
+                           "TTLJ_hdampDown_JJ_2", "TTLJ_hdampDown_CC_2", "TTLJ_hdampDown_BB_2",
+                           "TTLJ_hdampDown_JJ_4", "TTLJ_hdampDown_CC_4", "TTLJ_hdampDown_BB_4",
+                           //"TTLJ_hdampDown_JJ_45", "TTLJ_hdampDown_CC_45", "TTLJ_hdampDown_BB_45",
+                           "TTLJ_hdampUp_JJ_2", "TTLJ_hdampUp_CC_2", "TTLJ_hdampUp_BB_2",
+                           "TTLJ_hdampUp_JJ_4", "TTLJ_hdampUp_CC_4", "TTLJ_hdampUp_BB_4",
+                           //"TTLJ_hdampUp_JJ_45", "TTLJ_hdampUp_CC_45", "TTLJ_hdampUp_BB_45",
                            "TTLL_JJ", "TTLL_CC", "TTLL_BB",
-                           // TT systematics
-                           // TTLL
-                           "TTLL_hdampDown_JJ", "TTLL_hdampDown_CC", "TTLL_hdampDown_BB",
-                           "TTLL_hdampUp_JJ", "TTLL_hdampUp_CC", "TTLL_hdampUp_BB",
+                           /* CP5 */
                            "TTLL_CP5Down_JJ", "TTLL_CP5Down_CC", "TTLL_CP5Down_BB",
                            "TTLL_CP5Up_JJ", "TTLL_CP5Up_CC", "TTLL_CP5Up_BB",
+                           /* mtop */
                            "TTLL_mtop171p5_JJ", "TTLL_mtop171p5_CC", "TTLL_mtop171p5_BB",
                            "TTLL_mtop173p5_JJ", "TTLL_mtop173p5_CC", "TTLL_mtop173p5_BB",
-                           // TTLJ
-                           "TTLJ_hdampDown_JJ_2", "TTLJ_hdampDown_JJ_4", "TTLJ_hdampDown_JJ_45",
-                           "TTLJ_hdampDown_CC_2", "TTLJ_hdampDown_CC_4", "TTLJ_hdampDown_CC_45",
-                           "TTLJ_hdampDown_BB_2", "TTLJ_hdampDown_BB_4", "TTLJ_hdampDown_BB_45",
-                           "TTLJ_hdampDown_CC_2", "TTLJ_hdampDown_CC_4", "TTLJ_hdampDown_CC_45",
-                           "TTLL_hdampDown_BB",
-                           "TTLL_hdampUp_JJ", "TTLL_hdampUp_CC", "TTLL_hdampUp_BB",
-                           "TTLL_CP5Down_JJ", "TTLL_CP5Down_CC", "TTLL_CP5Down_BB",
-                           "TTLL_CP5Up_JJ", "TTLL_CP5Up_CC", "TTLL_CP5Up_BB",
-                           "TTLL_mtop171p5_JJ", "TTLL_mtop171p5_CC", "TTLL_mtop171p5_BB",
-                           "TTLL_mtop173p5_JJ", "TTLL_mtop173p5_CC", "TTLL_mtop173p5_BB"};
+                           /* hdamp */
+                           "TTLL_hdampDown_JJ", "TTLL_hdampDown_CC", "TTLL_hdampDown_BB",
+                           "TTLL_hdampUp_JJ", "TTLL_hdampUp_CC", "TTLL_hdampUp_BB"};
+
   n_sample_tagging_rf = vec_sample_tagging_rf.size();
-  */
 
   ratio_b = new TH2D **[n_sample_tagging_rf];
   ratio_c = new TH2D **[n_sample_tagging_rf];
@@ -1795,7 +2017,13 @@ void Tagging_RF_DL::Setup_Histo_Validation()
     histo_closure_eta[i] = new TH1D **[n_syst_c];
     histo_closure_pt[i] = new TH1D **[n_syst_c];
 
-    for (int j = 0; j < n_syst_c; j++)
+    int n_syst;
+    if (tagger == "B_Tagger")
+      n_syst = n_syst_b;
+    else if (tagger == "C_Tagger")
+      n_syst = n_syst_c;
+
+    for (int j = 0; j < n_syst; j++)
     {
       histo_closure_n_jet[i][j] = new TH1D *[3];
       histo_closure_ht[i][j] = new TH1D *[3];
@@ -1808,7 +2036,13 @@ void Tagging_RF_DL::Setup_Histo_Validation()
 
       for (int k = 0; k < 3; k++)
       {
-        TString histo_name_base = "Closure_" + vec_short_name_mc[i] + "_" + syst_name_c[j];
+        TString syst_name;
+        if (tagger == "B_Tagger")
+          syst_name = syst_name_b[j];
+        else if (tagger == "C_Tagger")
+          syst_name = syst_name_c[j];
+
+        TString histo_name_base = "Closure_" + vec_short_name_mc[i] + "_" + syst_name;
 
         TString histo_name = histo_name_base + "_N_Jet_" + to_string(k);
         histo_closure_n_jet[i][j][k] = new TH1D(histo_name, histo_name, bin_njet.size() - 1, bin_njet.data());
@@ -1884,6 +2118,8 @@ void Tagging_RF_DL::Setup_Tree(TTree *tree, const TString &syst)
     tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
     tree->SetBranchAddress("weight_b_tag_down_hf", &weight_b_tag_hf_down);
     tree->SetBranchAddress("weight_b_tag_up_hf", &weight_b_tag_hf_up);
+    tree->SetBranchAddress("weight_b_tag_down_lf", &weight_b_tag_lf_down);
+    tree->SetBranchAddress("weight_b_tag_up_lf", &weight_b_tag_lf_up);
     tree->SetBranchAddress("weight_b_tag_down_lfstats1", &weight_b_tag_lfstats1_down);
     tree->SetBranchAddress("weight_b_tag_up_lfstats1", &weight_b_tag_lfstats1_up);
     tree->SetBranchAddress("weight_b_tag_down_lfstats2", &weight_b_tag_lfstats2_down);

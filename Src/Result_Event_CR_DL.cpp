@@ -62,6 +62,8 @@ void Result_Event_CR_DL::Setup_Tree(TTree *tree, const Syst syst, const bool chk
     tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
     tree->SetBranchAddress("weight_b_tag_down_hf", &weight_b_tag_hf_down);
     tree->SetBranchAddress("weight_b_tag_up_hf", &weight_b_tag_hf_up);
+    tree->SetBranchAddress("weight_b_tag_down_lf", &weight_b_tag_lf_down);
+    tree->SetBranchAddress("weight_b_tag_up_lf", &weight_b_tag_lf_up);
     tree->SetBranchAddress("weight_b_tag_down_lfstats1", &weight_b_tag_lfstats1_down);
     tree->SetBranchAddress("weight_b_tag_up_lfstats1", &weight_b_tag_lfstats1_up);
     tree->SetBranchAddress("weight_b_tag_down_lfstats2", &weight_b_tag_lfstats2_down);

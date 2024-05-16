@@ -18,6 +18,5 @@
 #pragma link C++ class Result_Event_CR_DL+;
 #pragma link C++ class Tagging_RF_DL+; 
 #pragma link C++ class Selection+;
-#pragma link C++ class QCD_Data_Driven+;
 
 #endif /* __ROOTCLING__ */

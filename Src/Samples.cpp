@@ -80,19 +80,19 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_short_short_name["ttZ"] = "ttV";
   map_short_short_name["VV"] = "VV";
 
-  map_top_syst["TTLJ_CP5down"] = "Vcb_TTLJ_powheg_CP5Down.root";
-  map_top_syst["TTLJ_CP5up"] = "Vcb_TTLJ_powheg_CP5Up.root";
-  map_top_syst["TTLJ_hdampdown"] = "Vcb_TTLJ_powheg_hdampDown.root";
-  map_top_syst["TTLJ_hdampup"] = "Vcb_TTLJ_powheg_hdampUp.root";
-  map_top_syst["TTLJ_mtop_171p5"] = "Vcb_TTLJ_powheg_mtop171p5.root";
-  map_top_syst["TTLJ_mtop_173p5"] = "Vcb_TTLJ_powheg_mtop173p5.root";
+  map_top_syst["TTLJ_CP5Down"] = "Vcb_TTLJ_powheg_CP5Down.root";
+  map_top_syst["TTLJ_CP5Up"] = "Vcb_TTLJ_powheg_CP5Up.root";
+  map_top_syst["TTLJ_hdampDown"] = "Vcb_TTLJ_powheg_hdampDown.root";
+  map_top_syst["TTLJ_hdampUp"] = "Vcb_TTLJ_powheg_hdampUp.root";
+  map_top_syst["TTLJ_mtop171p5"] = "Vcb_TTLJ_powheg_mtop171p5.root";
+  map_top_syst["TTLJ_mtop173p5"] = "Vcb_TTLJ_powheg_mtop173p5.root";
 
-  map_top_syst["TTLL_CP5down"] = "Vcb_TTLL_powheg_CP5Down.root";
-  map_top_syst["TTLL_CP5up"] = "Vcb_TTLL_powheg_CP5Up.root";
-  map_top_syst["TTLL_hdampdown"] = "Vcb_TTLL_powheg_hdampDown.root";
-  map_top_syst["TTLL_hdampup"] = "Vcb_TTLL_powheg_hdampUp.root";
-  map_top_syst["TTLL_mtop_171p5"] = "Vcb_TTLL_powheg_mtop171p5.root";
-  map_top_syst["TTLL_mtop_173p5"] = "Vcb_TTLL_powheg_mtop173p5.root";
+  map_top_syst["TTLL_CP5Down"] = "Vcb_TTLL_powheg_CP5Down.root";
+  map_top_syst["TTLL_CP5Up"] = "Vcb_TTLL_powheg_CP5Up.root";
+  map_top_syst["TTLL_hdampDown"] = "Vcb_TTLL_powheg_hdampDown.root";
+  map_top_syst["TTLL_hdampUp"] = "Vcb_TTLL_powheg_hdampUp.root";
+  map_top_syst["TTLL_mtop171p5"] = "Vcb_TTLL_powheg_mtop171p5.root";
+  map_top_syst["TTLL_mtop173p5"] = "Vcb_TTLL_powheg_mtop173p5.root";
 
   if (era == "2016preVFP")
     vec_period = {"B_ver2", "C", "D", "E", "F"};
@@ -245,6 +245,7 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
 
 Samples::~Samples()
 {
+  //cout << "[Samples::~Samples]: Done" << endl;
 }
 
 //////////

@@ -31,7 +31,7 @@ class Reco_Eval : public TObject
   // class for evaluation of recostruction and signal study
 
 public:
-  Reco_Eval(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_swap_mode = "Permutation_MVA", const TString &a_draw_extension = "png");
+  Reco_Eval(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_tagger = "C", const TString &a_swap_mode = "Permutation_MVA", const TString &a_draw_extension = "png");
   ~Reco_Eval();
 
   void Run();
@@ -60,6 +60,7 @@ protected:
 
   TString era;
   TString channel;
+  TString tagger;
   TString draw_extension;
 
   map<TString, TFile *> map_fin;
@@ -142,6 +143,8 @@ protected:
   int Get_Index(const TString &short_name, const int &index_decay_mode);
   TString Histo_Name_RF(const TString &sample_name);
   void Read_Tree();
+  float Reweight_CKM(const TString &sample_name);
+  int Set_ABCD_Region();
 
   ClassDef(Reco_Eval, 1);
 };

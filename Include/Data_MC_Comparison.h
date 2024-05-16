@@ -47,6 +47,8 @@ protected:
   TString extension;
 
   bool chk_simple = false;
+  bool chk_qcd_data_driven = false;
+  
   int signal_scale = 1;
 
   Samples samples;

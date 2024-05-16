@@ -32,7 +32,7 @@ using namespace std;
 class Tagging_RF_DL : public TObject
 {
 public:
-  Tagging_RF_DL(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString &a_extension = "png");
+  Tagging_RF_DL(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString& a_tagger = "C", const TString &a_extension = "png");
   ~Tagging_RF_DL();
 
   inline static bool Comparing_TString(const TString &str1, const TString &str2)
@@ -43,7 +43,7 @@ public:
       return false;
   } // bool Comparing_TString(const TString &str1, const TString &str2)
 
-  float Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const int &n_jet, const float &ht);
+  float Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const int &n_jets_, const float &ht_);
   float Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const int &n_pv_, const float &ht_);
 
 protected:
@@ -52,6 +52,7 @@ protected:
   TString mode;
   TString era;
   TString channel;
+  TString tagger;
   TString extension;
 
   bool chk_combine;
@@ -171,6 +172,8 @@ protected:
   float weight_b_tag;
   float weight_b_tag_hf_down;
   float weight_b_tag_hf_up;
+  float weight_b_tag_lf_down;
+  float weight_b_tag_lf_up;
   float weight_b_tag_jes_down;
   float weight_b_tag_jes_up;
   float weight_b_tag_lfstats1_down;
@@ -233,7 +236,8 @@ protected:
   void Draw_Result();
   void Draw_Validation();
   void Fill_Histo_MC(const TString &sample_name, const TString &syst_type);
-  void Fill_Histo_Validation_MC(const TString &sample_name, const TString &syst_type);
+  void Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name, const TString &syst_type);
+  void Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &syst_type);
   int Histo_Index(const TString &sample_name);
   TString Histo_Name_RF(const TString &sample_name);
   void Ratio();

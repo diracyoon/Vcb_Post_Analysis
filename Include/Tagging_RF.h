@@ -22,6 +22,7 @@
 #include <TStyle.h>
 #include <TLatex.h>
 
+#include <Const_Def.h>
 #include <Samples.h>
 
 using namespace std;
@@ -29,11 +30,11 @@ using namespace std;
 class Tagging_RF : public TObject
 {
 public:
-  Tagging_RF(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString &a_extension = "png");
+  Tagging_RF(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString &a_tagger = "C", const TString &a_extension = "png");
   ~Tagging_RF();
 
-  float Get_Tagging_RF_B_Tag(const TString &sample, const TString &syst, const int &n_jet, const float &ht);
-  float Get_Tagging_RF_C_Tag(const TString &sample, const TString &syst, const int &n_pv_, const float &ht_);
+  float Get_Tagging_RF_B_Tag(const TString &region, const TString &sample, const TString &syst, const int &n_jet, const float &ht);
+  float Get_Tagging_RF_C_Tag(const TString &region, const TString &sample, const TString &syst, const int &n_pv_, const float &ht_);
 
   inline static bool Comparing_TString(const TString &str1, const TString &str2)
   {
@@ -49,13 +50,14 @@ protected:
   TString mode;
   TString era;
   TString channel;
+  TString tagger;
   TString extension;
 
   bool chk_combine;
 
   Samples samples;
   int n_sample;
-  
+
   vector<TString> vec_short_name_mc;
   int n_sample_merge_mc;
 
@@ -84,29 +86,30 @@ protected:
   int n_syst_b;
   int n_syst_c;
 
-  TH2D ***histo_mc_before_b; // n_sample, n_syst_b
-  TH2D ***histo_mc_after_b;  // n_sample, n_syst_b
+  vector<TString> region_name = {"A", "B", "C", "D"};
+  int n_region = region_name.size();
 
-  TH2D ***histo_mc_before_c; // n_sample, n_syst_c
-  TH2D ***histo_mc_after_c;  // n_sample, n_syst_c
+  TH2D ****histo_mc_before_b; // n_region, n_sample, n_syst_b
+  TH2D ****histo_mc_after_b;  // n_region, n_sample, n_syst_b
 
-  TH1D ****histo_closure_n_jet; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D ****histo_closure_ht;    // n_sample, 3
-  TH1D ****histo_closure_n_pv;  // n_sample, 3
+  TH2D ****histo_mc_before_c; // n_region, n_sample, n_syst_c
+  TH2D ****histo_mc_after_c;  // n_region, n_sample, n_syst_c
 
-  TH1D ****histo_closure_bvsc; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D ****histo_closure_cvsb; // n_sample,
-  TH1D ****histo_closure_cvsl; // n_sample,
-
-  TH1D ****histo_closure_eta; // n_sample, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D ****histo_closure_pt;
+  TH1D *****histo_closure_n_jet; // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D *****histo_closure_ht;    // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D *****histo_closure_n_pv;  // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D *****histo_closure_bvsc;  // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D *****histo_closure_cvsb;  // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D *****histo_closure_cvsl;  // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D *****histo_closure_eta;   // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D *****histo_closure_pt;    // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
 
   THStack *stack_mc_before;
   THStack **stack_mc_after_b; // n_syst_b
   THStack **stack_mc_after_c; // n_syst_c
 
-  TH2D ***ratio_b; // n_sample, n_syst_b
-  TH2D ***ratio_c; // n_sample, n_syst_c
+  TH2D ****ratio_b; // n_region, n_sample, n_syst_b
+  TH2D ****ratio_c; // n_region, n_sample, n_syst_c
 
   TH2D ***ratio_b_averaged;
   TH2D ***ratio_c_averaged;
@@ -123,6 +126,9 @@ protected:
   int n_jets;
   int n_pv;
 
+  float lepton_pt_uncorr;
+  float lepton_rel_iso;
+
   float ht;
 
   float leading_jet_bvsc;
@@ -138,6 +144,8 @@ protected:
 
   float subleading_jet_eta;
   float subleading_jet_pt;
+
+  float met_pt;
 
   int decay_mode;
 
@@ -178,6 +186,8 @@ protected:
   float weight_b_tag;
   float weight_b_tag_hf_down;
   float weight_b_tag_hf_up;
+  float weight_b_tag_lf_down;
+  float weight_b_tag_lf_up;
   float weight_b_tag_jes_down;
   float weight_b_tag_jes_up;
   float weight_b_tag_lfstats1_down;
@@ -230,8 +240,9 @@ protected:
   void Combine_Lepton_Channel();
   void Draw_Result();
   void Draw_Validation();
-  void Fill_Histo_MC(const TString &sample_name, const TString &syst_type);
-  void Fill_Histo_Validation_MC(const TString &sample_name, const TString &syst_type);
+  void Fill_Histo_MC(const int &region_index, const TString &sample_name, const TString &syst_type);
+  void Fill_Histo_Validation_MC_B_Tagger(const int &region_index, const TString &sample_name, const TString &syst_type);
+  void Fill_Histo_Validation_MC_C_Tagger(const int &region_index, const TString &sample_name, const TString &syst_type);
   int Histo_Index(const TString &sample_name);
   TString Histo_Name_RF(const TString &sample_name);
   void Ratio();
@@ -246,6 +257,7 @@ protected:
   void Setup_Histo();
   void Setup_Histo_Validation();
   void Setup_Tree(TTree *tree, const TString &syst);
+  int Set_Region();
 
 private:
   bool chk_draw_called = false;

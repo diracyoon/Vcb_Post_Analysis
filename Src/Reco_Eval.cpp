@@ -4,16 +4,19 @@ ClassImp(Reco_Eval);
 
 //////////
 
-Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TString &a_swap_mode, const TString &a_draw_extension) : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
+Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TString &a_tagger, const TString &a_swap_mode, const TString &a_draw_extension) : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
 {
   ROOT::EnableImplicitMT(10);
 
   cout << "[Reco_Eval::Reco_Eval]: Init analysis" << endl;
 
+  TH1::AddDirectory(kFALSE);
+
   reduction = 1;
 
   era = a_era;
   channel = a_channel;
+  tagger = a_tagger;
   draw_extension = a_draw_extension;
 
   if (era == "2017")
@@ -30,7 +33,8 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   }
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
-  path_base += "/Sample/" + era + "/" + channel + "/RunResult/Central_Syst/";
+
+  path_base += "/Sample/" + era + "/" + channel + "/RunResult_BvsC_Only/Central_Syst/";
 
   if (samples.map_mc.size() != samples.map_short_name_mc.size())
   {
@@ -152,16 +156,16 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     }
   }
 
-  dv_histo_conf = {{"MVA_Scores", 100, -1, 1},
-                   //{"N_Jets", 20, 0, 20},
-                   {"N_BJets", 10, 0, 10},
-                   {"N_CJets", 10, 0, 10},
-                   {"BvsC_w_u", 100, 0, 1},
-                   {"CvsB_w_u", 100, 0, 1},
-                   {"CvsL_w_u", 100, 0, 1},
-                   {"BvsC_w_d", 100, 0, 1},
-                   {"CvsB_w_d", 100, 0, 1},
-                   {"CvsL_w_d", 100, 0, 1}};
+  dv_histo_conf = {
+      {"MVA_Scores", 100, -1, 1},
+      {"BvsC_w_u", 100, 0, 1},
+      {"BvsC_w_d", 100, 0, 1},
+      {"Pt_Had_T_B", 100, 0, 300},
+      {"Pt_W_U", 100, 0, 300},
+      {"Pt_W_D", 100, 0, 300},
+      {"Pt_Lep_T_B", 100, 0, 300},
+      {"M_Had_T", 100, 100, 240},
+      {"M_Had_W", 100, 20, 140}};
   n_discriminators = dv_histo_conf.size();
 
   histo_discriminator = new TH1D ***[n_histo_sample];
@@ -321,8 +325,8 @@ Reco_Eval::~Reco_Eval()
 void Reco_Eval::Run()
 {
   Read_Tree();
-  Calculate_Significance();
-  Calculate_Prob();
+  // Calculate_Significance();
+  // Calculate_Prob();
   Draw_Reco();
   // Draw_Sample_By_Sample();
   // Draw_Significance();
@@ -410,6 +414,9 @@ void Reco_Eval::Draw_DV()
 
     canvas_dv[i] = new TCanvas(name, name, 1300, 800);
     canvas_dv[i]->Divide(3, 3);
+    // canvas_dv[i] = new TCanvas(name, name, 1300, 400);
+    // canvas_dv[i]->Divide(3, 1);
+
     canvas_dv[i]->Draw();
 
     stack_dv[i] = new THStack *[n_discriminators];
@@ -429,8 +436,26 @@ void Reco_Eval::Draw_DV()
       canvas_dv[i]->cd(j + 1);
       stack_dv[i][j]->Draw("BAR");
 
-      fout->cd();
-      stack_dv[i][j]->Write();
+      /* concise version
+            if (j == 0)
+            {
+              canvas_dv[i]->cd(1);
+              stack_dv[i][0]->Draw("BAR");
+            }
+            else if (j == 3)
+            {
+              canvas_dv[i]->cd(2);
+              stack_dv[i][3]->Draw("BAR");
+            }
+            else if (j == 6)
+            {
+              canvas_dv[i]->cd(3);
+              stack_dv[i][6]->Draw("BAR");
+            }
+      */
+
+      // fout->cd();
+      // stack_dv[i][j]->Write();
     } // loop over # of disriminating variables
 
     canvas_dv[i]->Print(vec_histo_sample[i] + "_DV_" + era + "_" + channel + "." + draw_extension, draw_extension);
@@ -493,12 +518,10 @@ void Reco_Eval::Draw_Reco()
     canvas_template[i]->Draw();
   }
 
-  float ttlj_correct = 0;
-  float ttlj_wrong = 0;
-  float ttlj_wrong_not_sel = 0;
-  float ttlj_cb_correct = 0;
-  float ttlj_cb_wrong = 0;
-  float ttlj_cb_wrong_not_sel = 0;
+  float ttlj_correct[5] = {0};
+  float ttlj_wrong[5] = {0};
+  float ttlj_wrong_not_sel[5] = {0};
+  float ttlj_wrong_hf[5] = {0};
 
   THStack *stack_mva_pre[n_histo_sample];
   THStack *stack_mva[n_histo_sample];
@@ -507,6 +530,7 @@ void Reco_Eval::Draw_Reco()
   THStack *stack_lep_w[n_histo_sample];
   THStack *stack_lep_t[n_histo_sample];
   THStack *stack_template[n_histo_sample];
+
   for (unsigned int i = 0; i < n_histo_sample; i++)
   {
     TString name = vec_histo_sample[i];
@@ -550,24 +574,28 @@ void Reco_Eval::Draw_Reco()
       histo_template[i][j]->SetFillColor(color[j]);
       stack_template[i]->Add(histo_template[i][j]);
 
-      // cout << histo_mva[i][j]->Integral() << endl;
-      if (name.Contains("TTLJ") && !name.Contains("cb"))
+      if (name.Contains("TTLJ"))
       {
+        int index;
+        if (name.Contains("ud"))
+          index = 0;
+        else if (name.Contains("us"))
+          index = 1;
+        else if (name.Contains("cd"))
+          index = 2;
+        else if (name.Contains("cs"))
+          index = 3;
+        else if (name.Contains("cb"))
+          index = 4;
+
         if (j == 0)
-          ttlj_correct += histo_mva[i][j]->Integral();
+          ttlj_correct[index] += histo_mva[i][j]->Integral();
         else if (j == 1 || j == 3)
-          ttlj_wrong += histo_mva[i][j]->Integral();
-        else if (j == 2 || j == 4)
-          ttlj_wrong_not_sel += histo_mva[i][j]->Integral();
-      }
-      else if (name == "TTLJ_cb")
-      {
-        if (j == 0)
-          ttlj_cb_correct += histo_mva[i][j]->Integral();
-        else if (j == 1 || j == 3)
-          ttlj_cb_wrong += histo_mva[i][j]->Integral();
-        else if (j == 2 || j == 4)
-          ttlj_cb_wrong_not_sel += histo_mva[i][j]->Integral();
+          ttlj_wrong[index] += histo_mva[i][j]->Integral();
+        else if (j == 2)
+          ttlj_wrong_not_sel[index] += histo_mva[i][j]->Integral();
+        else if (j == 4)
+          ttlj_wrong_hf[index] += histo_mva[i][j]->Integral();
       }
     } // loop over reco type
 
@@ -673,6 +701,24 @@ void Reco_Eval::Draw_Reco()
     stack_template[i]->Write();
   }
 
+  // to summary table
+  cout << "Summary Table Marker" << endl;
+  for (int i = 0; i < 5; i++)
+  {
+    if (i == 0)
+      cout << "TTLJ_ud" << endl;
+    else if (i == 1)
+      cout << "TTLJ_us" << endl;
+    else if (i == 2)
+      cout << "TTLJ_cd" << endl;
+    else if (i == 3)
+      cout << "TTLJ_cs" << endl;
+    else if (i == 4)
+      cout << "TTLJ_cb" << endl;
+
+    cout << ttlj_correct[i] << " " << ttlj_wrong[i] << " " << ttlj_wrong_not_sel[i] << " " << ttlj_wrong_hf[i] << endl;
+  }
+
   legend = new TLegend(0.2, 0.2, 0.8, 0.8);
   legend->SetBorderSize(0);
 
@@ -744,8 +790,8 @@ void Reco_Eval::Draw_Reco()
     name = "Permutation_MVA_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_mva[i]->Print(name, draw_extension);
 
-    name = "Permutation_MVA_" + to_string(i) + "_" + era + "_" + channel + ".cpp";
-    canvas_mva[i]->SaveAs(name);
+    // name = "Permutation_MVA_" + to_string(i) + "_" + era + "_" + channel + ".cpp";
+    // canvas_mva[i]->SaveAs(name);
 
     name = "Had_W_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_had_w[i]->Print(name, draw_extension);
@@ -762,8 +808,6 @@ void Reco_Eval::Draw_Reco()
     name = "Template_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_template[i]->Print(name, draw_extension);
   }
-
-  cout << ttlj_correct << " " << ttlj_wrong << " " << ttlj_wrong_not_sel << " " << ttlj_cb_correct << " " << ttlj_cb_wrong << " " << ttlj_cb_wrong_not_sel << endl;
 
   return;
 } // void Reco_Eval::Draw_Reco
@@ -950,15 +994,14 @@ void Reco_Eval::Fill_Histo_Discriminators(const TString &short_name, const int &
   int index = Get_Index(short_name, index_decay_mode);
 
   histo_discriminator[index][0][index_fail_reason]->Fill(event.best_mva_score, event.weight);
-  // histo_discriminator[index][1][index_fail_reason]->Fill(event.n_jets, event.weight);
-  histo_discriminator[index][1][index_fail_reason]->Fill(event.n_bjets, event.weight);
-  histo_discriminator[index][2][index_fail_reason]->Fill(event.n_cjets, event.weight);
-  histo_discriminator[index][3][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
-  histo_discriminator[index][4][index_fail_reason]->Fill(event.cvsb_w_u, event.weight);
-  histo_discriminator[index][5][index_fail_reason]->Fill(event.cvsl_w_u, event.weight);
-  histo_discriminator[index][6][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
-  histo_discriminator[index][7][index_fail_reason]->Fill(event.cvsb_w_d, event.weight);
-  histo_discriminator[index][8][index_fail_reason]->Fill(event.cvsl_w_d, event.weight);
+  histo_discriminator[index][1][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
+  histo_discriminator[index][2][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
+  histo_discriminator[index][3][index_fail_reason]->Fill(event.pt_had_t_b, event.weight);
+  histo_discriminator[index][4][index_fail_reason]->Fill(event.pt_w_u, event.weight);
+  histo_discriminator[index][5][index_fail_reason]->Fill(event.pt_w_d, event.weight);
+  histo_discriminator[index][6][index_fail_reason]->Fill(event.pt_lep_t_b, event.weight);
+  histo_discriminator[index][7][index_fail_reason]->Fill(event.m_had_t, event.weight);
+  histo_discriminator[index][8][index_fail_reason]->Fill(event.m_had_w, event.weight);
 
   return;
 } // void Reco_Eval::Fill_Histo_Discriminators(const TString& short_name, const int& index_decay_mode, const int& index_fail_reason)
@@ -1134,7 +1177,11 @@ void Reco_Eval::Read_Tree()
 
       tree->GetEntry(j);
 
-      // if (20 < event.met_pt)
+      
+      int abcd_region_index = Set_ABCD_Region();
+      if(abcd_region_index!=3) continue;
+
+      // if (event.best_mva_score_pre < 0.0 || event.template_score < 0.2)
       //   continue;
 
       // chk_swap = event.Swap();
@@ -1155,6 +1202,7 @@ void Reco_Eval::Read_Tree()
       }
 
       event.weight = 1;
+      event.weight *= Reweight_CKM(short_name);
       event.weight *= event.weight_lumi;
       event.weight *= event.weight_mc;
       event.weight *= event.weight_hem_veto;
@@ -1162,7 +1210,7 @@ void Reco_Eval::Read_Tree()
       event.weight *= event.weight_prefire;
       event.weight *= event.weight_top_pt;
       event.weight *= event.weight_sl_trig;
-
+   
       if (channel == "Mu")
       {
         event.weight *= event.weight_mu_id;
@@ -1173,25 +1221,32 @@ void Reco_Eval::Read_Tree()
         event.weight *= event.weight_el_id;
         event.weight *= event.weight_el_reco;
       }
-
-      event.weight *= event.weight_c_tag;
-
-      // event.weight *= tagging_rf.Get_Tagging_RF("B_Tag_Nominal", event.n_jets);
+     
       TString histo_name_rf = Histo_Name_RF(short_name);
-      event.weight *= tagging_rf.Get_Tagging_RF_C_Tag(histo_name_rf, "C_Tag_Nominal", event.n_pv, event.ht);
+      if (tagger == "B")
+      {
+        event.weight *= event.weight_b_tag;
+        event.weight *= tagging_rf.Get_Tagging_RF_B_Tag("A", histo_name_rf, "B_Tag_Nominal", event.n_jets, event.ht);
+      }
+      else if (tagger == "C")
+      {
+        event.weight *= event.weight_c_tag;
+        event.weight *= tagging_rf.Get_Tagging_RF_C_Tag("A", histo_name_rf, "C_Tag_Nominal", event.n_pv, event.ht);
+      }
 
       // if (event.chk_gentau_conta == true)
       //   continue;
 
       // if (event.n_bjets == 2)
       //   continue;
-
+ 
       Fill_Output_Tree(short_name, event.decay_mode, index_fail_reason);
 
       Fill_Histo(short_name, event.decay_mode, index_fail_reason);
-
+ 
       if (index_fail_reason == 0)
         Fill_Histo_Swap(short_name, event.decay_mode);
+
 
       Fill_Histo_Count(short_name, event.decay_mode, index_fail_reason);
       Fill_Histo_Discriminators(short_name, event.decay_mode, index_fail_reason);
@@ -1255,3 +1310,62 @@ void Reco_Eval::Read_Tree()
 } // void Reco_Eval::Read_Tree()
 
 //////////
+
+float Reco_Eval::Reweight_CKM(const TString &sample_name)
+{
+  float reweight = 1;
+
+  if (sample_name.Contains("TTLJ"))
+  {
+    if (event.decay_mode == 21)
+      reweight = Vud_pdg * Vud_pdg / Vud_squared_powheg;
+    else if (event.decay_mode == 23)
+      reweight = Vus_pdg * Vus_pdg / Vus_squared_powheg;
+    else if (event.decay_mode == 41)
+      reweight = Vcd_pdg * Vcd_pdg / Vcd_squared_powheg;
+    else if (event.decay_mode == 43)
+      reweight = Vcs_pdg * Vcs_pdg / Vcs_squared_powheg;
+  }
+  else
+    return 1.0;
+
+  return reweight;
+} // float Reco_Eval::Reweight_CKM(const TString& sample_name)
+
+//////////
+
+int Reco_Eval::Set_ABCD_Region()
+{
+  bool chk_pass_iso;
+  if (channel == "Mu")
+  {
+    if (event.lepton_rel_iso < REL_ISO_MUON)
+      chk_pass_iso = true;
+    else
+      chk_pass_iso = false;
+  }
+  else if (channel == "El")
+  {
+    if (event.lepton_rel_iso < REL_ISO_ELECTRON_A + REL_ISO_ELECTRON_B / event.lepton_pt_uncorr)
+      chk_pass_iso = true;
+    else
+      chk_pass_iso = false;
+  }
+
+  if (MET_PT < event.met_pt)
+  {
+    if (chk_pass_iso)
+      return 3; //"D"
+    else
+      return 1; //"B"
+  }
+  else
+  {
+    if (chk_pass_iso)
+      return 2; //"C"
+    else
+      return 0; //"A"
+  }
+
+  return -1;
+} // int Reco_Eval::Set_ABCD_Region()

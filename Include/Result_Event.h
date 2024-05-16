@@ -15,9 +15,10 @@ class Result_Event : public W_Event
   friend class Template;
   friend class Histo_Syst;
   friend class Reco_Eval;
+  friend class QCD_Data_Driven;
 
 public:
-  Result_Event(const TString &a_era, const TString &a_channel, const TString &a_swap_mode);
+  Result_Event(const TString &a_era = "2017", const TString &a_channel = "Mu", const TString &a_swap_mode = "Permutation_MVA");
   virtual ~Result_Event();
 
   void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all = false);
@@ -48,6 +49,8 @@ protected:
   float weight_b_tag;
   float weight_b_tag_hf_down;
   float weight_b_tag_hf_up;
+  float weight_b_tag_lf_down;
+  float weight_b_tag_lf_up;
   float weight_b_tag_jes_down;
   float weight_b_tag_jes_up;
   float weight_b_tag_lfstats1_down;
@@ -126,7 +129,9 @@ protected:
   int n_pv;
 
   float lepton_pt;
+  float lepton_pt_uncorr;
   float lepton_eta;
+  float lepton_rel_iso;
 
   int n_jets;
   int n_bjets;

@@ -29,8 +29,6 @@ public:
   Histo_Syst(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_mode = "Fill", const TString &a_run_flag = "Central", const TString &a_tagger = "B", const TString &a_swap_mode = "Permutation_MVA");
   ~Histo_Syst();
 
-  void Run_Merge();
-
   typedef struct _Histo_Conf
   {
     TString variable_title;
@@ -59,6 +57,8 @@ protected:
   TString mode;
   TString run_flag;
   TString tagger;
+
+  bool chk_qcd_data_driven = true;
 
   bool chk_cut_best_mva_score_pre = false;
   float cut_best_mva_score_pre = -1;
@@ -147,7 +147,9 @@ protected:
   TH1 ****histo_data; // n_abcd_region, n_region, n_variable
 
   TH2D ******histo_mc_dd; // n_abcd_region-2, n_region, n_syst, n_sample, n_variable
-  TH2D ****histo_data_dd;   // n_abcd_region-2, n_region, n_variable
+  TH2D ****histo_data_dd; // n_abcd_region-2, n_region, n_variable
+
+  TH1D *****histo_mc_merge; // n_region, n_syst, n_sample, n_variable
 
   TH1D ***histo_subtracted_tf;           // n_abcd_region-2, n_region
   TH2D ****histo_subtracted_data_driven; // n_region, n_syst, n_variable

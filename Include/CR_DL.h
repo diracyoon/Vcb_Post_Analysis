@@ -25,7 +25,7 @@ using namespace std;
 class CR_DL : public TObject
 {
 public:
-  CR_DL(const TString &a_era = "2018", const TString &a_channel = "MM", const TString &a_run_flag = "All");
+  CR_DL(const TString &a_era = "2018", const TString &a_channel = "MM", const TString &a_tagger = "C", const TString &a_run_flag = "All");
   ~CR_DL();
 
   inline static bool Comparing_TString(const TString &str1, const TString &str2)
@@ -46,13 +46,24 @@ public:
     float x_up;
   } Histo_Conf;
 
+  typedef struct _Histo_2D_Conf
+  {
+    TString variable_title;
+    int n_bin_x;
+    float *binning_x;
+    int n_bin_y;
+    float *binning_y;
+  } Histo_2D_Conf;
+
 protected:
   int reduction;
 
   TString era;
   TString channel;
-  TString path_base;
+  TString tagger;
   TString run_flag;
+
+  TString path_base;
 
   bool chk_merge_pdf_error_set = false;
 
@@ -114,14 +125,17 @@ protected:
   int n_variable;
   vector<Histo_Conf> variable_conf;
 
-  TH1D ****histo_mc; // n_syst, n_sample, n_variable
-  // TH2D ****histo_mc_2d; // n_sample, n_variable
+  int n_variable_2d;
+  vector<Histo_2D_Conf> variable_conf_2d;
+
+  TH1D ****histo_mc;    // n_syst, n_sample, n_variable
+  TH2D ****histo_mc_2d; // n_syst, n_sample, n_variable_2d
 
   TH1D ***histo_mc_pdf_error_set_down; // n_sample, n_variable
   TH1D ***histo_mc_pdf_error_set_up;   // n_sample, n_variable
 
-  TH1D **histo_data; // n_variable
-  // TH2D **histo_data_2d; // n_variable
+  TH1D **histo_data;    // n_variable
+  TH2D **histo_data_2d; // n_variable_2d
 
   int n_pdf_error_set = 100;
   THStack ***stack_pdf_error_set; // n_pdf_error_set, n_variable
@@ -134,6 +148,9 @@ protected:
   TString Histo_Name_RF(const TString &sample_name);
   void Merge_PDF_Error_Set();
   void Read_Tree();
+  void Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TString, TTree *> &map_tree_syst, const TString &type);
+  float Reweight_CKM(const TString &sample_name);
+  void Unroller();
   int Unroller(const float &bvsc_third, const float &bvsc_fourth);
 
   ClassDef(CR_DL, 1);

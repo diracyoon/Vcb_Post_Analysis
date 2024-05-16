@@ -55,10 +55,33 @@ const float cvsb_wp_t_2018 = 0.267;
 
 const float Z_MASS = 91.1876;
 
-const float lumi_2016a = 1;
-const float lumi_2016b = 1;
+//ckm pdg 2023
+const float Vud_pdg = 0.97373;
+const float Vus_pdg = 0.2243;
+const float Vub_pdg = 0.00382;
+
+const float Vcd_pdg = 0.221;
+const float Vcs_pdg = 0.975;
+const float Vcb_pdg = 0.0408;
+
+//ckm powheg
+const float Vud_squared_powheg = 0.95;
+const float Vus_squared_powheg = 0.05;
+const float Vub_squared_powheg = 0;
+
+const float Vcd_squared_powheg = 0.05;
+const float Vcs_squared_powheg = 0.95;
+const float Vcb_squared_powheg = 0.0;
+
+const float lumi_2016a = 19.52;
+const float lumi_2016b = 16.81;
 const float lumi_2017 = 41.53;
 const float lumi_2018 = 59.74;
+
+const float REL_ISO_MUON = 0.15;
+const float REL_ISO_ELECTRON_A = 0.0287;
+const float REL_ISO_ELECTRON_B = 0.506;
+const float MET_PT = 20;
 
 typedef enum Syst_
 {

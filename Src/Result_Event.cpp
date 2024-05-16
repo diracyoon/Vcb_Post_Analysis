@@ -60,6 +60,8 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all)
     tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
     tree->SetBranchAddress("weight_b_tag_down_hf", &weight_b_tag_hf_down);
     tree->SetBranchAddress("weight_b_tag_up_hf", &weight_b_tag_hf_up);
+    tree->SetBranchAddress("weight_b_tag_down_lf", &weight_b_tag_lf_down);
+    tree->SetBranchAddress("weight_b_tag_up_lf", &weight_b_tag_lf_up);
     tree->SetBranchAddress("weight_b_tag_down_lfstats1", &weight_b_tag_lfstats1_down);
     tree->SetBranchAddress("weight_b_tag_up_lfstats1", &weight_b_tag_lfstats1_up);
     tree->SetBranchAddress("weight_b_tag_down_lfstats2", &weight_b_tag_lfstats2_down);
@@ -168,7 +170,9 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all)
   tree->SetBranchAddress("n_vertex", &n_pv);
 
   tree->SetBranchAddress("lepton_pt", &lepton_pt);
+  tree->SetBranchAddress("lepton_pt_uncorr", &lepton_pt_uncorr);
   tree->SetBranchAddress("lepton_eta", &lepton_eta);
+  tree->SetBranchAddress("lepton_rel_iso", &lepton_rel_iso);
 
   tree->SetBranchAddress("n_jets", &n_jets);
   tree->SetBranchAddress("n_bjets", &n_bjets);
@@ -234,6 +238,11 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all)
 
   tree->SetBranchAddress("swapped_mva", &swapped_mva);
   tree->SetBranchAddress("template_score", &template_score);
+  // tree->SetBranchAddress("template_score_fewshot", &template_score);
+  // tree->SetBranchAddress("template_score_sigRegionOnly", &template_score);
+  // tree->SetBranchAddress("template_score_focal", &template_score);
+  // tree->SetBranchAddress("template_score_focal_sigOnly", &template_score);
+  //tree->SetBranchAddress("template_score_mixed", &template_score);
 
   // for MC
   tree->SetBranchAddress("decay_mode", &decay_mode);
