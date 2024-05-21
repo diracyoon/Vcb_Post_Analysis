@@ -1761,7 +1761,7 @@ void Tagging_RF::Read_Tree()
             TMath::IsNaN(weight_scale_variation_8))
           continue;
 
-        int region_index = Set_Region();
+        int region_index = Set_ABCD_Region();
 
         if (mode == "Analysis")
           Fill_Histo_MC(region_index, sample_name_short, syst_type);
@@ -1840,7 +1840,7 @@ void Tagging_RF::Setup_Analysis()
 {
   cout << "[Tagging_RF::Setup_Analysis]: Init analysis" << endl;
 
-  reduction = 1000;
+  reduction = 1;
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
   path_base += "/Sample/" + era + "/" + channel + "/Tagging_RF/";
@@ -2226,6 +2226,7 @@ void Tagging_RF::Setup_Tree(TTree *tree, const TString &syst)
   tree->SetBranchAddress("ht", &ht);
   tree->SetBranchAddress("n_vertex", &n_pv);
 
+  tree->SetBranchAddress("lepton_eta", &lepton_eta);
   tree->SetBranchAddress("lepton_rel_iso", &lepton_rel_iso);
   tree->SetBranchAddress("lepton_pt_uncorr", &lepton_pt_uncorr);
 
@@ -2300,7 +2301,7 @@ void Tagging_RF::Stack_MC()
 */
 //////////
 
-int Tagging_RF::Set_Region()
+int Tagging_RF::Set_ABCD_Region()
 {
   bool chk_pass_iso;
   if (channel == "Mu")
@@ -2312,7 +2313,20 @@ int Tagging_RF::Set_Region()
   }
   else if (channel == "El")
   {
-    if (lepton_rel_iso < REL_ISO_ELECTRON_A + REL_ISO_ELECTRON_B / lepton_pt_uncorr)
+    float rel_iso_electron_a;
+    float rel_iso_electron_b;
+    if (TMath::Abs(lepton_eta) <= 1.479)
+    {
+      rel_iso_electron_a = REL_ISO_ELECTRON_BARREL_A;
+      rel_iso_electron_b = REL_ISO_ELECTRON_BARREL_B;
+    }
+    else
+    {
+      rel_iso_electron_a = REL_ISO_ELECTRON_ENDCAP_A;
+      rel_iso_electron_b = REL_ISO_ELECTRON_ENDCAP_B;
+    }
+
+    if (lepton_rel_iso < rel_iso_electron_a + rel_iso_electron_b / lepton_pt_uncorr)
       chk_pass_iso = true;
     else
       chk_pass_iso = false;
@@ -2334,6 +2348,6 @@ int Tagging_RF::Set_Region()
   }
 
   return -1;
-} // int Tagging_RF::Set_Region()
+} // int Tagging_RF::Set_ABCD_Region()
 
 //////////

@@ -79,8 +79,13 @@ const float lumi_2017 = 41.53;
 const float lumi_2018 = 59.74;
 
 const float REL_ISO_MUON = 0.15;
-const float REL_ISO_ELECTRON_A = 0.0287;
-const float REL_ISO_ELECTRON_B = 0.506;
+
+// medium
+const float REL_ISO_ELECTRON_BARREL_A = 0.0478;
+const float REL_ISO_ELECTRON_BARREL_B = 0.506;
+const float REL_ISO_ELECTRON_ENDCAP_A = 0.0658;
+const float REL_ISO_ELECTRON_ENDCAP_B = 0.963;
+
 const float MET_PT = 20;
 
 typedef enum Syst_

@@ -11,7 +11,6 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   cout << "[Reco_Eval::Reco_Eval]: Init analysis" << endl;
 
   TH1::AddDirectory(kFALSE);
-
   reduction = 1;
 
   era = a_era;
@@ -34,7 +33,7 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");
 
-  path_base += "/Sample/" + era + "/" + channel + "/RunResult_BvsC_Only/Central_Syst/";
+  path_base += "/Sample/" + era + "/" + channel + "/RunResult/Central_Syst/";
 
   if (samples.map_mc.size() != samples.map_short_name_mc.size())
   {
@@ -1346,7 +1345,20 @@ int Reco_Eval::Set_ABCD_Region()
   }
   else if (channel == "El")
   {
-    if (event.lepton_rel_iso < REL_ISO_ELECTRON_A + REL_ISO_ELECTRON_B / event.lepton_pt_uncorr)
+    float rel_iso_electron_a;
+    float rel_iso_electron_b;
+    if (TMath::Abs(event.lepton_eta) <= 1.479)
+    {
+      rel_iso_electron_a = REL_ISO_ELECTRON_BARREL_A;
+      rel_iso_electron_b = REL_ISO_ELECTRON_BARREL_B;
+    }
+    else
+    {
+      rel_iso_electron_a = REL_ISO_ELECTRON_ENDCAP_A;
+      rel_iso_electron_b = REL_ISO_ELECTRON_ENDCAP_B;
+    }
+
+    if (event.lepton_rel_iso < rel_iso_electron_a + rel_iso_electron_b / event.lepton_pt_uncorr)
       chk_pass_iso = true;
     else
       chk_pass_iso = false;

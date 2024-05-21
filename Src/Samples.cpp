@@ -18,8 +18,10 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_mc["SingleTop_tch_antitop_Incl"] = "Vcb_SingleTop_tch_antitop_Incl.root";
   map_mc["SingleTop_tW_top"] = "Vcb_SingleTop_tW_top_NoFullyHad.root";
   map_mc["SingleTop_tW_antitop"] = "Vcb_SingleTop_tW_antitop_NoFullyHad.root";
-  map_mc["WJets"] = "Vcb_WJets_MG.root";
-  map_mc["DYJets"] = "Vcb_DYJets_MG.root";
+  // map_mc["WJets"] = "Vcb_WJets_MG.root";
+  // map_mc["DYJets"] = "Vcb_DYJets_MG.root";
+  map_mc["WJets"] = "Vcb_WJets_Sherpa.root";
+  map_mc["DYJets"] = "Vcb_DYJets.root";
   map_mc["QCD_bEn_HT100to200"] = "Vcb_QCD_bEnriched_HT100to200.root";
   map_mc["QCD_bEn_HT200to300"] = "Vcb_QCD_bEnriched_HT200to300.root";
   map_mc["QCD_bEn_HT300to500"] = "Vcb_QCD_bEnriched_HT300to500.root";
@@ -245,7 +247,7 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
 
 Samples::~Samples()
 {
-  //cout << "[Samples::~Samples]: Done" << endl;
+  // cout << "[Samples::~Samples]: Done" << endl;
 }
 
 //////////

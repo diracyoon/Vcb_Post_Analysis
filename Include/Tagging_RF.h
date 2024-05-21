@@ -126,6 +126,7 @@ protected:
   int n_jets;
   int n_pv;
 
+  float lepton_eta;
   float lepton_pt_uncorr;
   float lepton_rel_iso;
 
@@ -257,7 +258,7 @@ protected:
   void Setup_Histo();
   void Setup_Histo_Validation();
   void Setup_Tree(TTree *tree, const TString &syst);
-  int Set_Region();
+  int Set_ABCD_Region();
 
 private:
   bool chk_draw_called = false;

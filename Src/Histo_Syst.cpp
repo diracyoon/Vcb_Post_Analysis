@@ -1522,7 +1522,7 @@ void Histo_Syst::Init_Histo_Data_Driven()
   {
     TString histo_name = region_name[0] + "/TF"; // let's use TF from 2b region for all
     histo_tf[i] = (TH1D *)fin_tf->Get(histo_name);
-      cout << "test test test " << fin_tf << endl;
+    cout << "test test test " << fin_tf << endl;
     cout << histo_name << endl;
     cout << "test test test " << histo_tf[i] << endl;
   }
@@ -2206,7 +2206,20 @@ int Histo_Syst::Set_ABCD_Region()
   }
   else if (channel == "El")
   {
-    if (event.lepton_rel_iso < REL_ISO_ELECTRON_A + REL_ISO_ELECTRON_B / event.lepton_pt_uncorr)
+    float rel_iso_electron_a;
+    float rel_iso_electron_b;
+    if (TMath::Abs(event.lepton_eta) <= 1.479)
+    {
+      rel_iso_electron_a = REL_ISO_ELECTRON_BARREL_A;
+      rel_iso_electron_b = REL_ISO_ELECTRON_BARREL_B;
+    }
+    else
+    {
+      rel_iso_electron_a = REL_ISO_ELECTRON_ENDCAP_A;
+      rel_iso_electron_b = REL_ISO_ELECTRON_ENDCAP_B;
+    }
+
+    if (event.lepton_rel_iso < rel_iso_electron_a + rel_iso_electron_b / event.lepton_pt_uncorr)
       chk_pass_iso = true;
     else
       chk_pass_iso = false;

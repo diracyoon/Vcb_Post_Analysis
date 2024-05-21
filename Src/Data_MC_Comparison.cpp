@@ -321,6 +321,7 @@ void Data_MC_Comparison::Run()
     {
       Draw_Each(syst_name_short[i], "Best_MVA_Score");
       Draw_Each(syst_name_short[i], "Template_MVA_Score");
+      // Draw_Each(syst_name_short[i], "N_BJets");
     }
     else if (analyser == "Vcb_DL")
       Draw_Each(syst_name_short[i], "BvsC_3rd_4th_Jets_Unrolled");
@@ -369,8 +370,8 @@ void Data_MC_Comparison::Compare()
         gr_ratio[i][j]->SetPointError(k, 0, 0, error_l, error_h);
         // gr_ratio[i][j]->SetPointError(k, 0, 0, 1, 1);
       } // loop over n_bin
-    }   // loop over n_variable
-  }     // loop over n_region
+    } // loop over n_variable
+  } // loop over n_region
 
   cout << "[Data_MC_Comparison::Compare]: Done" << endl;
 
@@ -482,7 +483,7 @@ void Data_MC_Comparison::Draw()
       canvas[i][j]->Modified();
       canvas[i][j]->Print(canvas_name + "." + extension, extension);
     } // loop over n_variable
-  }   // loop over_n_region
+  } // loop over_n_region
 
   cout << "[Data_MC_Comparison::Draw] Done" << endl;
 
@@ -682,7 +683,7 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
       delete canvas_each;
       delete tl;
     } // loop over n_variable
-  }   // loop over n_region
+  } // loop over n_region
 
   return;
 } // void Data_MC_Comparison::Draw_Each(const TString& variable_name)
@@ -709,8 +710,8 @@ void Data_MC_Comparison::Envelope()
         gr_variation[i][j][k] = new TGraphAsymmErrors();
         gr_variation_signal[i][j][k] = new TGraphAsymmErrors();
       } // loop over n_variable
-    }   // loop over n_syst;
-  }     // loop over n_region
+    } // loop over n_syst;
+  } // loop over n_region
 
   for (int i = 0; i < n_region; i++)
   {
@@ -725,9 +726,6 @@ void Data_MC_Comparison::Envelope()
       {
         TH1D *histo_syst = (TH1D *)(stack_mc[i][k][j]->GetStack()->Last());
         TH1D *histo_syst_signal = (TH1D *)(stack_mc_signal[i][k][j]->GetStack()->Last());
-
-        // if (syst_name[k] == "Nominal")
-        //   continue;
 
         // cout << syst_name[k] << endl;
 
@@ -769,10 +767,10 @@ void Data_MC_Comparison::Envelope()
             else
               gr_variation_signal[i][k][j]->SetPointError(n_point, 0, 0, TMath::Abs(diff_signal), 0);
           } // loop over 3
-        }   // loop over n_bin
-      }     // loop over n_syst
-    }       // loop over n_variable
-  }         // loop over n_region
+        } // loop over n_bin
+      } // loop over n_syst
+    } // loop over n_variable
+  } // loop over n_region
 
   // merge variations via quadratic sum
   gr_variation_merged = new TGraphAsymmErrors **[n_region];
@@ -828,11 +826,11 @@ void Data_MC_Comparison::Envelope()
           variation_down_signal = TMath::Sqrt(TMath::Power(variation_down_signal, 2.) + TMath::Power(ey_l_signal, 2.));
 
           // cout << syst_name[l] << endl;
-          //  cout << "l = " << l << ", x = " << x << ", ey_h = " << ey_h << ", variation_up = " << variation_up << ", ey_l = " << ey_l << ", variation_down = " << variation_down << endl;
+          // cout << "l = " << l << ", x = " << x << ", ey_h = " << ey_h << ", variation_up = " << variation_up << ", ey_l = " << ey_l << ", variation_down = " << variation_down << endl;
           // cout << "l = " << l << ", x = " << x << ", ey_h_signal = " << ey_h_signal << ", variation_up_signal = " << variation_up_signal << ", ey_l_signal = " << ey_l_signal << ", variation_down_signal = " << variation_down_signal << endl;
 
-          // if (variable_conf[j].variable_title.Contains("N_Vertex"))
-          //   cout << l << ", x = " << x << ", ey_h = " << ey_h << ", variation_up = " << variation_up << ", ey_l = " << ey_l << ", variation_down = " << variation_down << endl;
+          // if (variable_conf[j].variable_title.Contains("N_BJets") && k == 7)
+          //   cout << syst_name[l] << ", k = " << k << ", x = " << x << ", ey_h = " << ey_h << ", variation_up = " << variation_up << ", ey_l = " << ey_l << ", variation_down = " << variation_down << endl;
         } // loop over n_syst
           // if (variable_conf[j].variable_title.Contains("N_Vertex"))
           // cout << "x = " << x << ", stat = " << stat_error << ", down = " << variation_down << ", up = " << variation_up << endl;
@@ -854,8 +852,8 @@ void Data_MC_Comparison::Envelope()
         gr_variation_merged_signal[i][j]->SetPoint(k, x, histo_signal->GetBinContent(bin));
         gr_variation_merged_signal[i][j]->SetPointError(k, 0, 0, variation_down_signal, variation_up_signal);
       } // loop over n_bin
-    }   // loop over n_variable
-  }     // loop over n_region
+    } // loop over n_variable
+  } // loop over n_region
 
   cout << "[Data_MC_Comparison::Envelope] Done" << endl;
 
@@ -1015,7 +1013,7 @@ void Data_MC_Comparison::Save()
 
       // canvas[i][j]->SaveAs(variable_name[j] + ".cpp");
     } // loop over n_variable
-  }   // loop over n_region
+  } // loop over n_region
 
   for (int i = 0; i < n_region; i++)
   {
@@ -1031,8 +1029,8 @@ void Data_MC_Comparison::Save()
 
         gr_variation[i][k][j]->Write();
       } // loop over n_syst-1
-    }   // loop over n_variable
-  }     // loop over n_region
+    } // loop over n_variable
+  } // loop over n_region
 
   fout->Close();
 
@@ -1067,8 +1065,8 @@ void Data_MC_Comparison::Setup_Histo_Data()
 
         variable_conf.push_back(conf);
       } // if
-    }   // n_variable
-  }     // n_region
+    } // n_variable
+  } // n_region
 
   n_region = region_name.size();
 
@@ -1095,9 +1093,9 @@ void Data_MC_Comparison::Setup_Histo_MC()
           // cout << histo_name << endl;
           histo_mc[i][j][k][l] = (TH1D *)fin->Get(histo_name);
         } // loop over n_variable
-      }   // loop over sample
-    }     // loop over n_syst
-  }       // loop over n_region
+      } // loop over sample
+    } // loop over n_syst
+  } // loop over n_region
 
   return;
 } // void Data_MC_Comparison::Setup_Histo_MC()
@@ -1148,35 +1146,35 @@ void Data_MC_Comparison::Stack_MC()
   stack_mc_signal = new THStack ***[n_region];
   for (int i = 0; i < n_region; i++)
   {
-     cout << "i = " << i << " " << region_name[i] << endl;
+    // cout << "i = " << i << " " << region_name[i] << endl;
 
     stack_mc[i] = new THStack **[n_syst];
     stack_mc_signal[i] = new THStack **[n_syst];
     for (int j = 0; j < n_syst; j++)
     {
-       cout << "j = " << j << " " << syst_name[j] << endl;
+      // cout << "j = " << j << " " << syst_name[j] << endl;
 
       stack_mc[i][j] = new THStack *[n_variable];
       stack_mc_signal[i][j] = new THStack *[n_variable];
       for (int k = 0; k < n_variable; k++)
       {
-         cout << "k = " << k << " " << variable_name[k] << endl;
+        // cout << "k = " << k << " " << variable_name[k] << endl;
 
         TString stack_name = region_name[i] + "_" + syst_name[j] + "_" + variable_name[k];
-         cout << stack_name << endl;
+        // cout << stack_name << endl;
 
         stack_mc[i][j][k] = new THStack(stack_name, stack_name);
         stack_mc_signal[i][j][k] = new THStack("Signal_" + stack_name, "Signal_" + stack_name);
 
         for (auto it = sample_name_order.begin(); it != sample_name_order.end(); it++)
         {
-           cout << it->second << " ";
+          // cout << it->second << " ";
 
           vector<int> vec_sample_index = Get_Histo_Group(it->second);
 
           for (unsigned int l = 0; l < vec_sample_index.size(); l++)
           {
-           cout << vec_sample_index[l] << " ";
+            // cout << vec_sample_index[l] << " ";
 
             histo_mc[i][j][vec_sample_index[l]][k]->SetLineColor(color[it->second]);
             histo_mc[i][j][vec_sample_index[l]][k]->SetLineWidth(2);
@@ -1243,13 +1241,13 @@ void Data_MC_Comparison::Stack_MC()
                 else
                   tl->AddEntry(histo_mc[i][j][vec_sample_index[0]][k], it->second, "f");
               } // if(chk_simple)
-            }   // else if (analyser == "Vcb_DL")
+            } // else if (analyser == "Vcb_DL")
           }
         }
 
       } // loop over n_variable
-    }   // loop over n_syst
-  }     // loop over n_region
+    } // loop over n_syst
+  } // loop over n_region
 
   cout << "[Data_MC_Comparison::Stack_MC] Done" << endl;
 
