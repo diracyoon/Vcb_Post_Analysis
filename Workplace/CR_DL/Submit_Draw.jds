@@ -1,0 +1,27 @@
+executable = Data_MC_Comparison.py
+jobbatchname = Data_MC_Comparison
+universe   = vanilla
+arguments  = -e $(Era) -ch $(Channel)
+log = condor.log
+getenv     = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+request_cpus = 1
+output = job_Data_MC_Comparison_$(Era)_$(Channel).log
+error = job_Data_MC_Comparison_$(Era)_$(Channel).err
+concurrency_limits = n1000.isyoon
+
+queue Era, Channel from(
+    #2016preVFP, MM
+    #2016preVFP, ME
+    #2016preVFP, EE
+    #2016postVFP, MM
+    #2016postVFP, ME
+    #2016postVFP, EE
+    2017, MM
+    2017, ME
+    2017, EE
+    #2018, MM
+    #2018, ME
+    #2018, EE
+)

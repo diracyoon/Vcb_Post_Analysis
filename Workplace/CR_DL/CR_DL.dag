@@ -1,0 +1,6 @@
+Job CR_DL Submit_CR_DL.jds
+Job Draw Submit_Draw.jds
+
+PARENT CR_DL CHILD Draw
+
+ABORT-DAG-ON Draw 1

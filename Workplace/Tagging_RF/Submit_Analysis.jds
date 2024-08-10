@@ -1,0 +1,47 @@
+executable = Tagging_RF.py
+jobbatchname = Tagging_RF
+universe   = vanilla
+arguments  = -e $(Era) -ch $(Channel) -index_split $(Index_Split) -n_split $(N_Split) -analysis
+log = condor.log
+getenv     = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+request_cpus = 5
+output = job_Tagging_RF_$(Era)_$(Channel)_$(Index_Split).log
+error = job_Tagging_RF_$(Era)_$(Channel)_$(Index_Split).err
+request_memory = 10*1024
+concurrency_limits = n1000.isyoon
+
+N_Split = 10
+
+Era = 2016preVFP
+Channel = Mu
+queue Index_Split from seq 0 9 |
+
+Era = 2016preVFP
+Channel = El
+queue Index_Split from seq 0 9 |
+
+Era = 2016postVFP
+Channel = Mu
+queue Index_Split from seq 0 9 |
+
+Era = 2016postVFP
+Channel = El
+queue Index_Split from seq 0 9 |
+
+Era = 2017
+Channel = Mu
+queue Index_Split from seq 0 9 |
+
+Era = 2017
+Channel = El
+queue Index_Split from seq 0 9 |
+
+Era = 2018
+Channel = Mu
+queue Index_Split from seq 0 9 |
+
+Era = 2018
+Channel = El
+queue Index_Split from seq 0 9 |
