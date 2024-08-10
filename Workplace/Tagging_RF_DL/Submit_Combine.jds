@@ -1,0 +1,20 @@
+executable = Tagging_RF_DL.py
+jobbatchname = Tagging_RF_DL
+universe   = vanilla
+arguments  = -e $(Era) -combine -tagger C
+log = condor.log
+getenv     = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+request_cpus = 1
+output = job_Tagging_RF_DL_Combine_$(Era).log
+error = job_Tagging_RF_DL_Combine_$(Era).err
+#request_memory = 10*1024
+concurrency_limits = n1100.isyoon
+
+queue Era from(
+    #2016preVFP
+    #2016postVFP
+    2017
+    #2018
+)

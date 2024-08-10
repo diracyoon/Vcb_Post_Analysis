@@ -1,0 +1,25 @@
+executable = Tagging_RF_DL.py
+jobbatchname = Tagging_RF_DL
+universe   = vanilla
+arguments  = -e $(Era) -ch $(Channel) -index_tree_type $(Index_Tree_Type) -analysis
+log = condor.log
+getenv     = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+request_cpus = 1
+request_memory = 5*1024
+output = job_Tagging_RF_DL_$(Era)_$(Channel)_$(Index_Tree_Type).log
+error = job_Tagging_RF_DL_$(Era)_$(Channel)_$(Index_Tree_Type).err
+concurrency_limits = n1100.isyoon
+
+Era = 2017
+Channel = MM
+queue Index_Tree_Type from seq 0 26 |
+
+Era = 2017
+Channel = ME
+queue Index_Tree_Type from seq 0 26 |
+
+Era = 2017
+Channel = EE
+queue Index_Tree_Type from seq 0 26 |
