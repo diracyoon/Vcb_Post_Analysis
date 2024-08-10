@@ -1,0 +1,45 @@
+executable = Histo_Syst.py
+jobbatchname = Vcb_Histo_Syst_2D
+universe   = vanilla
+arguments  = -e $(Era) -ch $(Channel) -index_tree_type $(Index_Tree_Type) -last_index_tree_type 50 -tagger C
+log = condor.log
+getenv     = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+request_cpus = 5
+request_memory = 10*1024
+output = job_2D_$(Era)_$(Channel)_$(Run_Flag).log
+error = job_2D_$(Era)_$(Channel)_$(Run_Flag).err
+concurrency_limits = n1000.isyoon
+
+Era = 2016preVFP
+Channel = Mu
+#queue Run_Flag from seq 0 30 | 
+
+Era = 2016preVFP
+Channel = El
+#queue Run_Flag from seq 0 30 |
+
+Era = 2016postVFP
+Channel = Mu
+#queue Run_Flag from seq 0 30 | 
+
+Era = 2016postVFP
+Channel = El
+#queue Run_Flag from seq 0 30 |
+
+Era = 2017
+Channel = Mu
+queue Index_Tree_Type from seq 0 49 | 
+
+Era = 2017
+Channel = El
+queue Index_Tree_Type from seq 0 49 |
+
+Era = 2018
+Channel = Mu
+#queue Run_Flag from seq 0 30 | 
+
+Era = 2018
+Channel = El
+#queue Run_Flag from seq 0 30 |

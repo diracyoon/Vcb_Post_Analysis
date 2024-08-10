@@ -1,0 +1,24 @@
+executable = Histo_Syst.py
+jobbatchname = Vcb_Histo_Syst_Data_Driven
+universe   = vanilla
+arguments  = -e $(Era) -ch $(Channel) -data_driven 1 -tagger C
+log = condor.log
+getenv     = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+request_cpus = 1
+request_memory = 10*1024
+output = job_Data_Driven_$(Era)_$(Channel).log
+error = job_Data_Driven_$(Era)_$(Channel).err
+concurrency_limits = n1000.isyoon
+
+queue Era, Channel from(
+    #2016preVFP, Mu
+    #2016preVFP, El
+    #2016postVFP, Mu
+    #2016postVFP, El
+    2017, Mu
+    2017, El
+    #2018, Mu
+    #2018, El
+) 

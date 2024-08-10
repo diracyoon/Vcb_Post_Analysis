@@ -1,0 +1,18 @@
+Job 2D Submit_2D.jds
+Job Cal_TF Submit_Cal_TF.jds
+Job Hadd Submit_Hadd.jds
+Job Data_Driven Submit_Data_Driven.jds
+Job Merge_Pdf_Error Submit_Merge_Pdf_Error.jds
+Job Draw Submit_Draw.jds
+
+PARENT 2D CHILD Hadd
+PARENT Hadd CHILD Data_Driven
+PARENT Cal_TF CHILD Data_Driven
+PARENT Data_Driven CHILD Merge_Pdf_Error
+PARENT Merge_Pdf_Error CHILD Draw
+
+ABORT-DAG-ON 2D 1
+ABORT-DAG-ON Cal_TF 1
+ABORT-DAG-ON Hadd 1
+ABORT-DAG-ON Data_Driven 1
+ABORT-DAG-ON Merge_Pdf_Error 1
