@@ -4,7 +4,7 @@ ClassImp(Histo_Syst);
 
 //////////
 
-Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TString &a_mode, const TString &a_run_flag, const TString &a_tagger, const TString &a_swap_mode)
+Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TString &a_mode, const int &a_index_tree_type, const int &a_last_index_tree_type, const TString &a_tagger, const TString &a_swap_mode)
     : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
 {
   ROOT::EnableImplicitMT(5);
@@ -13,21 +13,64 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
   cout << "[Histo_Syst::Histo_Syst]: Init analysis" << endl;
 
   debug = false;
-  reduction = 1;
+
+  reduction = 1000;
 
   era = a_era;
   channel = a_channel;
   mode = a_mode;
-  run_flag = a_run_flag;
+  index_tree_type = a_index_tree_type;
+  last_index_tree_type = a_last_index_tree_type;
   tagger = a_tagger;
 
   cout << "[Histo_Syst::Histo_Syst]: mode = " << mode << endl;
 
+  if (era.Contains("2016"))
+    year = "2016";
+  else
+    year = era;
+
+  chk_rf_tthf_breakdown = false;
+  chk_jes_breakdown = false;
+
+  // syst_tree
+  vec_tree_type = {"Data",
+                   "UEDown", "UEUp",
+                   "JetResDown", "JetResUp",
+                   "JetEnDown", "JetEnUp",
+                   "CP5Down", "CP5Up",
+                   "hdampDown", "hdampUp",
+                   "mtop171p5", "mtop173p5"};
+
+  if (chk_jes_breakdown == true)
+  {
+    vector<TString> vec_tree_type_jes_breakdown = {"JetEnAbsoluteDown", "JetEnAbsoluteUp",
+                                                   "JetEnBBEC1Down", "JetEnBBEC1Up",
+                                                   "JetEnEC2Down", "JetEnEC2Up",
+                                                   "JetEnFlavorQCDDown", "JetEnFlavorQCDUp",
+                                                   "JetEnHFDown", "JetEnHFUp",
+                                                   "JetEnRelativeBalDown", "JetEnRelativeBalUp"};
+
+    vector<TString> vec_tree_type_jes_breakdown_year = {"JetEnAbsolute", "JetEnBBEC1", "JetEnEC2", "JetEnHF", "JetEnRelativeSample"};
+    for (unsigned int i = 0; i < vec_tree_type_jes_breakdown_year.size(); i++)
+    {
+      vec_tree_type_jes_breakdown.push_back(vec_tree_type_jes_breakdown_year[i] + year + "Down");
+      vec_tree_type_jes_breakdown.push_back(vec_tree_type_jes_breakdown_year[i] + year + "Up");
+    }
+
+    vec_tree_type.insert(vec_tree_type.end(), vec_tree_type_jes_breakdown.begin(), vec_tree_type_jes_breakdown.end());
+  } // if (chk_jes_breakdown == true)
+
+  // Central should be the last
+  vec_tree_type.push_back("Central");
+
+  n_tree_type = vec_tree_type.size();
+
   chk_cut_best_mva_score_pre = false;
   if (chk_cut_best_mva_score_pre)
-    cut_best_mva_score_pre = 0.0;
+    cut_best_mva_score_pre = 0.2;
   else
-    cut_best_mva_score_pre = -1;
+    cut_best_mva_score_pre = 0;
 
   chk_cut_template_score = false;
   if (chk_cut_template_score)
@@ -65,7 +108,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
   abcd_region_name = {"A", "B", "C", "D"};
 
   // Signal should be last
-  region_name = {"Control0", "Signal"};
+  region_name = {"TwoB", "ThreeB_CR", "Signal"};
   n_region = region_name.size();
 
   if (mode == "Cal_TF")
@@ -77,6 +120,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
     Init_Histo_TF();
     Read_Tree();
     Calculate_TF();
+    Draw_TF();
   }
   else if (mode == "2D")
   {
@@ -116,6 +160,10 @@ Histo_Syst::~Histo_Syst()
 
   if (mode == "Cal_TF")
   {
+    // output file
+    TString fout_name = "Vcb_TF_" + era + "_" + channel + ".root";
+    fout = new TFile(fout_name, "RECREATE");
+
     // save raw histo
     for (int i = 0; i < n_region; i++)
     {
@@ -151,13 +199,32 @@ Histo_Syst::~Histo_Syst()
       histo_tf[i]->SetTitle("TF");
       histo_tf[i]->SetName("TF");
       histo_tf[i]->Write();
+
+      histo_tf_qcd_mc[i]->SetTitle("TF_QCD_Sample");
+      histo_tf_qcd_mc[i]->SetName("TF_QCD_Sample");
+      histo_tf_qcd_mc[i]->Write();
     } // loop over n_region
 
     cout << "[Histo_Syst::~Histo_Syst]: Closing root file" << endl;
     fout->Close();
   } //  if (mode == "Cal_TF")
+
   else if (mode == "2D")
   {
+    // output file
+    TString fout_name = "Vcb_2D_" + era + "_" + channel + "_";
+    if (index_tree_type != -1)
+    {
+      if (vec_tree_type[0] == "Central")
+        fout_name += "Central" + to_string(index_split) + to_string(n_split);
+      else
+        fout_name += vec_tree_type[0];
+    }
+    else
+      fout_name += "All";
+    fout_name += ".root";
+    fout = new TFile(fout_name, "RECREATE");
+
     // Save histos
     for (int i = 0; i < n_abcd_region; i++)
     {
@@ -174,11 +241,12 @@ Histo_Syst::~Histo_Syst()
 
         TDirectory *dir_region = dir_abcd_region->mkdir(region_name[j]);
 
-        if ((run_flag == "Data" || run_flag == "All") && (abcd_region_name[i] != "D" || region_name[j] != "Signal"))
+        // for Data
+        // if (find(vec_tree_type.begin(), vec_tree_type.end(), "Data") != vec_tree_type.end() && (abcd_region_name[i] != "D" || region_name[j] != "Signal"))
+        if (find(vec_tree_type.begin(), vec_tree_type.end(), "Data") != vec_tree_type.end())
         {
           cout << "Data" << endl;
 
-          // for Data
           TDirectory *dir_data = dir_region->mkdir("Data");
           for (int k = 0; k < n_variable; k++)
           {
@@ -187,15 +255,33 @@ Histo_Syst::~Histo_Syst()
             histo_data[i - 2][j][k]->SetName(variable_conf[k].variable_title);
             histo_data[i - 2][j][k]->Write();
           } // loop over variable
-        }
+        } // if (find(vec_tree_type.begin(), vec_tree_type.end(), "Data") != vec_tree_type.end())
 
         // for MC
         for (int k = 0; k < n_syst; k++)
         {
-          cout << "syst_name = " << syst_name[k] << endl;
+          if (syst_name[k] == "Jet_Res_Down" || syst_name[k] == "Jet_Res_Up" ||
+              syst_name[k] == "UE_Down" || syst_name[k] == "UE_Up" ||
+              syst_name[k] == "El_En_Down" || syst_name[k] == "El_En_Up" ||
+              syst_name[k] == "El_Res_Down" || syst_name[k] == "El_Res_Up" ||
+              syst_name[k] == "CP5_Down" || syst_name[k] == "CP5_Up" ||
+              syst_name[k] == "hdamp_Down" || syst_name[k] == "hdamp_Up" ||
+              syst_name[k] == "mtop_171p5" || syst_name[k] == "mtop_173p5" ||
+              syst_name[k].Contains("Jet_En"))
+          {
+            TString temp = syst_name[k];
+            temp.ReplaceAll("_", "");
 
-          if (run_flag != "All" && run_flag != "Central" && run_flag != syst_name[k])
-            continue;
+            if (find(vec_tree_type.begin(), vec_tree_type.end(), temp) == vec_tree_type.end())
+              continue;
+          }
+          else
+          {
+            if (find(vec_tree_type.begin(), vec_tree_type.end(), "Central") == vec_tree_type.end())
+              continue;
+          }
+
+          cout << "syst_name = " << syst_name[k] << endl;
 
           TDirectory *dir_syst = dir_region->mkdir(syst_name[k]);
 
@@ -222,41 +308,25 @@ Histo_Syst::~Histo_Syst()
 
     cout << "[Histo_Syst::~Histo_Syst]: Closing root file" << endl;
     fout->Close();
-  } //  if (mode=="Fill")
+  } // else if (mode == "2D")
 
   else if (mode == "Data_Driven")
   {
-    // cout << "[Histo_Syst::~Histo_Syst]: Updating subtracted histograms" << endl;
-    // // Update subtracted histo
-    // for (int i = 0; i < n_region; i++)
-    // {
-    //   for (int j = 0; j < n_syst; j++)
-    //   {
-    //     TDirectory *dir = (TDirectory *)fin_2d->Get("C/" + region_name[i] + "/" + syst_name[j]);
-    //     TDirectory *dir_sub = dir->mkdir("Subtracted", "Subtracted", true);
-
-    //     dir_sub->cd();
-    //     for (int k = 0; k < n_variable; k++)
-    //     {
-    //       histo_subtracted_data_driven[i][j][k]->SetTitle(variable_conf[k].variable_title);
-    //       histo_subtracted_data_driven[i][j][k]->SetName(variable_conf[k].variable_title);
-    //       histo_subtracted_data_driven[i][j][k]->Write();
-    //     } // loop over n_variable
-    //   }   // loop over n_syst
-    // }     // loop over n_region
-    // cout << "[Histo_Syst::~Histo_Syst]: Updating subtracted histograms. Done." << endl;
-
     cout << "[Histo_Syst::~Histo_Syst]: Writing fout." << endl;
+
+    TString fout_name = "Vcb_Histos_" + era + "_" + channel + ".root";
+    fout = new TFile(fout_name, "RECREATE");
+
     for (int i = 0; i < n_region; i++)
     {
-      cout << region_name[i] << endl;
+      // cout << region_name[i] << endl;
 
       TDirectory *dir_region = fout->mkdir(region_name[i]);
 
       // MC
       for (int j = 0; j < n_syst; j++)
       {
-        cout << "\t" << syst_name[j] << endl;
+        // cout << "\t" << syst_name[j] << endl;
 
         TDirectory *dir_syst = dir_region->mkdir(syst_name[j]);
         for (int k = 0; k < n_sample_merge_mc; k++)
@@ -337,23 +407,20 @@ Histo_Syst::~Histo_Syst()
       } // loop over n_variable
 
       // Data
-      if (region_name[i] != "Signal")
+      cout << "\tData" << endl;
+
+      TDirectory *dir_data = dir_region->mkdir("Data");
+      dir_data->cd();
+      for (int j = 0; j < n_variable; j++)
       {
-        cout << "\tData" << endl;
-
-        TDirectory *dir_data = dir_region->mkdir("Data");
-        dir_data->cd();
-        for (int j = 0; j < n_variable; j++)
-        {
-          TH1D *histo_proj = (TH1D *)(dynamic_cast<TH2D *>(histo_data_dd[1][i][j])->ProjectionX()->Clone());
-          histo_proj->SetTitle(variable_conf[j].variable_title);
-          histo_proj->SetName(variable_conf[j].variable_title);
-          histo_proj->Write();
-        } // loop over n_variable
-      } // if(region_name[i]!="Signal")
+        TH1D *histo_proj = (TH1D *)(dynamic_cast<TH2D *>(histo_data_dd[1][i][j])->ProjectionX()->Clone());
+        histo_proj->SetTitle(variable_conf[j].variable_title);
+        histo_proj->SetName(variable_conf[j].variable_title);
+        histo_proj->Write();
+      } // loop over n_variable
     } // loop over n_reigon
-    cout << "[Histo_Syst::~Histo_Syst]: Writing fout. Done." << endl;
 
+    cout << "[Histo_Syst::~Histo_Syst]: Writing fout. Done." << endl;
     cout << "[Histo_Syst::~Histo_Syst]: Closing root file" << endl;
 
     fin_2d->Close();
@@ -362,6 +429,7 @@ Histo_Syst::~Histo_Syst()
 
     cout << "[Histo_Syst::~Histo_Syst]: Closing root file. Done." << endl;
   }
+
   // PDF error set
   else
   {
@@ -426,8 +494,20 @@ void Histo_Syst::Calculate_TF()
     } // loop over n_region
   } // loop over n_abcd_region-2
 
+  // TF from QCD sample
+  int index_syst_nominal = find(syst_name.begin(), syst_name.end(), "Nominal") - syst_name.begin();
+  int index_qcd = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), "QCD_bEn") - vec_short_name_mc.begin();
+
   for (int i = 0; i < 2; i++)
+  {
     histo_tf[i]->Divide(histo_subtracted_tf[1][i], histo_subtracted_tf[0][i]);
+
+    histo_mc[1][i][index_syst_nominal][index_qcd][0]->Rebin(2);
+    histo_mc[0][i][index_syst_nominal][index_qcd][0]->Rebin(2);
+    histo_tf_qcd_mc[i]->Rebin(2);
+
+    histo_tf_qcd_mc[i]->Divide(histo_mc[1][i][index_syst_nominal][index_qcd][0], histo_mc[0][i][index_syst_nominal][index_qcd][0]);
+  }
 
   cout << "[Histo_Syst::Calculate_TF]: Done" << endl;
 
@@ -499,16 +579,35 @@ void Histo_Syst::Config_Syst()
                    "Pileup_Down", "Pileup_Up",
                    "PU_Jet_Veto_Down", "PU_Jet_Veto_Up",
                    "Prefire_Down", "Prefire_Up",
-                   "MuF_TT_Down", "MuF_TT_Up", "MuF_ST_Down", "MuF_ST_Up",
-                   "MuR_TT_Down", "MuR_TT_Up", "MuR_ST_Down", "MuR_ST_Up",
+                   "MuF_TT_Down", "MuF_TT_Up", "MuF_ST_Down", "MuF_ST_Up", "MuF_WJets_Down", "MuF_WJets_Up", "MuF_DYJets_Down", "MuF_DYJets_Up",
+                   "MuR_TT_Down", "MuR_TT_Up", "MuR_ST_Down", "MuR_ST_Up", "MuR_WJets_Down", "MuR_WJets_Up", "MuR_DYJets_Down", "MuR_DYJets_Up",
                    //"MuF_MuR_Down", "MuR_MuR_Up",
                    "FSR_Down", "FSR_Up",
-                   "ISR_TT_Down", "ISR_TT_Up", "ISR_ST_Down", "ISR_ST_Up",
+                   "ISR_TT_Down", "ISR_TT_Up", "ISR_ST_Down", "ISR_ST_Up", "ISR_WJets_Down", "ISR_WJets_Up", "ISR_DYJets_Down", "ISR_DYJets_Up",
                    "Top_Pt_Reweight",
                    "Trig_Down", "Trig_Up",
                    "CP5_Down", "CP5_Up",
-                   "hDamp_Down", "hDamp_Up",
-                   "mTop_171p5", "mTop_173p5"};
+                   "hdamp_Down", "hdamp_Up",
+                   "mtop_171p5", "mtop_173p5"};
+
+      if (chk_jes_breakdown == true)
+      {
+        vector<TString> syst_name_jes_breakdown = {"Jet_En_Absolute_Down", "Jet_En_Absolute_Up",
+                                                   "Jet_En_BBEC1_Down", "Jet_En_BBEC1_Up",
+                                                   "Jet_En_EC2_Down", "Jet_En_EC2_Up",
+                                                   "Jet_En_FlavorQCD_Down", "Jet_En_FlavorQCD_Up",
+                                                   "Jet_En_HF_Down", "Jet_En_HF_Up",
+                                                   "Jet_En_RelativeBal_Down", "Jet_En_RelativeBal_Up"};
+
+        vector<TString> syst_name_jes_breakdown_year = {"Jet_En_Absolute", "Jet_En_BBEC1", "Jet_En_EC2", "Jet_En_HF", "Jet_En_RelativeSample"};
+        for (unsigned int i = 0; i < syst_name_jes_breakdown_year.size(); i++)
+        {
+          syst_name_jes_breakdown.push_back(syst_name_jes_breakdown_year[i] + year + "_Down");
+          syst_name_jes_breakdown.push_back(syst_name_jes_breakdown_year[i] + year + "_Up");
+        }
+
+        syst_name.insert(syst_name.end(), syst_name_jes_breakdown.begin(), syst_name_jes_breakdown.end());
+      }
 
       if (tagger == "B")
       {
@@ -578,6 +677,8 @@ void Histo_Syst::Config_Syst()
   } // else
 
   n_syst = syst_name.size();
+  // for (int i = 0; i < n_syst; i++)
+  //   cout << syst_name[i] << endl;
   cout << "N_Syst = " << n_syst << endl;
 
   return;
@@ -587,9 +688,19 @@ void Histo_Syst::Config_Syst()
 
 void Histo_Syst::Config_Variable()
 {
+  if (channel == "Mu")
+    bin_tf = {-1 * MUON_ETA, -1.479, 0, 1.479, MUON_ETA};
+  // bin_tf = {-1 * MUON_ETA, MUON_ETA};
+  else if (channel == "El")
+    bin_tf = {-1 * ELECTRON_ETA, -1.479, 0, 1.479, ELECTRON_ETA};
+
+  bin_template_mva_score[0] = {0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.5, 1};
+  bin_template_mva_score[1] = {0, 0.02, 0.06, 0.10, 0.15, 0.20, 0.3, 0.45, threeb_cr_cut};
+  bin_template_mva_score[2] = {threeb_cr_cut, 0.85, 0.90, 0.92, 0.94, 0.96, 0.98, 1};
+
   if (mode == "Cal_TF")
   {
-    variable_conf = {{"Lepton_Eta", histo_tf_n_bin, histo_tf_x_low, histo_tf_x_up}};
+    variable_conf = {{"Lepton_Eta"}};
   }
   else
   {
@@ -598,40 +709,41 @@ void Histo_Syst::Config_Variable()
     else
     {
       variable_conf = {{"N_Vertex", 40, 0, 80},
-                       {"Lepton_Pt", 50, 0, 300},
+                       {"Lepton_Pt", 50, 0, 400},
                        {"Lepton_Eta", 30, -3, 3},
-                       {"N_Jets", 30, 0, 30},
-                       {"N_BJets", 30, 0, 30},
-                       {"N_CJets", 30, 0, 30},
-                       {"Pt_Leading_Jet", 50, 0, 300},
-                       {"Pt_Subleading_Jet", 50, 0, 300},
+                       {"N_Jets", 20, 0, 20},
+                       {"N_BJets", 10, 0, 10},
+                       {"N_CJets", 15, 0, 15},
+                       {"Pt_Leading_Jet", 50, 0, 400},
+                       {"Pt_Subleading_Jet", 50, 0, 400},
                        {"Eta_Leading_Jet", 50, -3, 3},
                        {"Eta_Subleading_jet", 50, -3, 3},
-                       {"BvsC_Leading_Jet", 50, 0, 1},
-                       {"CvsB_Leading_Jet", 50, 0, 1},
-                       {"CvsL_Leading_Jet", 50, 0, 1},
-                       {"BvsC_Subleading_Jet", 50, 0, 1},
-                       {"CvsB_Subleading_Jet", 50, 0, 1},
-                       {"CvsL_Subleading_Jet", 50, 0, 1},
-                       {"Met_Pt", 50, 0, 300},
-                       {"Met_Phi", 80, -4, 4},
-                       {"Best_MVA_Score_Pre", 100, -1, 1},
-                       {"Best_MVA_Score", 100, -1, 1},
-                       {"Had_T", 100, 70, 270},
-                       {"Had_W", 60, 20, 140},
-                       {"Lep_T", 100, 70, 270},
-                       {"Lep_W", 60, 20, 140},
-                       {"BvsC_W_u", 50, 0, 1},
-                       {"CvsB_W_u", 50, 0, 1},
-                       {"CvsL_W_u", 50, 0, 1},
-                       {"BvsC_W_d", 50, 0, 1},
-                       {"CvsB_W_d", 50, 0, 1},
-                       {"CvsL_W_d", 50, 0, 1},
-                       {"Template_MVA_Score", 100, 0, 1}};
+                       {"BvsC_Leading_Jet", 25, 0, 1},
+                       {"CvsB_Leading_Jet", 25, 0, 1},
+                       {"CvsL_Leading_Jet", 25, 0, 1},
+                       {"BvsC_Subleading_Jet", 25, 0, 1},
+                       {"CvsB_Subleading_Jet", 25, 0, 1},
+                       {"CvsL_Subleading_Jet", 25, 0, 1},
+                       {"Met_Pt", 50, 0, 400},
+                       {"Met_Phi", 40, -4, 4},
+                       {"Best_MVA_Score_Pre", 25, 0, 1},
+                       {"Best_MVA_Score", 25, 0, 1},
+                       {"Had_T", 50, 70, 270},
+                       {"Had_W", 50, 30, 130},
+                       {"Lep_T", 50, 70, 270},
+                       {"Lep_W", 50, 30, 130},
+                       {"BvsC_W_u", 25, 0, 1},
+                       {"CvsB_W_u", 25, 0, 1},
+                       {"CvsL_W_u", 25, 0, 1},
+                       {"BvsC_W_d", 25, 0, 1},
+                       {"CvsB_W_d", 25, 0, 1},
+                       {"CvsL_W_d", 25, 0, 1},
+                       {"Template_MVA_Score"}};
     } // else
   } // else
 
   n_variable = variable_conf.size();
+  cout << "Variable Size = " << n_variable << endl;
 
   return;
 } // void Histo_Syst::Config_Variable()
@@ -663,38 +775,46 @@ void Histo_Syst::Data_Driven()
       } // loop over n_variable
     } // loop over n_syst
   } // loop over n_region
-  cout << "test test " << endl;
+
   // apply TF
   for (int i = 0; i < n_region; i++)
   {
-    cout << region_name[i] << endl;
+    // cout << region_name[i] << endl;
     for (int j = 0; j < n_syst; j++)
     {
-      cout << syst_name[j] << endl;
+      // cout << syst_name[j] << endl;
       for (int k = 0; k < n_variable; k++)
       {
-        cout << variable_conf[k].variable_title << endl;
-        for (int l = 0; l < variable_conf[k].n_bin; l++)
-        {
-          cout << "l = " << l << endl;
+        // cout << variable_conf[k].variable_title << endl;
 
-          for (int m = 0; m < histo_tf_n_bin; m++)
+        int n_bin;
+        if (variable_conf[k].chk_equal_interval == false)
+          n_bin = bin_template_mva_score[i].size() - 1;
+        else
+          n_bin = variable_conf[k].n_bin;
+
+        for (int l = 0; l < n_bin; l++)
+        {
+          // cout << "l = " << l << endl;
+
+          for (int m = 0; m < bin_tf.size() - 1; m++)
           {
-            cout << "m = " << m << endl;
+            // cout << "m = " << m << endl;
 
             float content = histo_subtracted_data_driven[i][j][k]->GetBinContent(l + 1, m + 1);
             float error = histo_subtracted_data_driven[i][j][k]->GetBinError(l + 1, m + 1);
-            cout << "test 0" << endl;
-            cout << "test 0 " << histo_tf[i] << endl;
-            float tf = histo_tf[i]->GetBinContent(m + 1);
-            float tf_error = histo_tf[i]->GetBinError(m + 1);
-            cout << "test 1" << endl;
+
+            // float tf = histo_tf[i]->GetBinContent(m + 1);
+            // float tf_error = histo_tf[i]->GetBinError(m + 1);
+            float tf = histo_tf_combine->GetBinContent(m + 1);
+            float tf_error = histo_tf_combine->GetBinError(m + 1);
+
             float tf_up = tf + tf_error;
             float tf_down = tf - tf_error;
-            cout << "test 2" << endl;
+
             if (content < 0)
               content = 0;
-            cout << "test 3" << endl;
+
             histo_tf_corrected[i][j][k]->SetBinContent(l + 1, m + 1, content * tf);
             histo_tf_corrected[i][j][k]->SetBinError(l + 1, m + 1, error * tf);
 
@@ -708,7 +828,6 @@ void Histo_Syst::Data_Driven()
               histo_tf_corrected_down[i][k]->SetBinContent(l + 1, m + 1, content * tf_down);
               histo_tf_corrected_down[i][k]->SetBinError(l + 1, m + 1, error * tf_down);
             } // nominal
-            cout << "test 4" << endl;
           } // loop over tf_n_bin
         } // loop over n_bin
       } // loop over n_variable
@@ -722,6 +841,51 @@ void Histo_Syst::Data_Driven()
 
 //////////
 
+void Histo_Syst::Draw_TF()
+{
+  cout << "[Histo_Syst::Draw_TF]: Init" << endl;
+
+  TCanvas **canvas = new TCanvas *[n_region];
+  TLegend **tl = new TLegend *[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    canvas[i] = new TCanvas("", "", 800, 500);
+    canvas[i]->Draw();
+
+    double max = histo_tf[i]->GetMaximum();
+    max = max > histo_tf_qcd_mc[i]->GetMaximum() ? max : histo_tf_qcd_mc[i]->GetMaximum();
+    max *= 1.1;
+
+    double min = histo_tf[i]->GetMinimum();
+    min = min < histo_tf_qcd_mc[i]->GetMinimum() ? min : histo_tf_qcd_mc[i]->GetMinimum();
+    min *= 0.9;
+
+    histo_tf[i]->GetXaxis()->SetTitle("Lepton #eta");
+    histo_tf[i]->GetYaxis()->SetRangeUser(min, max);
+    histo_tf[i]->SetLineColor(4);
+    histo_tf[i]->SetMarkerColor(4);
+    histo_tf[i]->Draw();
+
+    histo_tf_qcd_mc[i]->SetLineColor(2);
+    histo_tf_qcd_mc[i]->SetMarkerColor(2);
+    histo_tf_qcd_mc[i]->Draw("SAME");
+
+    tl[i] = new TLegend(0.7, 0.7, 0.9, 0.9);
+    tl[i]->AddEntry(histo_tf[i], "TF", "lep");
+    tl[i]->AddEntry(histo_tf_qcd_mc[i], "TF QCD bEn MC Sample", "lep");
+    tl[i]->Draw("SAME");
+
+    TString canvas_name = "Transfer_Function_" + region_name[i] + "_" + era + "_" + channel + ".png";
+    canvas[i]->Print(canvas_name, "png");
+  } // TCanvas *canvas = new TCanvas *[n_region];
+
+  cout << "[Histo_Syst::Draw_TF]: Done" << endl;
+
+  return;
+} // void Histo_Syst::Draw_TF()
+
+//////////
+
 void Histo_Syst::Fill_Histo_Data()
 {
   int abcd_region_index = Set_ABCD_Region();
@@ -729,10 +893,6 @@ void Histo_Syst::Fill_Histo_Data()
 
   // to save time
   if (mode == "2D" && (abcd_region_name[abcd_region_index] == "A" || abcd_region_name[abcd_region_index] == "B"))
-    return;
-
-  // for blind
-  if (abcd_region_name[abcd_region_index] == "D" && region_name[region_index] == "3B")
     return;
 
   // this part is not satisfactory, but don't waste time
@@ -776,7 +936,15 @@ void Histo_Syst::Fill_Histo_Data()
       dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][27])->Fill(event.bvsc_w_d, event.lepton_eta, 1.);
       dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][28])->Fill(event.cvsb_w_d, event.lepton_eta, 1.);
       dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][29])->Fill(event.cvsl_w_d, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][30])->Fill(event.template_score, event.lepton_eta, 1);
+
+      // for blind
+      if (abcd_region_name[abcd_region_index] == "D")
+      {
+        if (region_name[region_index] != "Signal")
+          dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][30])->Fill(event.template_score, event.lepton_eta, 1);
+      }
+        else
+          dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][30])->Fill(event.template_score, event.lepton_eta, 1);
     } // else
   } // else
 
@@ -785,7 +953,7 @@ void Histo_Syst::Fill_Histo_Data()
 
 //////////
 
-void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &syst_fix)
+void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &sample_name_short, const TString &tree_type)
 {
   // int sample_index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name) - vec_short_name_mc.begin();
   int abcd_region_index = Set_ABCD_Region();
@@ -795,10 +963,11 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &syst_f
   if (mode == "2D" && (abcd_region_name[abcd_region_index] == "A" || abcd_region_name[abcd_region_index] == "B"))
     return;
 
-  int histo_index = Histo_Index(sample_name);
+  int histo_index = Histo_Index(sample_name_short);
   TString histo_name_rf = Histo_Name_RF(sample_name);
 
   float weight_ckm = Reweight_CKM(sample_name);
+  float weight_tthf = Reweight_TTHF(sample_name_short);
 
   // cout << "test " << sample_name << " " << sample_index << " " << histo_name_rf << endl;
 
@@ -807,20 +976,26 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &syst_f
     TString syst_type = syst_name[i];
 
     // for central tree, don't consider the following syst
-    if (syst_fix == "None" &&
-        (syst_type == "Jet_En_Down" || syst_type == "Jet_En_Up" ||
-         syst_type == "Jet_Res_Down" || syst_type == "Jet_Res_Up" ||
-         syst_type == "El_En_Down" || syst_type == "El_En_Up" ||
-         syst_type == "El_Res_Down" || syst_type == "El_Res_Up" ||
-         syst_type == "UE_Down" || syst_type == "UE_Up" ||
-         syst_type == "CP5_Down" || syst_type == "CP5_Up" ||
-         syst_type == "hDamp_Down" || syst_type == "hDamp_Up" ||
-         syst_type == "mTop_171p5" || syst_type == "mTop_173p5"))
-      continue;
+    if (tree_type == "Central")
+    {
+      if (syst_type == "Jet_Res_Down" || syst_type == "Jet_Res_Up" ||
+          syst_type == "El_En_Down" || syst_type == "El_En_Up" ||
+          syst_type == "El_Res_Down" || syst_type == "El_Res_Up" ||
+          syst_type == "UE_Down" || syst_type == "UE_Up" ||
+          syst_type == "CP5_Down" || syst_type == "CP5_Up" ||
+          syst_type == "hdamp_Down" || syst_type == "hdamp_Up" ||
+          syst_type == "mtop_171p5" || syst_type == "mtop_173p5" ||
+          syst_type.Contains("Jet_En"))
+        continue;
+    }
 
-    // if syst_fix is fixed, only nominal is considered
-    if (syst_fix != "None" && syst_fix != syst_type)
-      continue;
+    // if syst_fix is fixed, consider only the corresponding tree
+    else
+    {
+      TString temp = syst_type;
+      if (tree_type != temp.ReplaceAll("_", ""))
+        continue;
+    }
 
     event.weight = 1;
     event.weight *= event.weight_lumi;
@@ -829,6 +1004,9 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &syst_f
 
     // ckm reweight
     event.weight *= weight_ckm;
+
+    // tt+hf reweight
+    event.weight *= weight_tthf;
 
     if (syst_type == "PDF_Alternative")
       event.weight *= event.weight_pdf_alternative;
@@ -853,40 +1031,53 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &syst_f
       event.weight *= event.weight_pdf_as_up;
 
     // parton shower
-    if (syst_type == "FSR_Down" && (sample_name.Contains("TT") || sample_name.Contains("ST")))
+    if (syst_type == "FSR_Down" && (sample_name.Contains("TT") || sample_name.Contains("SingleTop")))
       event.weight *= event.weight_ps[0];
-    else if (syst_type == "FSR_Up" && (sample_name.Contains("TT") || sample_name.Contains("ST")))
+    else if (syst_type == "FSR_Up" && (sample_name.Contains("TT") || sample_name.Contains("SingleTop")))
       event.weight *= event.weight_ps[1];
-    else if (syst_type == "ISR_TT_Down" && sample_name.Contains("TT"))
-      event.weight *= event.weight_ps[2];
-    else if (syst_type == "ISR_TT_Up" && sample_name.Contains("TT"))
-      event.weight *= event.weight_ps[3];
-    else if (syst_type == "ISR_ST_Down" && sample_name.Contains("ST"))
-      event.weight *= event.weight_ps[2];
-    else if (syst_type == "ISR_ST_Up" && sample_name.Contains("ST"))
-      event.weight *= event.weight_ps[3];
+    else if (syst_type.Contains("ISR") &&
+             ((syst_type.Contains("TT") && sample_name.Contains("TT")) ||
+              (syst_type.Contains("ST") && sample_name.Contains("SingleTop")) ||
+              (syst_type.Contains("WJets") && sample_name.Contains("WJets")) ||
+              (syst_type.Contains("DYJets") && sample_name.Contains("DYJets"))))
+    {
+      if (syst_type.Contains("Down"))
+        event.weight *= event.weight_ps[2];
+      else if (syst_type.Contains("Up"))
+        event.weight *= event.weight_ps[3];
+    }
 
     // scale variation
-    if (syst_type == "MuF_TT_Down" && sample_name.Contains("TT"))
-      event.weight *= event.weight_scale_variation_2;
-    else if (syst_type == "MuF_TT_Up" && sample_name.Contains("TT"))
-      event.weight *= event.weight_scale_variation_1;
-    else if (syst_type == "MuF_ST_Down" && sample_name.Contains("ST"))
-      event.weight *= event.weight_scale_variation_2;
-    else if (syst_type == "MuF_ST_Up" && sample_name.Contains("ST"))
-      event.weight *= event.weight_scale_variation_1;
-    else if (syst_type == "MuR_TT_Down" && sample_name.Contains("TT"))
-      event.weight *= event.weight_scale_variation_6;
-    else if (syst_type == "MuR_TT_Up" && sample_name.Contains("TT"))
-      event.weight *= event.weight_scale_variation_3;
-    else if (syst_type == "MuR_ST_Down" && sample_name.Contains("ST"))
-      event.weight *= event.weight_scale_variation_6;
-    else if (syst_type == "MuR_ST_Up" && sample_name.Contains("ST"))
-      event.weight *= event.weight_scale_variation_3;
-    else if (syst_type == "MuF_MuR_Down")
+    if (syst_type == "MuF_MuR_Down")
       event.weight *= event.weight_scale_variation_8;
     else if (syst_type == "MuF_MuR_Up")
       event.weight *= event.weight_scale_variation_4;
+    else if (syst_type.Contains("MuF") &&
+             ((syst_type.Contains("TT") && sample_name.Contains("TT")) ||
+              (syst_type.Contains("ST") && sample_name.Contains("SingleTop")) ||
+              (syst_type.Contains("WJets") && sample_name.Contains("WJets")) ||
+              (syst_type.Contains("DYJets") && sample_name.Contains("DYJets"))))
+    {
+      if (syst_type.Contains("Down"))
+      {
+        event.weight *= event.weight_scale_variation_2;
+      }
+      else if (syst_type.Contains("Up"))
+      {
+        event.weight *= event.weight_scale_variation_1;
+      }
+    }
+    else if (syst_type.Contains("MuR") &&
+             ((syst_type.Contains("TT") && sample_name.Contains("TT")) ||
+              (syst_type.Contains("ST") && sample_name.Contains("SingleTop")) ||
+              (syst_type.Contains("WJets") && sample_name.Contains("WJets")) ||
+              (syst_type.Contains("DYJets") && sample_name.Contains("DYJets"))))
+    {
+      if (syst_type.Contains("Down"))
+        event.weight *= event.weight_scale_variation_6;
+      else if (syst_type.Contains("Up"))
+        event.weight *= event.weight_scale_variation_3;
+    }
 
     if (syst_type == "Pileup_Down")
       event.weight *= event.weight_pileup_down;
@@ -1118,7 +1309,11 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &syst_f
         event.weight *= event.weight_c_tag_xsec_br_unc_wjets_c_up;
         c_tagging_rf_type = syst_type;
       }
-      // fully correlated c-tagging scale factors
+
+      //////////////////////////////////////////////
+      /* fully correlated c-tagging scale factors */
+      //////////////////////////////////////////////
+      // JER
       else if (syst_type == "Jet_Res_Down")
       {
         event.weight *= event.weight_c_tag_jer_down;
@@ -1129,35 +1324,65 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &syst_f
         event.weight *= event.weight_c_tag_jer_up;
         c_tagging_rf_type = "C_Tag_JER_Up";
       }
-      else if (syst_type == "Jet_En_Down")
+      // JES Down Total & Breakdown
+      else if (syst_type.Contains("Jet_En") && syst_type.Contains("Down"))
       {
         event.weight *= event.weight_c_tag_jes_total_down;
-        c_tagging_rf_type = "C_Tag_JES_Total_Down";
+
+        if (syst_type == "Jet_En_Down")
+          c_tagging_rf_type = "C_Tag_JES_Total_Down";
+        else
+        {
+          c_tagging_rf_type = syst_type;
+          c_tagging_rf_type.ReplaceAll("Jet_En", "C_Tag_JES");
+        }
       }
-      else if (syst_type == "Jet_En_Up")
+      // JES Up Total & Breakdown
+      else if (syst_type.Contains("Jet_En") && syst_type.Contains("Up"))
       {
         event.weight *= event.weight_c_tag_jes_total_up;
-        c_tagging_rf_type = "C_Tag_JES_Total_Up";
+
+        if (syst_type == "Jet_En_Up")
+          c_tagging_rf_type = "C_Tag_JES_Total_Up";
+        else
+        {
+          c_tagging_rf_type = syst_type;
+          c_tagging_rf_type.ReplaceAll("Jet_En", "C_Tag_JES");
+        }
       }
-      else if (syst_type == "MuF_Down")
+      else if (syst_type.Contains("MuF") &&
+               ((syst_type.Contains("TT") && sample_name.Contains("TT")) ||
+                (syst_type.Contains("ST") && sample_name.Contains("SingleTop")) ||
+                (syst_type.Contains("WJets") && sample_name.Contains("WJets")) ||
+                (syst_type.Contains("DYJets") && sample_name.Contains("DYJets"))))
       {
-        event.weight *= event.weight_c_tag_lhe_scale_muf_down;
-        c_tagging_rf_type = "C_Tag_LHE_Scale_MuF_Down";
+        if (syst_type.Contains("Down"))
+        {
+          event.weight *= event.weight_c_tag_lhe_scale_muf_down;
+          c_tagging_rf_type = "C_Tag_LHE_Scale_MuF_Down";
+        }
+        else if (syst_type.Contains("Up"))
+        {
+          event.weight *= event.weight_c_tag_lhe_scale_muf_up;
+          c_tagging_rf_type = "C_Tag_LHE_Scale_MuF_Up";
+        }
       }
-      else if (syst_type == "MuF_Up")
+      else if (syst_type.Contains("MuR") &&
+               ((syst_type.Contains("TT") && sample_name.Contains("TT")) ||
+                (syst_type.Contains("ST") && sample_name.Contains("SingleTop")) ||
+                (syst_type.Contains("WJets") && sample_name.Contains("WJets")) ||
+                (syst_type.Contains("DYJets") && sample_name.Contains("DYJets"))))
       {
-        event.weight *= event.weight_c_tag_lhe_scale_muf_up;
-        c_tagging_rf_type = "C_Tag_LHE_Scale_MuF_Up";
-      }
-      else if (syst_type == "MuR_Down")
-      {
-        event.weight *= event.weight_c_tag_lhe_scale_mur_down;
-        c_tagging_rf_type = "C_Tag_LHE_Scale_MuR_Down";
-      }
-      else if (syst_type == "MuR_Up")
-      {
-        event.weight *= event.weight_c_tag_lhe_scale_mur_up;
-        c_tagging_rf_type = "C_Tag_LHE_Scale_MuR_Up";
+        if (syst_type.Contains("Down"))
+        {
+          event.weight *= event.weight_c_tag_lhe_scale_mur_down;
+          c_tagging_rf_type = "C_Tag_LHE_Scale_MuR_Down";
+        }
+        else if (syst_type.Contains("Up"))
+        {
+          event.weight *= event.weight_c_tag_lhe_scale_mur_up;
+          c_tagging_rf_type = "C_Tag_LHE_Scale_MuR_Up";
+        }
       }
       else if (syst_type == "FSR_Down")
       {
@@ -1169,15 +1394,22 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &syst_f
         event.weight *= event.weight_c_tag_ps_fsr_fixed_up;
         c_tagging_rf_type = "C_Tag_PS_FSR_Fixed_Up";
       }
-      else if (syst_type == "ISR_Down")
+      else if (syst_type.Contains("ISR") &&
+               ((syst_type.Contains("TT") && sample_name.Contains("TT")) ||
+                (syst_type.Contains("ST") && sample_name.Contains("SingleTop")) ||
+                (syst_type.Contains("WJets") && sample_name.Contains("WJets")) ||
+                (syst_type.Contains("DYJets") && sample_name.Contains("DYJets"))))
       {
-        event.weight *= event.weight_c_tag_ps_isr_fixed_down;
-        c_tagging_rf_type = "C_Tag_PS_ISR_Fixed_Down";
-      }
-      else if (syst_type == "ISR_Up")
-      {
-        event.weight *= event.weight_c_tag_ps_isr_fixed_up;
-        c_tagging_rf_type = "C_Tag_PS_ISR_Fixed_Up";
+        if (syst_type.Contains("Down"))
+        {
+          event.weight *= event.weight_c_tag_ps_isr_fixed_down;
+          c_tagging_rf_type = "C_Tag_PS_ISR_Fixed_Down";
+        }
+        else if (syst_type.Contains("Up"))
+        {
+          event.weight *= event.weight_c_tag_ps_isr_fixed_up;
+          c_tagging_rf_type = "C_Tag_PS_ISR_Fixed_Up";
+        }
       }
       else if (syst_type == "Pileup_Down")
       {
@@ -1196,7 +1428,7 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &syst_f
       }
 
       // c-tag renormalization factor
-      event.weight *= tagging_rf.Get_Tagging_RF_C_Tag(abcd_region_name[abcd_region_index], histo_name_rf, c_tagging_rf_type, event.n_pv, event.ht);
+      event.weight *= tagging_rf.Get_Tagging_RF_C_Tag(abcd_region_name[abcd_region_index], histo_name_rf, c_tagging_rf_type, event.n_pileup, event.ht);
     } // else if (tagger == "C")
 
     // this part is not satisfactory, but don't waste time
@@ -1256,27 +1488,45 @@ int Histo_Syst::Histo_Index(const TString &sample_name)
 
   if ((sample_name.Contains("TTLL") || sample_name.Contains("TTLJ")))
   {
+    TString histo_name = sample_name;
+
+    if (histo_name.Contains("WtoCB"))
+      histo_name.ReplaceAll("TTLJ_WtoCB", "TTLJ");
+
     bool chk_b = false;
     bool chk_c = false;
 
-    // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
-    for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
-    {
-      int flavour = event.vec_sel_gen_hf_flavour->at(i);
-      int origin = event.vec_sel_gen_hf_origin->at(i);
+    // // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
+    // for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
+    // {
+    //   int flavour = event.vec_sel_gen_hf_flavour->at(i);
+    //   int origin = event.vec_sel_gen_hf_origin->at(i);
 
-      if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
-      {
+    //   // if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
+    //   if (flavour == 5 && abs(origin) == 21)
+    //   {
+    //     chk_b = true;
+    //     break;
+    //   }
+    //   // else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
+    //   else if (flavour == 4 && abs(origin) == 21)
+    //     chk_c = true;
+    // }
+
+    if (chk_include_pseudo_additional)
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 56)
         chk_b = true;
-        break;
-      }
-      else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 46)
         chk_c = true;
     }
-
-    TString histo_name = sample_name;
-    if (histo_name.Contains("WtoCB"))
-      histo_name = "TTLJ";
+    else
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 55)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 45)
+        chk_c = true;
+    }
 
     if (histo_name.Contains("CP5") || histo_name.Contains("hdamp") || histo_name.Contains("mtop"))
     {
@@ -1313,37 +1563,56 @@ int Histo_Syst::Histo_Index(const TString &sample_name)
 TString Histo_Syst::Histo_Name_RF(const TString &sample_name)
 {
   TString histo_name_rf;
-  // = samples.map_short_name_mc[sample_name];
 
   if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   {
     histo_name_rf = sample_name;
 
-    bool chk_b = false;
-    bool chk_c = false;
-
-    // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
-    for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
-    {
-      int flavour = event.vec_sel_gen_hf_flavour->at(i);
-      int origin = event.vec_sel_gen_hf_origin->at(i);
-
-      if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
-      {
-        chk_b = true;
-        break;
-      }
-      else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
-        chk_c = true;
-    }
-
     if (histo_name_rf.Contains("WtoCB"))
-      histo_name_rf = "TTLJ";
+      histo_name_rf.ReplaceAll("TTLJ_WtoCB", "TTLJ");
 
-    if (chk_b)
-      histo_name_rf += "_BB";
-    else if (chk_c)
-      histo_name_rf += "_CC";
+    if (chk_rf_tthf_breakdown)
+    {
+      bool chk_b = false;
+      bool chk_c = false;
+
+      // // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
+      // for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
+      // {
+      //   int flavour = event.vec_sel_gen_hf_flavour->at(i);
+      //   int origin = event.vec_sel_gen_hf_origin->at(i);
+
+      //   // if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
+      //   if (flavour == 5 && abs(origin) == 21)
+      //   {
+      //     chk_b = true;
+      //     break;
+      //   }
+      //   // else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
+      //   else if (flavour == 4 && abs(origin) == 21)
+      //     chk_c = true;
+      // }
+
+      if (chk_include_pseudo_additional)
+      {
+        if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 56)
+          chk_b = true;
+        else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 46)
+          chk_c = true;
+      }
+      else
+      {
+        if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 55)
+          chk_b = true;
+        else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 45)
+          chk_c = true;
+      }
+
+      if (chk_b)
+        histo_name_rf += "_BB";
+      else if (chk_c)
+        histo_name_rf += "_CC";
+    } // if (chk_rf_tthf_breakdown)
 
     if (event.decay_mode == 21 || event.decay_mode == 23)
       histo_name_rf += "_2";
@@ -1353,7 +1622,7 @@ TString Histo_Syst::Histo_Name_RF(const TString &sample_name)
       histo_name_rf += "_45";
   }
   else
-    histo_name_rf = samples.map_short_short_name[sample_name];
+    histo_name_rf = samples.map_short_name_mc[sample_name];
 
   return histo_name_rf;
 } // TString Histo_Syst::Histo_name_RF(const TString &sample_name)
@@ -1387,7 +1656,12 @@ void Histo_Syst::Init_Histo()
           for (int m = 0; m < n_variable; m++)
           {
             TString histo_name = abcd_region_name[i + 2] + "_" + region_name[j] + "_" + syst_name[k] + "_" + vec_short_name_mc[l] + "_" + variable_conf[m].variable_title;
-            histo_mc[i][j][k][l][m] = new TH2D(histo_name, variable_conf[m].variable_title, variable_conf[m].n_bin, variable_conf[m].x_low, variable_conf[m].x_up, histo_tf_n_bin, histo_tf_x_low, histo_tf_x_up);
+
+            if (variable_conf[m].chk_equal_interval == false)
+              histo_mc[i][j][k][l][m] = new TH2D(histo_name, variable_conf[m].variable_title, bin_template_mva_score[j].size() - 1, bin_template_mva_score[j].data(), bin_tf.size() - 1, bin_tf.data());
+
+            else
+              histo_mc[i][j][k][l][m] = new TH2D(histo_name, variable_conf[m].variable_title, variable_conf[m].vec_bin.size() - 1, variable_conf[m].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
           } // loop over n_variable
         } // loop over n_sample_merge_mc
       } // loop over n_syst
@@ -1405,19 +1679,23 @@ void Histo_Syst::Init_Histo()
       for (int k = 0; k < n_variable; k++)
       {
         TString histo_name = abcd_region_name[i + 2] + "_" + region_name[j] + "_" + variable_conf[k].variable_title;
-        histo_data[i][j][k] = new TH2D(histo_name, variable_conf[k].variable_title, variable_conf[k].n_bin, variable_conf[k].x_low, variable_conf[k].x_up, histo_tf_n_bin, histo_tf_x_low, histo_tf_x_up);
+
+        if (variable_conf[k].chk_equal_interval == false)
+          histo_data[i][j][k] = new TH2D(histo_name, variable_conf[k].variable_title, bin_template_mva_score[j].size() - 1, bin_template_mva_score[j].data(), bin_tf.size() - 1, bin_tf.data());
+        else
+          histo_data[i][j][k] = new TH2D(histo_name, variable_conf[k].variable_title, variable_conf[k].vec_bin.size() - 1, variable_conf[k].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
       } // loop over n_variable
     } // loop over n_region
   } // loop over n_abcd_region
 
-  // output file
-  TString fout_name = "Vcb_2D_" + era + "_" + channel + "_";
-  if (run_flag == "Central")
-    fout_name += run_flag + to_string(index_split) + to_string(n_split);
-  else
-    fout_name += run_flag;
-  fout_name += ".root";
-  fout = new TFile(fout_name, "RECREATE");
+  // // output file
+  // TString fout_name = "Vcb_2D_" + era + "_" + channel + "_";
+  // if (run_flag == "Central")
+  //   fout_name += run_flag + to_string(index_split) + to_string(n_split);
+  // else
+  //   fout_name += run_flag;
+  // fout_name += ".root";
+  // fout = new TFile(fout_name, "RECREATE");
 
   return;
 } // void Histo_Syst::Init_Histo()
@@ -1489,11 +1767,19 @@ void Histo_Syst::Init_Histo_Data_Driven()
       histo_tf_corrected[i][j] = new TH2D *[n_variable];
       for (int k = 0; k < n_variable; k++)
       {
-        TString histo_name = "Subtracted_Data_Driven_" + region_name[i] + "_" + syst_name[j] + "_" + variable_conf[k].variable_title;
-        histo_subtracted_data_driven[i][j][k] = new TH2D(histo_name, histo_name, variable_conf[k].n_bin, variable_conf[k].x_low, variable_conf[k].x_up, histo_tf_n_bin, histo_tf_x_low, histo_tf_x_up);
+        TString histo_name_subtracted = "Subtracted_Data_Driven_" + region_name[i] + "_" + syst_name[j] + "_" + variable_conf[k].variable_title;
+        TString histo_name_tf_corr = "TF_Corrected_" + region_name[i] + "_" + syst_name[j] + "_" + variable_conf[k].variable_title;
 
-        histo_name = "TF_Corrected_" + region_name[i] + "_" + syst_name[j] + "_" + variable_conf[k].variable_title;
-        histo_tf_corrected[i][j][k] = new TH2D(histo_name, histo_name, variable_conf[k].n_bin, variable_conf[k].x_low, variable_conf[k].x_up, histo_tf_n_bin, histo_tf_x_low, histo_tf_x_up);
+        if (variable_conf[k].chk_equal_interval == false)
+        {
+          histo_subtracted_data_driven[i][j][k] = new TH2D(histo_name_subtracted, histo_name_subtracted, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_tf.size() - 1, bin_tf.data());
+          histo_tf_corrected[i][j][k] = new TH2D(histo_name_tf_corr, histo_name_tf_corr, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_tf.size() - 1, bin_tf.data());
+        }
+        else
+        {
+          histo_subtracted_data_driven[i][j][k] = new TH2D(histo_name_subtracted, histo_name_subtracted, variable_conf[k].vec_bin.size() - 1, variable_conf[k].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
+          histo_tf_corrected[i][j][k] = new TH2D(histo_name_tf_corr, histo_name_tf_corr, variable_conf[k].vec_bin.size() - 1, variable_conf[k].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
+        }
       } // loop over n_variable
     } // loop over n_syst
   } // loop over n_region
@@ -1506,11 +1792,19 @@ void Histo_Syst::Init_Histo_Data_Driven()
     histo_tf_corrected_down[i] = new TH2D *[n_variable];
     for (int j = 0; j < n_variable; j++)
     {
-      TString histo_name = "TF_Corrected_Up_" + region_name[i] + "_" + variable_conf[j].variable_title;
-      histo_tf_corrected_up[i][j] = new TH2D(histo_name, histo_name, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up, histo_tf_n_bin, histo_tf_x_low, histo_tf_x_up);
+      TString histo_name_up = "TF_Corrected_Up_" + region_name[i] + "_" + variable_conf[j].variable_title;
+      TString histo_name_down = "TF_Corrected_Down_" + region_name[i] + "_" + variable_conf[j].variable_title;
 
-      histo_name = "TF_Corrected_Down_" + region_name[i] + "_" + variable_conf[j].variable_title;
-      histo_tf_corrected_down[i][j] = new TH2D(histo_name, histo_name, variable_conf[j].n_bin, variable_conf[j].x_low, variable_conf[j].x_up, histo_tf_n_bin, histo_tf_x_low, histo_tf_x_up);
+      if (variable_conf[j].chk_equal_interval == false)
+      {
+        histo_tf_corrected_up[i][j] = new TH2D(histo_name_up, histo_name_up, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_tf.size() - 1, bin_tf.data());
+        histo_tf_corrected_down[i][j] = new TH2D(histo_name_down, histo_name_down, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_tf.size() - 1, bin_tf.data());
+      }
+      else
+      {
+        histo_tf_corrected_up[i][j] = new TH2D(histo_name_up, histo_name_up, variable_conf[j].vec_bin.size() - 1, variable_conf[j].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
+        histo_tf_corrected_down[i][j] = new TH2D(histo_name_down, histo_name_down, variable_conf[j].vec_bin.size() - 1, variable_conf[j].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
+      }
     } // loop over n_variable
   } // loop over n_region
 
@@ -1520,15 +1814,17 @@ void Histo_Syst::Init_Histo_Data_Driven()
   histo_tf = new TH1D *[n_region];
   for (int i = 0; i < n_region; i++)
   {
-    TString histo_name = region_name[0] + "/TF"; // let's use TF from 2b region for all
+    // TString histo_name = region_name[0] + "/TF"; // let's use TF from 2b region for all
+    TString histo_name = region_name[i] + "/TF";
     histo_tf[i] = (TH1D *)fin_tf->Get(histo_name);
-    cout << "test test test " << fin_tf << endl;
-    cout << histo_name << endl;
-    cout << "test test test " << histo_tf[i] << endl;
   }
 
-  TString fout_name = "Vcb_Histos_" + era + "_" + channel + ".root";
-  fout = new TFile(fout_name, "RECREATE");
+  // combine transfer function
+  histo_tf[0]->SetBit(TH1::kIsAverage);
+  histo_tf[1]->SetBit(TH1::kIsAverage);
+
+  histo_tf_combine = (TH1D *)histo_tf[0]->Clone();
+  histo_tf_combine->Add(histo_tf[1]);
 
   cout << "[Histo_Syst::Init_Histo_Data_Driven]: Done" << endl;
 
@@ -1556,7 +1852,8 @@ void Histo_Syst::Init_Histo_TF()
           for (int m = 0; m < n_variable; m++)
           {
             TString histo_name = abcd_region_name[i] + "_" + region_name[j] + "_" + syst_name[k] + "_" + vec_short_name_mc[l] + "_" + variable_conf[m].variable_title;
-            histo_mc[i][j][k][l][m] = new TH1D(histo_name, variable_conf[m].variable_title, variable_conf[m].n_bin, variable_conf[m].x_low, variable_conf[m].x_up);
+
+            histo_mc[i][j][k][l][m] = new TH1D(histo_name, variable_conf[m].variable_title, bin_tf.size() - 1, bin_tf.data());
           } // loop over n_variable
         } // loop over n_sample_merge_mc
       } // loop over n_syst
@@ -1574,7 +1871,7 @@ void Histo_Syst::Init_Histo_TF()
       for (int k = 0; k < n_variable; k++)
       {
         TString histo_name = abcd_region_name[i] + "_" + region_name[j] + "_" + variable_conf[k].variable_title;
-        histo_data[i][j][k] = new TH1D(histo_name, variable_conf[k].variable_title, variable_conf[k].n_bin, variable_conf[k].x_low, variable_conf[k].x_up);
+        histo_data[i][j][k] = new TH1D(histo_name, variable_conf[k].variable_title, bin_tf.size() - 1, bin_tf.data());
       } // loop over n_variable
     } // loop over n_region
   } // loop over n_abcd_region
@@ -1586,20 +1883,21 @@ void Histo_Syst::Init_Histo_TF()
     for (int j = 0; j < n_region; j++)
     {
       TString histo_name = "Subtrated_" + abcd_region_name[i] + "_" + region_name[j];
-      histo_subtracted_tf[i][j] = new TH1D(histo_name, histo_name, variable_conf[0].n_bin, variable_conf[0].x_low, variable_conf[0].x_up);
+
+      histo_subtracted_tf[i][j] = new TH1D(histo_name, histo_name, bin_tf.size() - 1, bin_tf.data());
     } // loop over n_region
   } // loop over n_abcd_region - 2
 
   histo_tf = new TH1D *[n_region];
+  histo_tf_qcd_mc = new TH1D *[n_region];
   for (int i = 0; i < n_region; i++)
   {
     TString histo_name = "TF_" + region_name[i];
-    histo_tf[i] = new TH1D(histo_name, histo_name, variable_conf[0].n_bin, variable_conf[0].x_low, variable_conf[0].x_up);
-  } // loop over n_region
+    histo_tf[i] = new TH1D(histo_name, histo_name, bin_tf.size() - 1, bin_tf.data());
 
-  // output file
-  TString fout_name = "Vcb_TF_" + era + "_" + channel + ".root";
-  fout = new TFile(fout_name, "RECREATE");
+    histo_name = "TF_QCD_MC_" + region_name[i];
+    histo_tf_qcd_mc[i] = new TH1D(histo_name, histo_name, bin_tf.size() - 1, bin_tf.data());
+  } // loop over n_region
 
   return;
 } // void Histo_Syst::Init_Histo_TF()
@@ -1657,11 +1955,19 @@ void Histo_Syst::Merge_PDF_Error_Set()
       histo_mc_pdf_error_set_up[i][j] = new TH1D *[n_variable];
       for (int k = 0; k < n_variable; k++)
       {
-        TString histo_name_pdf_error = "PDF_Error_Set_Down_" + region_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
-        histo_mc_pdf_error_set_down[i][j][k] = new TH1D(histo_name_pdf_error, variable_conf[k].variable_title, variable_conf[k].n_bin, variable_conf[k].x_low, variable_conf[k].x_up);
+        TString histo_name_pdf_error_down = "PDF_Error_Set_Down_" + region_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
+        TString histo_name_pdf_error_up = "PDF_Error_Set_Up_" + region_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
 
-        histo_name_pdf_error = "PDF_Error_Set_Up_" + region_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
-        histo_mc_pdf_error_set_up[i][j][k] = new TH1D(histo_name_pdf_error, variable_conf[k].variable_title, variable_conf[k].n_bin, variable_conf[k].x_low, variable_conf[k].x_up);
+        if (variable_conf[k].chk_equal_interval == false)
+        {
+          histo_mc_pdf_error_set_down[i][j][k] = new TH1D(histo_name_pdf_error_down, variable_conf[k].variable_title, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data());
+          histo_mc_pdf_error_set_up[i][j][k] = new TH1D(histo_name_pdf_error_up, variable_conf[k].variable_title, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data());
+        }
+        else
+        {
+          histo_mc_pdf_error_set_down[i][j][k] = new TH1D(histo_name_pdf_error_down, variable_conf[k].variable_title, variable_conf[k].n_bin, variable_conf[k].x_low, variable_conf[k].x_up);
+          histo_mc_pdf_error_set_up[i][j][k] = new TH1D(histo_name_pdf_error_up, variable_conf[k].variable_title, variable_conf[k].n_bin, variable_conf[k].x_low, variable_conf[k].x_up);
+        }
       } // loop over n_variable
     } // loop over n_sample_merge_mc
   } // loop over n_region
@@ -1675,7 +1981,13 @@ void Histo_Syst::Merge_PDF_Error_Set()
       cout << vec_short_name_mc[j] << endl;
       for (int k = 0; k < n_variable; k++)
       {
-        for (int l = 0; l < variable_conf[k].n_bin; l++)
+        int n_bin;
+        if (variable_conf[k].chk_equal_interval == false)
+          n_bin = bin_template_mva_score[i].size() - 1;
+        else
+          n_bin = variable_conf[k].n_bin;
+
+        for (int l = 0; l < n_bin; l++)
         {
           float max = -999999999999999999;
           float min = 999999999999999999;
@@ -1726,11 +2038,11 @@ void Histo_Syst::Read_Tree()
   // for MC
   for (auto it_map_map = map_map_tree_mc.begin(); it_map_map != map_map_tree_mc.end(); it_map_map++)
   {
-    TString syst_loop_name = it_map_map->first;
-    cout << syst_loop_name << endl;
+    TString tree_type = it_map_map->first;
+    cout << "Tree_Type = " << tree_type << endl;
 
     TString syst_fix;
-    if (syst_loop_name == "Central")
+    if (tree_type == "Central")
       syst_fix = "None";
     else
       syst_fix = it_map_map->first;
@@ -1739,13 +2051,15 @@ void Histo_Syst::Read_Tree()
 
     for (auto it = map_tree->begin(); it != map_tree->end(); it++)
     {
-      cout << it->first << endl;
+      TString sample_name = it->first;
 
       TString sample_name_short;
       if (it->first.Contains("TTLJ") || it->first.Contains("TTLL"))
         sample_name_short = it->first;
       else
         sample_name_short = samples.map_short_name_mc[it->first];
+
+      cout << sample_name << " " << sample_name_short << endl;
 
       Long64_t n_entries = it->second->GetEntries();
       n_entries /= reduction;
@@ -1755,22 +2069,13 @@ void Histo_Syst::Read_Tree()
       Long64_t init;
       Long64_t end;
 
-      if (run_flag == "Central")
-      {
-        Long64_t step = n_entries / n_split;
-        init = step * index_split;
-        end = step * (index_split + 1);
-        if (index_split + 1 == n_split)
-          end = n_entries;
-
-        cout << "N_Entries:" << n_entries << " N_Split:" << n_split << " Index_Split:" << index_split << " Step:" << step << " Init:" << init << " End:" << end << endl;
-        cout << endl;
-      }
-      else
-      {
-        init = 0;
+      Long64_t step = n_entries / n_split;
+      init = step * index_split;
+      end = step * (index_split + 1);
+      if (index_split + 1 == n_split)
         end = n_entries;
-      }
+
+      cout << "N_Entries:" << n_entries << " N_Split:" << n_split << " Index_Split:" << index_split << " Step:" << step << " Init:" << init << " End:" << end << endl;
 
       for (Long64_t i = init; i < end; i++)
       {
@@ -1779,33 +2084,35 @@ void Histo_Syst::Read_Tree()
 
         it->second->GetEntry(i);
 
-        // cut on best_mva_score_pre
-        if (chk_cut_best_mva_score_pre && event.best_mva_score_pre < cut_best_mva_score_pre)
-          continue;
+        // // cut on best_mva_score_pre
+        // if (chk_cut_best_mva_score_pre && event.best_mva_score_pre < cut_best_mva_score_pre)
+        //   continue;
 
-        // cut on template_score
-        if (chk_cut_template_score && event.template_score < cut_template_score)
-          continue;
+        // // cut on template_score
+        // if (chk_cut_template_score && event.template_score < cut_template_score)
+        //   continue;
 
         // event veto
         if (100 < TMath::Abs(event.weight_pdf_alternative))
         {
-          cout << "strange weight_pdf_alternative is detected. " << syst_loop_name << ", " << i << ", weight_pdf_alternative = " << event.weight_pdf_alternative << endl;
-          cout << "Continue" << endl;
+          cout << "strange weight_pdf_alternative is detected. " << tree_type << ", " << i << ", weight_pdf_alternative = " << event.weight_pdf_alternative << endl;
+
+          continue;
+        }
+
+        if (TMath::IsNaN(event.weight_scale_variation_1) || !TMath::Finite(event.weight_scale_variation_1) || TMath::IsNaN(event.weight_scale_variation_2) || !TMath::Finite(event.weight_scale_variation_2))
+        {
+          cout << "strange weight_scale_variation is detected. " << tree_type << ", " << i << ", weight_scale_variation_1 = " << event.weight_scale_variation_1 << ", weight_scale_variation_2 = " << event.weight_scale_variation_2 << endl;
 
           continue;
         }
 
         // event.Swap();
 
-        Fill_Histo_MC(sample_name_short, syst_fix);
+        Fill_Histo_MC(sample_name, sample_name_short, tree_type);
         // if (syst_fix == "None") Fill_Histo_Weight(region_index, sample_index);
       } // loop over entries
     } // loop over map_tree_mc
-
-    // close fin to save memory
-    // map<TString, TFile *> *map_fin = map_map_fin_mc[fin_name];
-    // map_fin->at(fin_name)->Close();
   } // loop over map_map_tree_mc
 
   // for data
@@ -1850,22 +2157,44 @@ void Histo_Syst::Register_Sample()
 {
   cout << "[Histo_Syst::Register_Sample]: Init" << endl;
 
-  // job splitting for central and syst_reweight
-  if (run_flag.Contains("Central"))
+  // fix tree
+  if (index_tree_type != -1)
   {
-    index_split = TString(run_flag(7, 2)).Atoi();
-    n_split = TString(run_flag(9, 2)).Atoi();
-    run_flag = "Central";
+    TString tree_type_fixed;
+    if (n_tree_type - 1 <= index_tree_type)
+    {
+      tree_type_fixed = "Central";
+
+      index_split = index_tree_type - n_tree_type + 1;
+      n_split = last_index_tree_type - n_tree_type + 1;
+    }
+    else
+    {
+      tree_type_fixed = vec_tree_type[index_tree_type];
+
+      index_split = 0;
+      n_split = 1;
+    }
+    cout << "Fixing tree_type. Index = " << index_tree_type << " Tree_Type " << tree_type_fixed << " N_Tree_Type " << n_tree_type << " Index_Split " << index_split << " N_Split " << n_split << endl;
+
+    vec_tree_type.clear();
+    vec_tree_type.shrink_to_fit();
+
+    vec_tree_type.push_back(tree_type_fixed);
+  }
+  else
+  {
+    cout << "Iterate all tree_type" << endl;
+
+    index_split = 0;
+    n_split = 1;
   }
 
-  cout << "[Histo_Syst::Register_Sample]: run_flag = " << run_flag << endl;
-  if (run_flag == "Central")
-    cout << "Index_Split = " << index_split << ", N_Split = " << n_split << endl;
-
-  if (channel == "Mu" && run_flag.Contains("Electron"))
-    throw "Input run_flag is not compatible with Mu channel. Abort process.";
-
-  TString result_path = path_base + "/Sample/" + era + "/" + channel + "/RunResult/";
+  for (unsigned int i = 0; i < vec_tree_type.size(); i++)
+  {
+    map<TString, TTree *> map_tree_mc;
+    vec_map_tree_mc.push_back(map_tree_mc);
+  }
 
   if (samples.map_mc.size() != samples.map_short_name_mc.size() || samples.map_data.size() != samples.map_short_name_data.size())
   {
@@ -1873,203 +2202,159 @@ void Histo_Syst::Register_Sample()
     exit(EXIT_FAILURE);
   }
 
-  tree_name = "/Result_Tree";
-
-  if (run_flag != "Data")
+  for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
   {
-    for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
+    cout << it->first << endl;
+
+    TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
+    TString result_path = path_sample_base + era + "/Vcb/";
+
+    map_fin_mc[it->first] = new TFile(result_path + "Central_Syst/" + it->second);
+
+    for (unsigned int i = 0; i < vec_tree_type.size(); i++)
     {
-      cout << it->first << endl;
+      TString tree_type = vec_tree_type[i];
 
-      map_fin_mc[it->first] = new TFile(result_path + "Central_Syst/" + it->second);
+      if (tree_type == "Data")
+        continue;
 
-      if (run_flag == "Central" ||
-          run_flag == "CP5_Down" || run_flag == "CP5_Up" ||
-          run_flag == "hDamp_Down" || run_flag == "hDamp_Up" ||
-          run_flag == "mTop_171p5" || run_flag == "mTop_173p5" ||
-          run_flag == "All")
-      {
-        map_tree_mc[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "Central" + tree_name);
-        event.Setup_Tree(map_tree_mc[it->first], Syst::Central, true);
-      }
+      if (tree_type.Contains("CP5") || tree_type.Contains("hdamp") || tree_type.Contains("mtop"))
+        continue;
 
-      if (run_flag == "Jet_En_Down" || run_flag == "All")
-      {
-        map_tree_mc_jec_down[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "JetEnDown" + tree_name);
-        event.Setup_Tree(map_tree_mc_jec_down[it->first], Syst::JetEnDown, false);
-      }
+      cout << tree_type << endl;
 
-      if (run_flag == "Jet_En_Up" || run_flag == "All")
-      {
-        map_tree_mc_jec_up[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "JetEnUp" + tree_name);
-        event.Setup_Tree(map_tree_mc_jec_up[it->first], Syst::JetEnUp, false);
-      }
+      vec_map_tree_mc[i][it->first] = (TTree *)map_fin_mc[it->first]->Get(channel + "/" + tree_type + "/Result_Tree");
 
-      if (run_flag == "Jet_Res_Down" || run_flag == "All")
-      {
-        map_tree_mc_jer_down[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "JetResDown" + tree_name);
-        event.Setup_Tree(map_tree_mc_jer_down[it->first], Syst::JetResDown, false);
-      }
+      bool chk_all = false;
+      if (tree_type == "Central")
+        chk_all = true;
 
-      if (run_flag == "Jet_Res_Up" || run_flag == "All")
-      {
-        map_tree_mc_jer_up[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "JetResUp" + tree_name);
-        event.Setup_Tree(map_tree_mc_jer_up[it->first], Syst::JetResUp, false);
-      }
+      event.Setup_Tree(vec_map_tree_mc[i][it->first], StringToSyst(tree_type), chk_all);
+    } //  for (unsigned int i = 0; i < vec_tree_type.size(); i++)
 
-      if (run_flag == "UE_Down" || run_flag == "All")
-      {
-        map_tree_mc_ue_down[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "UEDown" + tree_name);
-        event.Setup_Tree(map_tree_mc_ue_down[it->first], Syst::Central, false);
-      }
+    if (find(vec_tree_type.begin(), vec_tree_type.end(), "CP5Down") != vec_tree_type.end() ||
+        find(vec_tree_type.begin(), vec_tree_type.end(), "CP5Up") != vec_tree_type.end() ||
+        find(vec_tree_type.begin(), vec_tree_type.end(), "hdampDown") != vec_tree_type.end() ||
+        find(vec_tree_type.begin(), vec_tree_type.end(), "hdampUp") != vec_tree_type.end() ||
+        find(vec_tree_type.begin(), vec_tree_type.end(), "mtop171p5") != vec_tree_type.end() ||
+        find(vec_tree_type.begin(), vec_tree_type.end(), "mtop173p5") != vec_tree_type.end())
+    {
+      map_tree_mc_central[it->first] = (TTree *)map_fin_mc[it->first]->Get(channel + "/Central/Result_Tree");
+      event.Setup_Tree(map_tree_mc_central[it->first], StringToSyst("Central"), false);
+    }
+  } // for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
 
-      if (run_flag == "UE_Up" || run_flag == "All")
-      {
-        map_tree_mc_ue_up[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "UEUp" + tree_name);
-        event.Setup_Tree(map_tree_mc_ue_up[it->first], Syst::Central, false);
-      }
+  for (unsigned int i = 0; i < vec_tree_type.size(); i++)
+  {
+    TString tree_type = vec_tree_type[i];
+    map_map_tree_mc[tree_type] = &vec_map_tree_mc[i];
+  }
 
-      /*
-      if (channel == "El")
-      {
-        if (run_flag == "El_En_Down" || run_flag == "All")
-        {
-          map_fin_mc_eec_down[it->first] = new TFile(result_path + "ElectronEnDown/" + it->second);
-          map_tree_mc_eec_down[it->first] = (TTree *)map_fin_mc_eec_down[it->first]->Get(key_base + "ElectronEnDown" + tree_name);
+  if (find(vec_tree_type.begin(), vec_tree_type.end(), "CP5Down") != vec_tree_type.end())
+    Register_Top_Syst(map_fin_mc_cp5_down, map_tree_mc_cp5_down, "CP5Down");
 
-          event.Setup_Tree(map_tree_mc_eec_down[it->first], Syst::ElectronEnDown, false);
-        }
+  if (find(vec_tree_type.begin(), vec_tree_type.end(), "CP5Up") != vec_tree_type.end())
+    Register_Top_Syst(map_fin_mc_cp5_up, map_tree_mc_cp5_up, "CP5Up");
 
-        if (run_flag == "El_En_Up" || run_flag == "All")
-        {
-          map_fin_mc_eec_up[it->first] = new TFile(result_path + "ElectronEnUp/" + it->second);
-          map_tree_mc_eec_up[it->first] = (TTree *)map_fin_mc_eec_up[it->first]->Get(key_base + "ElectronEnUp" + tree_name);
+  if (find(vec_tree_type.begin(), vec_tree_type.end(), "hdampDown") != vec_tree_type.end())
+    Register_Top_Syst(map_fin_mc_hdamp_down, map_tree_mc_hdamp_down, "hdampDown");
 
-          event.Setup_Tree(map_tree_mc_eec_up[it->first], Syst::ElectronEnUp, false);
-        }
+  if (find(vec_tree_type.begin(), vec_tree_type.end(), "hdampUp") != vec_tree_type.end())
+    Register_Top_Syst(map_fin_mc_hdamp_up, map_tree_mc_hdamp_up, "hdampUp");
 
-        if (run_flag == "El_Res_Down")
-        {
-          map_fin_mc_eer_down[it->first] = new TFile(result_path + "ElectronResDown/" + it->second);
-          map_tree_mc_eer_down[it->first] = (TTree *)map_fin_mc_eer_down[it->first]->Get(key_base + "ElectronResDown" + tree_name);
+  if (find(vec_tree_type.begin(), vec_tree_type.end(), "mtop171p5") != vec_tree_type.end())
+    Register_Top_Syst(map_fin_mc_mtop_171p5, map_tree_mc_mtop_171p5, "mtop171p5");
 
-          event.Setup_Tree(map_tree_mc_eer_down[it->first], Syst::ElectronResDown, false);
-        }
+  if (find(vec_tree_type.begin(), vec_tree_type.end(), "mtop173p5") != vec_tree_type.end())
+    Register_Top_Syst(map_fin_mc_mtop_173p5, map_tree_mc_mtop_173p5, "mtop173p5");
 
-        if (run_flag == "El_Res_Up" || run_flag == "All")
-        {
-          map_fin_mc_eer_up[it->first] = new TFile(result_path + "ElectronResUp/" + it->second);
-          map_tree_mc_eer_up[it->first] = (TTree *)map_fin_mc_eer_up[it->first]->Get(key_base + "ElectronResUp" + tree_name);
+  // TFile and TTree handlers
+  // if (run_flag == "Central" || run_flag == "All")
+  //   map_map_tree_mc["Central"] = &map_tree_mc;
 
-          event.Setup_Tree(map_tree_mc_eer_up[it->first], Syst::ElectronResUp, false);
-        }
-      }
-      */
+  // if (run_flag == "Jet_En_Down" || run_flag == "All")
+  //   map_map_tree_mc["Jet_En_Down"] = &map_tree_mc_jec_down;
+
+  // if (run_flag == "Jet_En_Up" || run_flag == "All")
+  //   map_map_tree_mc["Jet_En_Up"] = &map_tree_mc_jec_up;
+
+  // if (run_flag == "Jet_Res_Down" || run_flag == "All")
+  //   map_map_tree_mc["Jet_Res_Down"] = &map_tree_mc_jer_down;
+
+  // if (run_flag == "Jet_Res_Up" || run_flag == "All")
+  //   map_map_tree_mc["Jet_Res_Up"] = &map_tree_mc_jer_up;
+
+  // if (run_flag == "UE_Down" || run_flag == "All")
+  //   map_map_tree_mc["UE_Down"] = &map_tree_mc_ue_down;
+
+  // if (run_flag == "UE_Up" || run_flag == "All")
+  //   map_map_tree_mc["UE_Up"] = &map_tree_mc_ue_up;
+
+  // if (run_flag == "CP5_Down" || run_flag == "All")
+  //   map_map_tree_mc["CP5_Down"] = &map_tree_mc_cp5_down;
+
+  // if (run_flag == "CP5_Up" || run_flag == "All")
+  //   map_map_tree_mc["CP5_Up"] = &map_tree_mc_cp5_up;
+
+  // if (run_flag == "hDamp_Down" || run_flag == "All")
+  //   map_map_tree_mc["hDamp_Down"] = &map_tree_mc_hdamp_down;
+
+  // if (run_flag == "hDamp_Up" || run_flag == "All")
+  //   map_map_tree_mc["hDamp_Up"] = &map_tree_mc_hdamp_up;
+
+  // if (run_flag == "mTop_171p5" || run_flag == "All")
+  //   map_map_tree_mc["mTop_171p5"] = &map_tree_mc_mtop_171p5;
+
+  // if (run_flag == "mTop_173p5" || run_flag == "All")
+  //   map_map_tree_mc["mTop_173p5"] = &map_tree_mc_mtop_173p5;
+
+  /*
+  if (channel == "El")
+  {
+    if (run_flag == "El_En_Down" || run_flag == "All")
+    {
+      map_map_fin_mc["El_En_Down"] = &map_fin_mc_eec_down;
+      map_map_tree_mc["El_En_Down"] = &map_tree_mc_eec_down;
     }
 
-    if (run_flag == "CP5_Down" || run_flag == "All")
-      Register_Top_Syst(map_fin_mc_cp5_down, map_tree_mc_cp5_down, "CP5Down");
-
-    if (run_flag == "CP5_Up" || run_flag == "All")
-      Register_Top_Syst(map_fin_mc_cp5_up, map_tree_mc_cp5_up, "CP5Up");
-
-    if (run_flag == "hDamp_Down" || run_flag == "All")
-      Register_Top_Syst(map_fin_mc_hdamp_down, map_tree_mc_hdamp_down, "hdampDown");
-
-    if (run_flag == "hDamp_Up" || run_flag == "All")
-      Register_Top_Syst(map_fin_mc_hdamp_up, map_tree_mc_hdamp_up, "hdampUp");
-
-    if (run_flag == "mTop_171p5" || run_flag == "All")
-      Register_Top_Syst(map_fin_mc_mtop_171p5, map_tree_mc_mtop_171p5, "mtop171p5");
-
-    if (run_flag == "mTop_173p5" || run_flag == "All")
-      Register_Top_Syst(map_fin_mc_mtop_173p5, map_tree_mc_mtop_173p5, "mtop173p5");
-
-    // TFile and TTree handlers
-    if (run_flag == "Central" || run_flag == "All")
-      map_map_tree_mc["Central"] = &map_tree_mc;
-
-    if (run_flag == "Jet_En_Down" || run_flag == "All")
-      map_map_tree_mc["Jet_En_Down"] = &map_tree_mc_jec_down;
-
-    if (run_flag == "Jet_En_Up" || run_flag == "All")
-      map_map_tree_mc["Jet_En_Up"] = &map_tree_mc_jec_up;
-
-    if (run_flag == "Jet_Res_Down" || run_flag == "All")
-      map_map_tree_mc["Jet_Res_Down"] = &map_tree_mc_jer_down;
-
-    if (run_flag == "Jet_Res_Up" || run_flag == "All")
-      map_map_tree_mc["Jet_Res_Up"] = &map_tree_mc_jer_up;
-
-    if (run_flag == "UE_Down" || run_flag == "All")
-      map_map_tree_mc["UE_Down"] = &map_tree_mc_ue_down;
-
-    if (run_flag == "UE_Up" || run_flag == "All")
-      map_map_tree_mc["UE_Up"] = &map_tree_mc_ue_up;
-
-    if (run_flag == "CP5_Down" || run_flag == "All")
-      map_map_tree_mc["CP5_Down"] = &map_tree_mc_cp5_down;
-
-    if (run_flag == "CP5_Up" || run_flag == "All")
-      map_map_tree_mc["CP5_Up"] = &map_tree_mc_cp5_up;
-
-    if (run_flag == "hDamp_Down" || run_flag == "All")
-      map_map_tree_mc["hDamp_Down"] = &map_tree_mc_hdamp_down;
-
-    if (run_flag == "hDamp_Up" || run_flag == "All")
-      map_map_tree_mc["hDamp_Up"] = &map_tree_mc_hdamp_up;
-
-    if (run_flag == "mTop_171p5" || run_flag == "All")
-      map_map_tree_mc["mTop_171p5"] = &map_tree_mc_mtop_171p5;
-
-    if (run_flag == "mTop_173p5" || run_flag == "All")
-      map_map_tree_mc["mTop_173p5"] = &map_tree_mc_mtop_173p5;
-
-    /*
-    if (channel == "El")
+    if (run_flag == "El_En_Up" || run_flag == "All")
     {
-      if (run_flag == "El_En_Down" || run_flag == "All")
-      {
-        map_map_fin_mc["El_En_Down"] = &map_fin_mc_eec_down;
-        map_map_tree_mc["El_En_Down"] = &map_tree_mc_eec_down;
-      }
+      map_map_fin_mc["El_En_Up"] = &map_fin_mc_eec_up;
+      map_map_tree_mc["El_En_Up"] = &map_tree_mc_eec_up;
+    }
 
-      if (run_flag == "El_En_Up" || run_flag == "All")
-      {
-        map_map_fin_mc["El_En_Up"] = &map_fin_mc_eec_up;
-        map_map_tree_mc["El_En_Up"] = &map_tree_mc_eec_up;
-      }
+    if (run_flag == "El_Res_Down" || run_flag == "All")
+    {
+      map_map_fin_mc["El_Res_Down"] = &map_fin_mc_eer_down;
+      map_map_tree_mc["El_Res_Down"] = &map_tree_mc_eer_down;
+    }
 
-      if (run_flag == "El_Res_Down" || run_flag == "All")
-      {
-        map_map_fin_mc["El_Res_Down"] = &map_fin_mc_eer_down;
-        map_map_tree_mc["El_Res_Down"] = &map_tree_mc_eer_down;
-      }
-
-      if (run_flag == "El_Res_Up" || run_flag == "All")
-      {
-        map_map_fin_mc["El_Res_Up"] = &map_fin_mc_eer_up;
-        map_map_tree_mc["El_Res_Up"] = &map_tree_mc_eer_up;
-      }
-    } // if (channel == "El")
-    */
-  } // if (run_flag != "Data")
+    if (run_flag == "El_Res_Up" || run_flag == "All")
+    {
+      map_map_fin_mc["El_Res_Up"] = &map_fin_mc_eer_up;
+      map_map_tree_mc["El_Res_Up"] = &map_tree_mc_eer_up;
+    }
+  } // if (channel == "El")
+  */
 
   // data
-  if (run_flag == "Data" || run_flag == "All")
+  if (find(vec_tree_type.begin(), vec_tree_type.end(), "Data") != vec_tree_type.end())
   {
-    result_path += "DATA/";
+    TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
+    TString result_path = path_sample_base + era + "/Vcb/DATA/";
+
     for (auto it = samples.map_data.begin(); it != samples.map_data.end(); it++)
     {
       cout << it->first << endl;
+
       if (it == samples.map_data.begin())
         data_short_name = samples.map_short_name_data[it->first];
 
       map_fin_data[it->first] = new TFile(result_path + it->second);
-      map_tree_data[it->first] = (TTree *)map_fin_data[it->first]->Get(key_base + "Central" + tree_name);
+      map_tree_data[it->first] = (TTree *)map_fin_data[it->first]->Get(channel + "/Central/Result_Tree");
       event.Setup_Tree(map_tree_data[it->first], Syst::Central, false);
     }
-  } // if (run_flag == "Data" || run_flag == "All")
+  } // if (find(vec_tree_type.begin(), vec_tree_type.end(), "Data") != vec_tree_type.end())
 
   cout << "[Histo_Syst::Register_Sample]: Done" << endl;
 } // void Histo_Syst::Register_Sample()
@@ -2080,18 +2365,21 @@ void Histo_Syst::Register_Sample_TF()
 {
   cout << "[Histo_Syst::Register_Sample_TF]: Init" << endl;
 
-  TString result_path = path_base + "/Sample/" + era + "/" + channel + "/RunResult/";
-  tree_name = "/Result_Tree";
+  TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
+  TString result_path = path_sample_base + era + "/Vcb/";
+
+  index_split = 0;
+  n_split = 1;
 
   for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
   {
     cout << it->first << endl;
 
     map_fin_mc[it->first] = new TFile(result_path + "Central_Syst/" + it->second);
-    map_tree_mc[it->first] = (TTree *)map_fin_mc[it->first]->Get(key_base + "Central" + tree_name);
-    event.Setup_Tree(map_tree_mc[it->first], Syst::Central, true);
+    map_tree_mc_central[it->first] = (TTree *)map_fin_mc[it->first]->Get(channel + "/Central/Result_Tree");
+    event.Setup_Tree(map_tree_mc_central[it->first], Syst::Central, true);
   }
-  map_map_tree_mc["Central"] = &map_tree_mc;
+  map_map_tree_mc["Central"] = &map_tree_mc_central;
 
   result_path += "DATA/";
   for (auto it = samples.map_data.begin(); it != samples.map_data.end(); it++)
@@ -2101,7 +2389,7 @@ void Histo_Syst::Register_Sample_TF()
       data_short_name = samples.map_short_name_data[it->first];
 
     map_fin_data[it->first] = new TFile(result_path + it->second);
-    map_tree_data[it->first] = (TTree *)map_fin_data[it->first]->Get(key_base + "Central" + tree_name);
+    map_tree_data[it->first] = (TTree *)map_fin_data[it->first]->Get(channel + "/Central/Result_Tree");
     event.Setup_Tree(map_tree_data[it->first], Syst::Central, false);
   }
 
@@ -2116,24 +2404,31 @@ void Histo_Syst::Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TStr
 {
   cout << "[Histo_Syst::Register_Top_Syst]:" << type << endl;
 
-  map_fin_syst = map_fin_mc;
-  map_tree_syst = map_tree_mc;
+  map_tree_syst = map_tree_mc_central;
 
-  map_fin_syst.erase("TTLJ");
   map_tree_syst.erase("TTLJ");
-
-  map_fin_syst.erase("TTLL");
   map_tree_syst.erase("TTLL");
+  map_tree_syst.erase("TTLJ_WtoCB");
 
-  TString result_path = path_base + "/Sample/" + era + "/" + channel + "/RunResult/";
+  TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
+  TString result_path = path_sample_base + era + "/Vcb/Top_Syst/";
 
-  map_fin_syst["TTLJ_" + type] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_" + type]);
-  map_tree_syst["TTLJ_" + type] = (TTree *)map_fin_syst["TTLJ_" + type]->Get(key_base + "Central" + tree_name);
+  cout << "TTLJ" << endl;
+  map_fin_syst["TTLJ_" + type] = new TFile(result_path + samples.map_top_syst["TTLJ_" + type]);
+  map_tree_syst["TTLJ_" + type] = (TTree *)map_fin_syst["TTLJ_" + type]->Get(channel + "/Central/Result_Tree");
   event.Setup_Tree(map_tree_syst["TTLJ_" + type], Syst::Central);
 
-  map_fin_syst["TTLL_" + type] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_" + type]);
-  map_tree_syst["TTLL_" + type] = (TTree *)map_fin_syst["TTLL_" + type]->Get(key_base + "Central" + tree_name);
+  cout << "TTLL" << endl;
+  map_fin_syst["TTLL_" + type] = new TFile(result_path + samples.map_top_syst["TTLL_" + type]);
+  map_tree_syst["TTLL_" + type] = (TTree *)map_fin_syst["TTLL_" + type]->Get(channel + "/Central/Result_Tree");
   event.Setup_Tree(map_tree_syst["TTLL_" + type], Syst::Central);
+
+  cout << "TTLJ_WtoCB" << endl;
+  map_fin_syst["TTLJ_WtoCB_" + type] = new TFile(result_path + samples.map_top_syst["TTLJ_WtoCB_" + type]);
+  map_tree_syst["TTLJ_WtoCB_" + type] = (TTree *)map_fin_syst["TTLJ_WtoCB_" + type]->Get(channel + "/Central/Result_Tree");
+  event.Setup_Tree(map_tree_syst["TTLJ_WtoCB_" + type], Syst::Central);
+
+  map_map_tree_mc[type] = &map_tree_syst;
 
   return;
 } // void Histo_Syst::Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TString, TTree *> &map_tree_syst, const TString &type)
@@ -2160,6 +2455,63 @@ float Histo_Syst::Reweight_CKM(const TString &sample_name)
 
   return reweight;
 } // float Histo_Syst::Reweight_CKM(const TString& sample_name)
+
+//////////
+
+float Histo_Syst::Reweight_TTHF(const TString &sample_name)
+{
+  if ((sample_name.Contains("TTLL") || sample_name.Contains("TTLJ")))
+  {
+    if (sample_name.Contains("WtoCB"))
+      return 1.0;
+
+    bool chk_b = false;
+    bool chk_c = false;
+
+    // // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
+    // for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
+    // {
+    //   int flavour = event.vec_sel_gen_hf_flavour->at(i);
+    //   int origin = event.vec_sel_gen_hf_origin->at(i);
+
+    //   // if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
+    //   if (flavour == 5 && abs(origin) == 21)
+    //   {
+    //     chk_b = true;
+    //     break;
+    //   }
+    //   // else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
+    //   else if (flavour == 4 && abs(origin) == 21)
+    //     chk_c = true;
+    // }
+
+    if (chk_include_pseudo_additional)
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 56)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 46)
+        chk_c = true;
+    }
+    else
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 55)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 45)
+        chk_c = true;
+    }
+
+    if (chk_b == true)
+      return TTBB_Scale;
+    else if (chk_c == true)
+      return TTCC_Scale;
+    else
+      return (Cross_Section_Total_TT - Cross_Section_Total_TTBB * TTBB_Scale - Cross_Section_Total_TTCC * TTCC_Scale) / Cross_Seciton_Total_TT_JJ;
+  } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
+  else
+    return 1.;
+
+  return -1;
+} // float Histo_Syst::Reweight_TTHF(const TString &sample_name)
 
 //////////
 
@@ -2196,13 +2548,13 @@ void Histo_Syst::Setup_Template_Reader()
 
 int Histo_Syst::Set_ABCD_Region()
 {
-  bool chk_pass_iso;
+  bool chk_pass; // For muon, iso. For electron, mva
   if (channel == "Mu")
   {
     if (event.lepton_rel_iso < REL_ISO_MUON)
-      chk_pass_iso = true;
+      chk_pass = true;
     else
-      chk_pass_iso = false;
+      chk_pass = false;
   }
   else if (channel == "El")
   {
@@ -2220,21 +2572,26 @@ int Histo_Syst::Set_ABCD_Region()
     }
 
     if (event.lepton_rel_iso < rel_iso_electron_a + rel_iso_electron_b / event.lepton_pt_uncorr)
-      chk_pass_iso = true;
+      chk_pass = true;
     else
-      chk_pass_iso = false;
+      chk_pass = false;
+
+    // if (event.lepton_mva)
+    // {
+    //   cout << "test developing" << endl;
+    // }
   }
 
   if (MET_PT < event.met_pt)
   {
-    if (chk_pass_iso)
+    if (chk_pass)
       return 3; //"D"
     else
       return 1; //"B"
   }
   else
   {
-    if (chk_pass_iso)
+    if (chk_pass)
       return 2; //"C"
     else
       return 0; //"A"
@@ -2258,7 +2615,12 @@ int Histo_Syst::Set_Region()
   if (event.n_bjets == 2)
     return 0;
   else
-    return 1;
+  {
+    if (event.template_score < threeb_cr_cut)
+      return 1;
+    else
+      return 2;
+  }
 
 } // void Histo_Syst::Set_Region()
 

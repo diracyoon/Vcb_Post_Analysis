@@ -18,10 +18,11 @@ public:
   Result_Event_CR_DL();
   ~Result_Event_CR_DL();
 
-  void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all = false);
+  void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all = false, const bool chk_data = false);
 
 protected:
   int n_pv;
+  int n_pileup;
 
   float leading_lepton_eta;
   float leading_lepton_pt;
@@ -31,6 +32,7 @@ protected:
 
   int n_jet;
   int n_b_jet;
+  int n_c_jet;
   float ht;
 
   float leading_jet_bvsc;
@@ -41,13 +43,18 @@ protected:
   float subleading_jet_cvsb;
   float subleading_jet_cvsl;
 
-  float met_pt;
-  float met_phi;
-
   float leading_jet_charge;
   float subleading_jet_charge;
 
+  float leading_jet_pt;
+  float subleading_jet_pt;
+
+  float met_pt;
+  float met_phi;
+
   int decay_mode;
+
+  int gen_ttbar_id;
 
   vector<int> *vec_gen_hf_flavour = NULL;
   vector<int> *vec_gen_hf_origin = NULL;
@@ -56,6 +63,12 @@ protected:
 
   float bvsc_third;
   float bvsc_fourth;
+
+  float bvsc_third_pt;
+  float bvsc_third_eta;
+
+  float bvsc_fourth_pt;
+  float bvsc_fourth_eta;
 
   float weight;
 

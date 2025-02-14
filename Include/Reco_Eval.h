@@ -63,6 +63,8 @@ protected:
   TString tagger;
   TString draw_extension;
 
+  bool chk_rf_tthf_breakdown = false;
+
   map<TString, TFile *> map_fin;
   map<TString, TTree *> map_tree;
 

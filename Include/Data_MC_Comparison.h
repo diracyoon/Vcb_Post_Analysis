@@ -36,8 +36,7 @@ public:
   {
     TString variable_title;
     int n_bin;
-    float x_low;
-    float x_up;
+    vector<float> vec_bin;
   } Histo_Conf;
 
 protected:
@@ -48,7 +47,8 @@ protected:
 
   bool chk_simple = false;
   bool chk_qcd_data_driven = false;
-  
+  bool chk_jes_break_down = false;
+
   int signal_scale = 1;
 
   Samples samples;
@@ -76,7 +76,7 @@ protected:
   int n_variable;
   vector<TString> variable_name;
 
-  vector<Histo_Conf> variable_conf;
+  vector<Histo_Conf> variable_conf[2]; // region
 
   map<TString, int> color;
 
@@ -109,6 +109,7 @@ protected:
   TLegend *tl;
 
   void Compare();
+  void Compare_QCD();
   void Draw();
   void Draw_Each(const TString &a_syst_name, const TString &a_variable_name = "All");
   void Envelope();

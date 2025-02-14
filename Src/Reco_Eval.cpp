@@ -18,7 +18,19 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   tagger = a_tagger;
   draw_extension = a_draw_extension;
 
-  if (era == "2017")
+  if (era == "2016preVFP")
+  {
+    bvsc_wp_m = bvsc_wp_m_2016preVFP;
+    cvsb_wp_m = cvsb_wp_m_2016preVFP;
+    cvsl_wp_m = cvsl_wp_m_2016preVFP;
+  }
+  else if (era == "2016postVFP")
+  {
+    bvsc_wp_m = bvsc_wp_m_2016postVFP;
+    cvsb_wp_m = cvsb_wp_m_2016postVFP;
+    cvsl_wp_m = cvsl_wp_m_2016postVFP;
+  }
+  else if (era == "2017")
   {
     bvsc_wp_m = bvsc_wp_m_2017;
     cvsb_wp_m = cvsb_wp_m_2017;
@@ -31,9 +43,9 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     cvsl_wp_m = cvsl_wp_m_2018;
   }
 
-  TString path_base = getenv("Vcb_Post_Analysis_WD");
+  TString path_base = getenv("Vcb_Post_Analysis_Sample_Dir");
 
-  path_base += "/Sample/" + era + "/" + channel + "/RunResult/Central_Syst/";
+  path_base += era + "/Vcb/Central_Syst/";
 
   if (samples.map_mc.size() != samples.map_short_name_mc.size())
   {
@@ -52,9 +64,9 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 
     TString key;
     if (channel == "Mu")
-      key = "Central/Result_Tree";
+      key = "Mu/Central/Result_Tree";
     else if (channel == "El")
-      key = "Central/Result_Tree";
+      key = "El/Central/Result_Tree";
 
     map_tree[it->first] = (TTree *)map_fin[it->first]->Get(key);
     event.Setup_Tree(map_tree[it->first], Syst::Central, false);
@@ -127,10 +139,10 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
         name_base += "_Wrong_" + fail_reason[j - 1];
 
       name = name_base + "_MVA_Pre";
-      histo_mva_pre[i][j] = new TH1D(name, name, 100, -1, 1);
+      histo_mva_pre[i][j] = new TH1D(name, name, 100, 0, 1);
 
       name = name_base + "_MVA";
-      histo_mva[i][j] = new TH1D(name, name, 100, -1, 1);
+      histo_mva[i][j] = new TH1D(name, name, 100, 0, 1);
 
       name = name_base + "_Cutflow";
       histo_cutflow[i][j] = new TH1D(name, name, 10, 0, 10);
@@ -155,16 +167,16 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     }
   }
 
-  dv_histo_conf = {
-      {"MVA_Scores", 100, -1, 1},
-      {"BvsC_w_u", 100, 0, 1},
-      {"BvsC_w_d", 100, 0, 1},
-      {"Pt_Had_T_B", 100, 0, 300},
-      {"Pt_W_U", 100, 0, 300},
-      {"Pt_W_D", 100, 0, 300},
-      {"Pt_Lep_T_B", 100, 0, 300},
-      {"M_Had_T", 100, 100, 240},
-      {"M_Had_W", 100, 20, 140}};
+  dv_histo_conf = {{"MVA_Scores", 100, 0, 1},
+                   {"M_Had_W", 100, 20, 140},
+                   {"M_Had_T", 100, 100, 240},
+                   {"BvsC_w_u", 100, 0, 1},
+                   {"CvsB_w_u", 100, 0, 1},
+                   {"CvsL_w_u", 100, 0, 1},
+                   {"BvsC_w_d", 100, 0, 1},
+                   {"CvsB_w_d", 100, 0, 1},
+                   {"CvsL_w_d", 100, 0, 1}};
+
   n_discriminators = dv_histo_conf.size();
 
   histo_discriminator = new TH1D ***[n_histo_sample];
@@ -357,7 +369,7 @@ void Reco_Eval::Calculate_Significance()
         else
           count_background += count;
       } // correct or wrong
-    }   // loop over samples
+    } // loop over samples
 
     float count_total = count_signal + count_background;
 
@@ -472,14 +484,14 @@ void Reco_Eval::Draw_Reco()
   cout << "[Reco_Eval::Draw_Reco]: start drawing raw distributions " << endl;
 
   /* Raw distributions */
-  TCanvas *canvas_mva_pre[3];
-  TCanvas *canvas_mva[3];
-  TCanvas *canvas_had_w[3];
-  TCanvas *canvas_had_t[3];
-  TCanvas *canvas_lep_w[3];
-  TCanvas *canvas_lep_t[3];
-  TCanvas *canvas_template[3];
-  for (int i = 0; i < 3; i++)
+  TCanvas *canvas_mva_pre[4];
+  TCanvas *canvas_mva[4];
+  TCanvas *canvas_had_w[4];
+  TCanvas *canvas_had_t[4];
+  TCanvas *canvas_lep_w[4];
+  TCanvas *canvas_lep_t[4];
+  TCanvas *canvas_template[4];
+  for (int i = 0; i < 4; i++)
   {
     TString name = "Permutation_MVA_Pre_" + to_string(i);
     canvas_mva_pre[i] = new TCanvas(name, name, 1300, 800);
@@ -637,42 +649,67 @@ void Reco_Eval::Draw_Reco()
         canvas_index = 1;
         subpad_index = 4;
       }
-      else if (name.Contains("WJets"))
+      else if (name.Contains("ttHTobb"))
       {
         canvas_index = 1;
         subpad_index = 5;
       }
-      else if (name.Contains("DYJets"))
+      else if (name.Contains("ttHToNonbb"))
       {
         canvas_index = 1;
         subpad_index = 6;
       }
-      else if (name.Contains("QCD_bEn"))
+      else if (name.Contains("ttWToLNu"))
       {
         canvas_index = 2;
         subpad_index = 1;
       }
-      else if (name.Contains("ttH"))
+      else if (name.Contains("ttWToQQ"))
       {
         canvas_index = 2;
         subpad_index = 2;
       }
-      else if (name.Contains("ttW"))
+      else if (name.Contains("ttZToLLNuNu"))
       {
         canvas_index = 2;
         subpad_index = 3;
       }
-      else if (name.Contains("ttZ"))
+      else if (name.Contains("ttZToQQ"))
       {
         canvas_index = 2;
         subpad_index = 4;
       }
-      else if (name.Contains("VV"))
+      else if (name.Contains("DYJets"))
       {
         canvas_index = 2;
         subpad_index = 5;
       }
-    }
+      else if (name.Contains("WJets"))
+      {
+        canvas_index = 2;
+        subpad_index = 6;
+      }
+      else if (name.Contains("WW"))
+      {
+        canvas_index = 3;
+        subpad_index = 1;
+      }
+      else if (name.Contains("WZ"))
+      {
+        canvas_index = 3;
+        subpad_index = 2;
+      }
+      else if (name.Contains("ZZ"))
+      {
+        canvas_index = 3;
+        subpad_index = 3;
+      }
+      else if (name.Contains("QCD_bEn"))
+      {
+        canvas_index = 3;
+        subpad_index = 4;
+      }
+    } // else
 
     canvas_mva_pre[canvas_index]->cd(subpad_index);
     stack_mva_pre[i]->Draw("BAR");
@@ -770,7 +807,7 @@ void Reco_Eval::Draw_Reco()
     legend->Draw("SAME");
   }
 
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < 4; i++)
   {
     canvas_mva_pre[i]->Update();
     canvas_mva[i]->Update();
@@ -781,7 +818,7 @@ void Reco_Eval::Draw_Reco()
     canvas_template[i]->Update();
   }
 
-  for (int i = 0; i < 3; i++)
+  for (int i = 0; i < 4; i++)
   {
     TString name = "Permutation_MVA_Pre_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_mva_pre[i]->Print(name, draw_extension);
@@ -906,6 +943,7 @@ void Reco_Eval::Draw_Swap()
       else
         canvas_swap->cd(index + 2);
 
+      histo_swap[i]->GetYaxis()->SetRangeUser(0, 1.1 * histo_swap[i]->GetMaximum());
       histo_swap[i]->Draw();
 
       index++;
@@ -929,6 +967,7 @@ void Reco_Eval::Draw_Swap()
       else
         canvas_swap_fixed->cd(index + 2);
 
+      histo_swap_fix[i]->GetYaxis()->SetRangeUser(0, 1.1 * histo_swap_fix[i]->GetMaximum());
       histo_swap_fix[i]->Draw();
 
       index++;
@@ -993,14 +1032,14 @@ void Reco_Eval::Fill_Histo_Discriminators(const TString &short_name, const int &
   int index = Get_Index(short_name, index_decay_mode);
 
   histo_discriminator[index][0][index_fail_reason]->Fill(event.best_mva_score, event.weight);
-  histo_discriminator[index][1][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
-  histo_discriminator[index][2][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
-  histo_discriminator[index][3][index_fail_reason]->Fill(event.pt_had_t_b, event.weight);
-  histo_discriminator[index][4][index_fail_reason]->Fill(event.pt_w_u, event.weight);
-  histo_discriminator[index][5][index_fail_reason]->Fill(event.pt_w_d, event.weight);
-  histo_discriminator[index][6][index_fail_reason]->Fill(event.pt_lep_t_b, event.weight);
-  histo_discriminator[index][7][index_fail_reason]->Fill(event.m_had_t, event.weight);
-  histo_discriminator[index][8][index_fail_reason]->Fill(event.m_had_w, event.weight);
+  histo_discriminator[index][1][index_fail_reason]->Fill(event.m_had_w, event.weight);
+  histo_discriminator[index][2][index_fail_reason]->Fill(event.m_had_t, event.weight);
+  histo_discriminator[index][3][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
+  histo_discriminator[index][4][index_fail_reason]->Fill(event.cvsb_w_u, event.weight);
+  histo_discriminator[index][5][index_fail_reason]->Fill(event.cvsl_w_u, event.weight);
+  histo_discriminator[index][6][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
+  histo_discriminator[index][7][index_fail_reason]->Fill(event.cvsb_w_d, event.weight);
+  histo_discriminator[index][8][index_fail_reason]->Fill(event.cvsl_w_d, event.weight);
 
   return;
 } // void Reco_Eval::Fill_Histo_Discriminators(const TString& short_name, const int& index_decay_mode, const int& index_fail_reason)
@@ -1101,41 +1140,51 @@ TString Reco_Eval::Histo_Name_RF(const TString &sample_name)
 
   if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   {
-    bool chk_b = false;
-    bool chk_c = false;
-
-    // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
-    for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
-    {
-      histo_name_rf = sample_name;
-
-      int flavour = event.vec_sel_gen_hf_flavour->at(i);
-      int origin = event.vec_sel_gen_hf_origin->at(i);
-
-      if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
-      {
-        chk_b = true;
-        break;
-      }
-      else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
-        chk_c = true;
-    }
+    histo_name_rf = sample_name;
 
     if (histo_name_rf.Contains("WtoCB"))
-      histo_name_rf = "TTLJ";
+      histo_name_rf.ReplaceAll("TTLJ_WtoCB", "TTLJ");
 
-    // if (histo_name.Contains("CP5") || histo_name.Contains("hdamp") || histo_name.Contains("mtop"))
-    // {
-    //   if (histo_name.Contains("TTLJ"))
-    //     histo_name = "TTLJ";
-    //   else if (histo_name.Contains("TTLL"))
-    //     histo_name = "TTLL";
-    // }
+    if (chk_rf_tthf_breakdown)
+    {
+      bool chk_b = false;
+      bool chk_c = false;
 
-    if (chk_b)
-      histo_name_rf += "_BB";
-    else if (chk_c)
-      histo_name_rf += "_CC";
+      // // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
+      // for (unsigned int i = 0; i < event.vec_sel_gen_hf_flavour->size(); i++)
+      // {
+      //   histo_name_rf = sample_name;
+
+      //   int flavour = event.vec_sel_gen_hf_flavour->at(i);
+      //   int origin = event.vec_sel_gen_hf_origin->at(i);
+
+      //   if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
+      //   {
+      //     chk_b = true;
+      //     break;
+      //   }
+      //   else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
+      //     chk_c = true;
+      // }
+
+      // if (histo_name.Contains("CP5") || histo_name.Contains("hdamp") || histo_name.Contains("mtop"))
+      // {
+      //   if (histo_name.Contains("TTLJ"))
+      //     histo_name = "TTLJ";
+      //   else if (histo_name.Contains("TTLL"))
+      //     histo_name = "TTLL";
+      // }
+
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 55)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 45)
+        chk_c = true;
+
+      if (chk_b)
+        histo_name_rf += "_BB";
+      else if (chk_c)
+        histo_name_rf += "_CC";
+    } // if (chk_rf_tthf_breakdown)
 
     if (event.decay_mode == 21 || event.decay_mode == 23)
       histo_name_rf += "_2";
@@ -1145,7 +1194,7 @@ TString Reco_Eval::Histo_Name_RF(const TString &sample_name)
       histo_name_rf += "_45";
   }
   else
-    histo_name_rf = samples.map_short_short_name[sample_name];
+    histo_name_rf = samples.map_short_name_mc[sample_name];
 
   return histo_name_rf;
 } // TString& Reco_Eval::Histo_Name_RF()
@@ -1158,9 +1207,10 @@ void Reco_Eval::Read_Tree()
 
   for (auto it = map_fin.begin(); it != map_fin.end(); it++)
   {
+    TString sample_name = it->first;
     TString short_name = samples.map_short_name_mc[it->first];
-    cout << it->first << endl;
-    // cout << short_name << endl;
+
+    cout << sample_name << " " << short_name << endl;
 
     TTree *tree = map_tree[it->first];
 
@@ -1176,9 +1226,9 @@ void Reco_Eval::Read_Tree()
 
       tree->GetEntry(j);
 
-      
       int abcd_region_index = Set_ABCD_Region();
-      if(abcd_region_index!=3) continue;
+      if (abcd_region_index != 3)
+        continue;
 
       // if (event.best_mva_score_pre < 0.0 || event.template_score < 0.2)
       //   continue;
@@ -1201,7 +1251,7 @@ void Reco_Eval::Read_Tree()
       }
 
       event.weight = 1;
-      event.weight *= Reweight_CKM(short_name);
+      event.weight *= Reweight_CKM(sample_name);
       event.weight *= event.weight_lumi;
       event.weight *= event.weight_mc;
       event.weight *= event.weight_hem_veto;
@@ -1209,7 +1259,7 @@ void Reco_Eval::Read_Tree()
       event.weight *= event.weight_prefire;
       event.weight *= event.weight_top_pt;
       event.weight *= event.weight_sl_trig;
-   
+
       if (channel == "Mu")
       {
         event.weight *= event.weight_mu_id;
@@ -1220,17 +1270,17 @@ void Reco_Eval::Read_Tree()
         event.weight *= event.weight_el_id;
         event.weight *= event.weight_el_reco;
       }
-     
-      TString histo_name_rf = Histo_Name_RF(short_name);
+
+      TString histo_name_rf = Histo_Name_RF(sample_name);
       if (tagger == "B")
       {
         event.weight *= event.weight_b_tag;
-        event.weight *= tagging_rf.Get_Tagging_RF_B_Tag("A", histo_name_rf, "B_Tag_Nominal", event.n_jets, event.ht);
+        event.weight *= tagging_rf.Get_Tagging_RF_B_Tag("D", histo_name_rf, "B_Tag_Nominal", event.n_jets, event.ht);
       }
       else if (tagger == "C")
       {
         event.weight *= event.weight_c_tag;
-        event.weight *= tagging_rf.Get_Tagging_RF_C_Tag("A", histo_name_rf, "C_Tag_Nominal", event.n_pv, event.ht);
+        event.weight *= tagging_rf.Get_Tagging_RF_C_Tag("D", histo_name_rf, "C_Tag_Nominal", event.n_pileup, event.ht);
       }
 
       // if (event.chk_gentau_conta == true)
@@ -1238,14 +1288,16 @@ void Reco_Eval::Read_Tree()
 
       // if (event.n_bjets == 2)
       //   continue;
- 
+
+      // if (event.n_jets != 5)
+      //   continue;
+
       Fill_Output_Tree(short_name, event.decay_mode, index_fail_reason);
 
       Fill_Histo(short_name, event.decay_mode, index_fail_reason);
- 
+
       if (index_fail_reason == 0)
         Fill_Histo_Swap(short_name, event.decay_mode);
-
 
       Fill_Histo_Count(short_name, event.decay_mode, index_fail_reason);
       Fill_Histo_Discriminators(short_name, event.decay_mode, index_fail_reason);
@@ -1303,7 +1355,7 @@ void Reco_Eval::Read_Tree()
       // if(1000<j) break;
       // histo_mva_pre
     } // loop over entries
-  }   // loop over map_fin
+  } // loop over map_fin
 
   return;
 } // void Reco_Eval::Read_Tree()

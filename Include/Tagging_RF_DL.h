@@ -23,6 +23,7 @@
 #include "TStyle.h"
 #include <TPad.h>
 #include <TLatex.h>
+#include <TMath.h>
 
 #include <Samples.h>
 #include "Const_Def.h"
@@ -32,7 +33,7 @@ using namespace std;
 class Tagging_RF_DL : public TObject
 {
 public:
-  Tagging_RF_DL(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString& a_tagger = "C", const TString &a_extension = "png");
+  Tagging_RF_DL(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString &a_tagger = "C", const int &a_index_tree_type = -1, const TString &a_extension = "png");
   ~Tagging_RF_DL();
 
   inline static bool Comparing_TString(const TString &str1, const TString &str2)
@@ -44,7 +45,7 @@ public:
   } // bool Comparing_TString(const TString &str1, const TString &str2)
 
   float Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const int &n_jets_, const float &ht_);
-  float Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const int &n_pv_, const float &ht_);
+  float Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const int &n_pileup_, const float &ht_);
 
 protected:
   int reduction;
@@ -54,6 +55,15 @@ protected:
   TString channel;
   TString tagger;
   TString extension;
+
+  TString year;
+
+  bool chk_tthf_breakdown = false;
+  bool chk_jes_breakdown = false;
+
+  int index_tree_type;
+  vector<TString> vec_tree_type;
+  int n_tree_type;
 
   bool chk_combine;
 
@@ -70,14 +80,16 @@ protected:
 
   vector<float> bin_njet;
   vector<float> bin_ht;
-  vector<float> bin_npv;
+  vector<float> bin_n_pileup;
 
   map<TString, TFile *> map_fin_mc;
-  map<TString, TTree *> map_tree_mc;
-  map<TString, TTree *> map_tree_mc_jec_down;
-  map<TString, TTree *> map_tree_mc_jec_up;
-  map<TString, TTree *> map_tree_mc_jer_down;
-  map<TString, TTree *> map_tree_mc_jer_up;
+  vector<map<TString, TTree *>> vec_map_tree_mc;
+
+  // map<TString, TTree *> map_tree_mc;
+  // map<TString, TTree *> map_tree_mc_jec_down;
+  // map<TString, TTree *> map_tree_mc_jec_up;
+  // map<TString, TTree *> map_tree_mc_jer_down;
+  // map<TString, TTree *> map_tree_mc_jer_up;
 
   map<TString, map<TString, TTree *> *> map_map_tree_mc;
 
@@ -96,7 +108,7 @@ protected:
 
   TH1D ****histo_closure_n_jet; // n_sample, n_syst_c, 3 (no tagging SF, tagging SF, tagging SF+RF)
   TH1D ****histo_closure_ht;    // n_sample, n_syst_c, 3
-  TH1D ****histo_closure_n_pv;  // n_sample, n_syst_c, 3
+  TH1D ****histo_closure_n_pileup;  // n_sample, n_syst_c, 3
 
   TH1D ****histo_closure_bvsc; // n_sample, n_syst_c, 3 (no tagging SF, tagging SF, tagging SF+RF)
   TH1D ****histo_closure_cvsb; // n_sample, n_syst_c, 3
@@ -122,7 +134,10 @@ protected:
   TLegend *legend;
 
   int n_jets;
+  int n_bjets;
+
   int n_pv;
+  int n_pileup;
 
   float ht;
 
@@ -219,6 +234,8 @@ protected:
 
   int decay_mode;
 
+  int gen_ttbar_id;
+
   vector<int> *vec_gen_hf_flavour = NULL;
   vector<int> *vec_gen_hf_origin = NULL;
   vector<int> *vec_sel_gen_hf_flavour = NULL;
@@ -232,12 +249,11 @@ protected:
 
   void Combine_Decay_Mode();
   void Combine_Lepton_Channel();
-  void Combine_TT();
   void Draw_Result();
   void Draw_Validation();
-  void Fill_Histo_MC(const TString &sample_name, const TString &syst_type);
-  void Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name, const TString &syst_type);
-  void Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &syst_type);
+  void Fill_Histo_MC(const TString &sample_name, const TString &tree_type);
+  void Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name, const TString &tree_type);
+  void Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &tree_type);
   int Histo_Index(const TString &sample_name);
   TString Histo_Name_RF(const TString &sample_name);
   void Ratio();

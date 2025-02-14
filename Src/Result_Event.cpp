@@ -16,7 +16,7 @@ Result_Event::~Result_Event()
 
 //////////
 
-void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all)
+void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all, const bool chk_data)
 {
   // cout << "[Result_Event::Setup_Tree]: Init" << endl;
 
@@ -112,9 +112,51 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all)
     tree->SetBranchAddress("weight_c_tag_down_jer", &weight_c_tag_jer_down);
   else if (syst == Syst::JetResUp)
     tree->SetBranchAddress("weight_c_tag_up_jer", &weight_c_tag_jer_up);
-  else if (syst == Syst::JetEnDown)
+  else if (syst == Syst::JetEnDown ||
+           syst == Syst::JetEnAbsoluteDown ||
+           syst == Syst::JetEnBBEC1Down ||
+           syst == Syst::JetEnEC2Down ||
+           syst == Syst::JetEnFlavorQCDDown ||
+           syst == Syst::JetEnHFDown ||
+           syst == Syst::JetEnRelativeBalDown ||
+           syst == Syst::JetEnAbsolute2016Down ||
+           syst == Syst::JetEnBBEC12016Down ||
+           syst == Syst::JetEnEC22016Down ||
+           syst == Syst::JetEnHF2016Down ||
+           syst == Syst::JetEnRelativeSample2016Down ||
+           syst == Syst::JetEnAbsolute2017Down ||
+           syst == Syst::JetEnBBEC12017Down ||
+           syst == Syst::JetEnEC22017Down ||
+           syst == Syst::JetEnHF2017Down ||
+           syst == Syst::JetEnRelativeSample2017Down ||
+           syst == Syst::JetEnAbsolute2018Down ||
+           syst == Syst::JetEnBBEC12018Down ||
+           syst == Syst::JetEnEC22018Down ||
+           syst == Syst::JetEnHF2018Down ||
+           syst == Syst::JetEnRelativeSample2018Down)
     tree->SetBranchAddress("weight_c_tag_down_jes_total", &weight_c_tag_jes_total_down);
-  else if (syst == Syst::JetEnUp)
+  else if (syst == Syst::JetEnUp ||
+           syst == Syst::JetEnAbsoluteUp ||
+           syst == Syst::JetEnBBEC1Up ||
+           syst == Syst::JetEnEC2Up ||
+           syst == Syst::JetEnFlavorQCDUp ||
+           syst == Syst::JetEnHFUp ||
+           syst == Syst::JetEnRelativeBalUp ||
+           syst == Syst::JetEnAbsolute2016Up ||
+           syst == Syst::JetEnBBEC12016Up ||
+           syst == Syst::JetEnEC22016Up ||
+           syst == Syst::JetEnHF2016Up ||
+           syst == Syst::JetEnRelativeSample2016Up ||
+           syst == Syst::JetEnAbsolute2017Up ||
+           syst == Syst::JetEnBBEC12017Up ||
+           syst == Syst::JetEnEC22017Up ||
+           syst == Syst::JetEnHF2017Up ||
+           syst == Syst::JetEnRelativeSample2017Up ||
+           syst == Syst::JetEnAbsolute2018Up ||
+           syst == Syst::JetEnBBEC12018Up ||
+           syst == Syst::JetEnEC22018Up ||
+           syst == Syst::JetEnHF2018Up ||
+           syst == Syst::JetEnRelativeSample2018Up)
     tree->SetBranchAddress("weight_c_tag_up_jes_total", &weight_c_tag_jes_total_up);
   else
     tree->SetBranchAddress("weight_c_tag", &weight_c_tag);
@@ -173,6 +215,7 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all)
   tree->SetBranchAddress("lepton_pt_uncorr", &lepton_pt_uncorr);
   tree->SetBranchAddress("lepton_eta", &lepton_eta);
   tree->SetBranchAddress("lepton_rel_iso", &lepton_rel_iso);
+  // tree->SetBranchAddress("lepton_mva", &lepton_mva);
 
   tree->SetBranchAddress("n_jets", &n_jets);
   tree->SetBranchAddress("n_bjets", &n_bjets);
@@ -237,33 +280,39 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all)
   tree->SetBranchAddress("eta_lep_t_b", &eta_lep_t_b);
 
   tree->SetBranchAddress("swapped_mva", &swapped_mva);
-  tree->SetBranchAddress("template_score", &template_score);
+  //tree->SetBranchAddress("template_score", &template_score);
+  tree->SetBranchAddress("template_score_eraInclusive", &template_score);
   // tree->SetBranchAddress("template_score_fewshot", &template_score);
   // tree->SetBranchAddress("template_score_sigRegionOnly", &template_score);
   // tree->SetBranchAddress("template_score_focal", &template_score);
   // tree->SetBranchAddress("template_score_focal_sigOnly", &template_score);
-  //tree->SetBranchAddress("template_score_mixed", &template_score);
+  // tree->SetBranchAddress("template_score_mixed", &template_score);
 
   // for MC
-  tree->SetBranchAddress("decay_mode", &decay_mode);
+  if (!chk_data)
+  {
+    tree->SetBranchAddress("n_pileup", &n_pileup);
 
-  tree->SetBranchAddress("Gen_HF_Flavour", &vec_gen_hf_flavour);
-  tree->SetBranchAddress("Gen_HF_Origin", &vec_gen_hf_origin);
-  tree->SetBranchAddress("Sel_Gen_HF_Flavour", &vec_sel_gen_hf_flavour);
-  tree->SetBranchAddress("Sel_Gen_HF_Origin", &vec_sel_gen_hf_origin);
+    tree->SetBranchAddress("decay_mode", &decay_mode);
+    tree->SetBranchAddress("genTtbarId", &gen_ttbar_id);
 
-  tree->SetBranchAddress("swapped_truth", &swapped_truth);
+    tree->SetBranchAddress("Gen_HF_Flavour", &vec_gen_hf_flavour);
+    tree->SetBranchAddress("Gen_HF_Origin", &vec_gen_hf_origin);
+    tree->SetBranchAddress("Sel_Gen_HF_Flavour", &vec_sel_gen_hf_flavour);
+    tree->SetBranchAddress("Sel_Gen_HF_Origin", &vec_sel_gen_hf_origin);
 
-  tree->SetBranchAddress("chk_reco_correct", &chk_reco_correct);
-  tree->SetBranchAddress("chk_included", &chk_included);
-  tree->SetBranchAddress("chk_hf_contamination", &chk_hf_contamination);
-  tree->SetBranchAddress("chk_gentau_conta", &chk_gentau_conta);
+    tree->SetBranchAddress("swapped_truth", &swapped_truth);
 
-  tree->SetBranchAddress("pu_conta_had_t_b", &pu_conta_had_t_b);
-  tree->SetBranchAddress("pu_conta_w_u", &pu_conta_w_u);
-  tree->SetBranchAddress("pu_conta_w_d", &pu_conta_w_d);
-  tree->SetBranchAddress("pu_conta_lep_t_b", &pu_conta_lep_t_b);
+    tree->SetBranchAddress("chk_reco_correct", &chk_reco_correct);
+    tree->SetBranchAddress("chk_included", &chk_included);
+    tree->SetBranchAddress("chk_hf_contamination", &chk_hf_contamination);
+    tree->SetBranchAddress("chk_gentau_conta", &chk_gentau_conta);
 
+    tree->SetBranchAddress("pu_conta_had_t_b", &pu_conta_had_t_b);
+    tree->SetBranchAddress("pu_conta_w_u", &pu_conta_w_u);
+    tree->SetBranchAddress("pu_conta_w_d", &pu_conta_w_d);
+    tree->SetBranchAddress("pu_conta_lep_t_b", &pu_conta_lep_t_b);
+  }
   // cout << "[Result_Event::Setup_Tree]: Done" << endl;
 
   return;

@@ -21,7 +21,7 @@ public:
   Result_Event(const TString &a_era = "2017", const TString &a_channel = "Mu", const TString &a_swap_mode = "Permutation_MVA");
   virtual ~Result_Event();
 
-  void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all = false);
+  void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all = false, const bool chk_data = false);
 
 protected:
   float weight_mu_id;
@@ -127,11 +127,13 @@ protected:
   float weight_top_pt;
 
   int n_pv;
+  int n_pileup;
 
   float lepton_pt;
   float lepton_pt_uncorr;
   float lepton_eta;
   float lepton_rel_iso;
+  float lepton_mva;
 
   int n_jets;
   int n_bjets;
@@ -187,6 +189,8 @@ protected:
 
   // For MC
   int decay_mode;
+
+  int gen_ttbar_id;
 
   vector<int> *vec_gen_hf_flavour = NULL;
   vector<int> *vec_gen_hf_origin = NULL;

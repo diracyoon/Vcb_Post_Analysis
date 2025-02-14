@@ -4,11 +4,15 @@ ClassImp(Tagging_RF_DL);
 
 //////////
 
-Tagging_RF_DL::Tagging_RF_DL(const TString &a_era, const TString &a_mode, const TString &a_channel, const TString &a_tagger, const TString &a_extension) : samples(a_era, a_channel, "Vcb_Tagging_RF_DL")
+Tagging_RF_DL::Tagging_RF_DL(const TString &a_era, const TString &a_mode, const TString &a_channel, const TString &a_tagger, const int &a_index_tree_type, const TString &a_extension) : samples(a_era, a_channel, "Vcb_Tagging_RF_DL")
 {
   ROOT::EnableImplicitMT(10);
 
+  TH1::AddDirectory(kFALSE);
+
   cout << "[Tagging_RF_DL::Tagging_RF_DL]: Init analysis" << endl;
+
+  reduction = 1;
 
   era = a_era;
   mode = a_mode;
@@ -16,21 +20,77 @@ Tagging_RF_DL::Tagging_RF_DL(const TString &a_era, const TString &a_mode, const 
   tagger = a_tagger;
   extension = a_extension;
 
+  index_tree_type = a_index_tree_type;
+
   if (tagger.Contains("C"))
     tagger = "C_Tagger";
   else if (tagger.Contains("B"))
     tagger = "B_Tagger";
 
+  if (era.Contains("2016"))
+    year = "2016";
+  else
+    year = era;
+
+  chk_tthf_breakdown = false;
+  chk_jes_breakdown = false;
+
+  // syst_tree
+  vec_tree_type = {"JetResDown", "JetResUp",
+                   "JetEnDown", "JetEnUp"};
+
+  if (chk_jes_breakdown == true)
+  {
+    vector<TString> vec_tree_type_jes_breakdown = {"JetEnAbsoluteDown", "JetEnAbsoluteUp",
+                                                   "JetEnBBEC1Down", "JetEnBBEC1Up",
+                                                   "JetEnEC2Down", "JetEnEC2Up",
+                                                   "JetEnFlavorQCDDown", "JetEnFlavorQCDUp",
+                                                   "JetEnHFDown", "JetEnHFUp",
+                                                   "JetEnRelativeBalDown", "JetEnRelativeBalUp"};
+
+    vector<TString> vec_tree_type_jes_breakdown_year = {"JetEnAbsolute", "JetEnBBEC1", "JetEnEC2", "JetEnHF", "JetEnRelativeSample"};
+    for (unsigned int i = 0; i < vec_tree_type_jes_breakdown_year.size(); i++)
+    {
+      vec_tree_type_jes_breakdown.push_back(vec_tree_type_jes_breakdown_year[i] + year + "Down");
+      vec_tree_type_jes_breakdown.push_back(vec_tree_type_jes_breakdown_year[i] + year + "Up");
+    }
+
+    vec_tree_type.insert(vec_tree_type.end(), vec_tree_type_jes_breakdown.begin(), vec_tree_type_jes_breakdown.end());
+  } //  if (chk_jes_breakdown == true)
+
+  // Central should be the last
+  vec_tree_type.push_back("Central");
+
+  n_tree_type = vec_tree_type.size();
+
   syst_name_b = {"B_Tag_Nominal",
                  "B_Tag_HF_Down", "B_Tag_HF_Up",
                  "B_Tag_LF_Down", "B_Tag_LF_Up",
-                 "B_Tag_JES_Down", "B_Tag_JES_Up",
                  "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up",
                  "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up",
                  "B_Tag_CFErr1_Down", "B_Tag_CFErr1_Up",
                  "B_Tag_CFErr2_Down", "B_Tag_CFErr2_Up",
                  "B_Tag_HFStats1_Down", "B_Tag_HFStats1_Up",
-                 "B_Tag_HFStats2_Down", "B_Tag_HFStats2_Up"};
+                 "B_Tag_HFStats2_Down", "B_Tag_HFStats2_Up",
+                 "B_Tag_JES_Total_Down", "B_Tag_JES_Total_Up"};
+  if (chk_jes_breakdown == true)
+  {
+    vector<TString> syst_name_b_jes_breakdown = {"B_Tag_JES_Absolute_Down", "B_Tag_JES_Absolute_Up",
+                                                 "B_Tag_JES_BBEC1_Down", "B_Tag_JES_BBEC1_Up",
+                                                 "B_Tag_JES_EC2_Down", "B_Tag_JES_EC2_Up",
+                                                 "B_Tag_JES_FlavorQCD_Down", "B_Tag_JES_FlavorQCD_Up",
+                                                 "B_Tag_JES_HF_Down", "B_Tag_JES_HF_Up",
+                                                 "B_Tag_JES_RelativeBal_Down", "B_Tag_JES_RelativeBal_Up"};
+
+    vector<TString> syst_name_b_jes_breakdown_year = {"B_Tag_JES_Absolute", "B_Tag_JES_BBEC1", "B_Tag_JES_EC2", "B_Tag_JES_HF", "B_Tag_JES_RelativeSample"};
+    for (unsigned int i = 0; i < syst_name_b_jes_breakdown_year.size(); i++)
+    {
+      syst_name_b_jes_breakdown.push_back(syst_name_b_jes_breakdown_year[i] + year + "_Down");
+      syst_name_b_jes_breakdown.push_back(syst_name_b_jes_breakdown_year[i] + year + "_Up");
+    }
+
+    syst_name_b.insert(syst_name_b.end(), syst_name_b_jes_breakdown.begin(), syst_name_b_jes_breakdown.end());
+  }
   n_syst_b = syst_name_b.size();
 
   syst_name_c = {"C_Tag_Nominal",
@@ -47,107 +107,231 @@ Tagging_RF_DL::Tagging_RF_DL(const TString &a_era, const TString &a_mode, const 
                  "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
                  "C_Tag_JER_Down", "C_Tag_JER_Up",
                  "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up"};
+
+  if (chk_jes_breakdown == true)
+  {
+    vector<TString> syst_name_c_jes_breakdown = {"C_Tag_JES_Absolute_Down", "C_Tag_JES_Absolute_Up",
+                                                 "C_Tag_JES_BBEC1_Down", "C_Tag_JES_BBEC1_Up",
+                                                 "C_Tag_JES_EC2_Down", "C_Tag_JES_EC2_Up",
+                                                 "C_Tag_JES_FlavorQCD_Down", "C_Tag_JES_FlavorQCD_Up",
+                                                 "C_Tag_JES_HF_Down", "C_Tag_JES_HF_Up",
+                                                 "C_Tag_JES_RelativeBal_Down", "C_Tag_JES_RelativeBal_Up"};
+
+    vector<TString> syst_name_c_jes_breakdown_year = {"C_Tag_JES_Absolute", "C_Tag_JES_BBEC1", "C_Tag_JES_EC2", "C_Tag_JES_HF", "C_Tag_JES_RelativeSample"};
+    for (unsigned int i = 0; i < syst_name_c_jes_breakdown_year.size(); i++)
+    {
+      syst_name_c_jes_breakdown.push_back(syst_name_c_jes_breakdown_year[i] + year + "_Down");
+      syst_name_c_jes_breakdown.push_back(syst_name_c_jes_breakdown_year[i] + year + "_Up");
+    }
+
+    syst_name_c.insert(syst_name_c.end(), syst_name_c_jes_breakdown.begin(), syst_name_c_jes_breakdown.end());
+  }
   n_syst_c = syst_name_c.size();
 
   // number of merged MC
-  for (auto it = samples.map_short_short_name.begin(); it != samples.map_short_short_name.end(); it++)
+  for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
   {
     cout << it->second << endl;
     vec_short_name_mc.push_back(it->second);
   }
 
-  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
-  vec_short_name_mc.push_back("TTLJ_JJ_2"); // TTLJ, w->ud or w->us
-  vec_short_name_mc.push_back("TTLJ_JJ_4"); // TTLJ, w->cd or w->cs
-  vec_short_name_mc.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
-  vec_short_name_mc.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
-  vec_short_name_mc.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
-  vec_short_name_mc.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
-
-  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
-  vec_short_name_mc.push_back("TTLJ_JJ_45"); // TTLJ, w->cb
-  vec_short_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
-  vec_short_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
-
-  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL"));
-  vec_short_name_mc.push_back("TTLL_JJ"); // TTLL+cc, w->ud or w->us
-  vec_short_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
-  vec_short_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
-
-  // TT systematic
-  // TTLJ
-  vec_short_name_mc.push_back("TTLJ_hdampDown_JJ_2");
-  vec_short_name_mc.push_back("TTLJ_hdampDown_JJ_4");
-  vec_short_name_mc.push_back("TTLJ_hdampDown_CC_2");
-  vec_short_name_mc.push_back("TTLJ_hdampDown_CC_4");
-  vec_short_name_mc.push_back("TTLJ_hdampDown_BB_2");
-  vec_short_name_mc.push_back("TTLJ_hdampDown_BB_4");
-
-  vec_short_name_mc.push_back("TTLJ_hdampUp_JJ_2");
-  vec_short_name_mc.push_back("TTLJ_hdampUp_JJ_4");
-  vec_short_name_mc.push_back("TTLJ_hdampUp_CC_2");
-  vec_short_name_mc.push_back("TTLJ_hdampUp_CC_4");
-  vec_short_name_mc.push_back("TTLJ_hdampUp_BB_2");
-  vec_short_name_mc.push_back("TTLJ_hdampUp_BB_4");
-
-  vec_short_name_mc.push_back("TTLJ_CP5Down_JJ_2");
-  vec_short_name_mc.push_back("TTLJ_CP5Down_JJ_4");
-  vec_short_name_mc.push_back("TTLJ_CP5Down_CC_2");
-  vec_short_name_mc.push_back("TTLJ_CP5Down_CC_4");
-  vec_short_name_mc.push_back("TTLJ_CP5Down_BB_2");
-  vec_short_name_mc.push_back("TTLJ_CP5Down_BB_4");
-
-  vec_short_name_mc.push_back("TTLJ_CP5Up_JJ_2");
-  vec_short_name_mc.push_back("TTLJ_CP5Up_JJ_4");
-  vec_short_name_mc.push_back("TTLJ_CP5Up_CC_2");
-  vec_short_name_mc.push_back("TTLJ_CP5Up_CC_4");
-  vec_short_name_mc.push_back("TTLJ_CP5Up_BB_2");
-  vec_short_name_mc.push_back("TTLJ_CP5Up_BB_4");
-
-  vec_short_name_mc.push_back("TTLJ_mtop171p5_JJ_2");
-  vec_short_name_mc.push_back("TTLJ_mtop171p5_JJ_4");
-  vec_short_name_mc.push_back("TTLJ_mtop171p5_CC_2");
-  vec_short_name_mc.push_back("TTLJ_mtop171p5_CC_4");
-  vec_short_name_mc.push_back("TTLJ_mtop171p5_BB_2");
-  vec_short_name_mc.push_back("TTLJ_mtop171p5_BB_4");
-
-  vec_short_name_mc.push_back("TTLJ_mtop173p5_JJ_2");
-  vec_short_name_mc.push_back("TTLJ_mtop173p5_JJ_4");
-  vec_short_name_mc.push_back("TTLJ_mtop173p5_CC_2");
-  vec_short_name_mc.push_back("TTLJ_mtop173p5_CC_4");
-  vec_short_name_mc.push_back("TTLJ_mtop173p5_BB_2");
-  vec_short_name_mc.push_back("TTLJ_mtop173p5_BB_4");
-
-  // TTLL
-  vec_short_name_mc.push_back("TTLL_hdampDown_JJ");
-  vec_short_name_mc.push_back("TTLL_hdampDown_CC");
-  vec_short_name_mc.push_back("TTLL_hdampDown_BB");
-
-  vec_short_name_mc.push_back("TTLL_hdampUp_JJ");
-  vec_short_name_mc.push_back("TTLL_hdampUp_CC");
-  vec_short_name_mc.push_back("TTLL_hdampUp_BB");
-
-  vec_short_name_mc.push_back("TTLL_CP5Down_JJ");
-  vec_short_name_mc.push_back("TTLL_CP5Down_CC");
-  vec_short_name_mc.push_back("TTLL_CP5Down_BB");
-
-  vec_short_name_mc.push_back("TTLL_CP5Up_JJ");
-  vec_short_name_mc.push_back("TTLL_CP5Up_CC");
-  vec_short_name_mc.push_back("TTLL_CP5Up_BB");
-
-  vec_short_name_mc.push_back("TTLL_mtop171p5_JJ");
-  vec_short_name_mc.push_back("TTLL_mtop171p5_CC");
-  vec_short_name_mc.push_back("TTLL_mtop171p5_BB");
-
-  vec_short_name_mc.push_back("TTLL_mtop173p5_JJ");
-  vec_short_name_mc.push_back("TTLL_mtop173p5_CC");
-  vec_short_name_mc.push_back("TTLL_mtop173p5_BB");
-
   // remove redundancy
   sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
   vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
+
+  if (chk_tthf_breakdown)
+  {
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
+    vec_short_name_mc.push_back("TTLJ_JJ_2"); // TTLJ, w->ud or w->us
+    vec_short_name_mc.push_back("TTLJ_JJ_4"); // TTLJ, w->cd or w->cs
+    vec_short_name_mc.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
+    vec_short_name_mc.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
+    vec_short_name_mc.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
+    vec_short_name_mc.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
+    vec_short_name_mc.push_back("TTLJ_JJ_45"); // TTLJ, w->cb
+    vec_short_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
+    vec_short_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL"));
+    vec_short_name_mc.push_back("TTLL_JJ"); // TTLL+cc, w->ud or w->us
+    vec_short_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
+    vec_short_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
+
+    // TT systematic
+    // TTLJ
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampDown"));
+    vec_short_name_mc.push_back("TTLJ_hdampDown_JJ_2");
+    vec_short_name_mc.push_back("TTLJ_hdampDown_JJ_4");
+    vec_short_name_mc.push_back("TTLJ_hdampDown_CC_2");
+    vec_short_name_mc.push_back("TTLJ_hdampDown_CC_4");
+    vec_short_name_mc.push_back("TTLJ_hdampDown_BB_2");
+    vec_short_name_mc.push_back("TTLJ_hdampDown_BB_4");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampUp"));
+    vec_short_name_mc.push_back("TTLJ_hdampUp_JJ_2");
+    vec_short_name_mc.push_back("TTLJ_hdampUp_JJ_4");
+    vec_short_name_mc.push_back("TTLJ_hdampUp_CC_2");
+    vec_short_name_mc.push_back("TTLJ_hdampUp_CC_4");
+    vec_short_name_mc.push_back("TTLJ_hdampUp_BB_2");
+    vec_short_name_mc.push_back("TTLJ_hdampUp_BB_4");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Down"));
+    vec_short_name_mc.push_back("TTLJ_CP5Down_JJ_2");
+    vec_short_name_mc.push_back("TTLJ_CP5Down_JJ_4");
+    vec_short_name_mc.push_back("TTLJ_CP5Down_CC_2");
+    vec_short_name_mc.push_back("TTLJ_CP5Down_CC_4");
+    vec_short_name_mc.push_back("TTLJ_CP5Down_BB_2");
+    vec_short_name_mc.push_back("TTLJ_CP5Down_BB_4");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Up"));
+    vec_short_name_mc.push_back("TTLJ_CP5Up_JJ_2");
+    vec_short_name_mc.push_back("TTLJ_CP5Up_JJ_4");
+    vec_short_name_mc.push_back("TTLJ_CP5Up_CC_2");
+    vec_short_name_mc.push_back("TTLJ_CP5Up_CC_4");
+    vec_short_name_mc.push_back("TTLJ_CP5Up_BB_2");
+    vec_short_name_mc.push_back("TTLJ_CP5Up_BB_4");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop171p5"));
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_JJ_2");
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_JJ_4");
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_CC_2");
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_CC_4");
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_BB_2");
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_BB_4");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop173p5"));
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_JJ_2");
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_JJ_4");
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_CC_2");
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_CC_4");
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_BB_2");
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_BB_4");
+
+    // TTLL
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL_hdampDown"));
+    vec_short_name_mc.push_back("TTLL_hdampDown_JJ");
+    vec_short_name_mc.push_back("TTLL_hdampDown_CC");
+    vec_short_name_mc.push_back("TTLL_hdampDown_BB");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL_hdampUp"));
+    vec_short_name_mc.push_back("TTLL_hdampUp_JJ");
+    vec_short_name_mc.push_back("TTLL_hdampUp_CC");
+    vec_short_name_mc.push_back("TTLL_hdampUp_BB");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL_CP5Down"));
+    vec_short_name_mc.push_back("TTLL_CP5Down_JJ");
+    vec_short_name_mc.push_back("TTLL_CP5Down_CC");
+    vec_short_name_mc.push_back("TTLL_CP5Down_BB");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL_CP5Up"));
+    vec_short_name_mc.push_back("TTLL_CP5Up_JJ");
+    vec_short_name_mc.push_back("TTLL_CP5Up_CC");
+    vec_short_name_mc.push_back("TTLL_CP5Up_BB");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL_mtop171p5"));
+    vec_short_name_mc.push_back("TTLL_mtop171p5_JJ");
+    vec_short_name_mc.push_back("TTLL_mtop171p5_CC");
+    vec_short_name_mc.push_back("TTLL_mtop171p5_BB");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL_mtop173p5"));
+    vec_short_name_mc.push_back("TTLL_mtop173p5_JJ");
+    vec_short_name_mc.push_back("TTLL_mtop173p5_CC");
+    vec_short_name_mc.push_back("TTLL_mtop173p5_BB");
+
+    // TTLJ_WtoCB
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampDown"));
+    vec_short_name_mc.push_back("TTLJ_hdampDown_JJ_45");
+    vec_short_name_mc.push_back("TTLJ_hdampDown_CC_45");
+    vec_short_name_mc.push_back("TTLJ_hdampDown_BB_45");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampUp"));
+    vec_short_name_mc.push_back("TTLJ_hdampUp_JJ_45");
+    vec_short_name_mc.push_back("TTLJ_hdampUp_CC_45");
+    vec_short_name_mc.push_back("TTLJ_hdampUp_BB_45");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Down"));
+    vec_short_name_mc.push_back("TTLJ_CP5Down_JJ_45");
+    vec_short_name_mc.push_back("TTLJ_CP5Down_CC_45");
+    vec_short_name_mc.push_back("TTLJ_CP5Down_BB_45");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Up"));
+    vec_short_name_mc.push_back("TTLJ_CP5Up_JJ_45");
+    vec_short_name_mc.push_back("TTLJ_CP5Up_CC_45");
+    vec_short_name_mc.push_back("TTLJ_CP5Up_BB_45");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop171p5"));
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_JJ_45");
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_CC_45");
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_BB_45");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop173p5"));
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_JJ_45");
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_CC_45");
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_BB_45");
+  } // if (chk_tthf_breakdown)
+  else
+  {
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
+    vec_short_name_mc.push_back("TTLJ_2"); // TTLJ, w->ud or w->us
+    vec_short_name_mc.push_back("TTLJ_4"); // TTLJ, w->cd or w->cs
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
+    vec_short_name_mc.push_back("TTLJ_45"); // TTLJ, w->cb
+
+    // TT systematic
+    // TTLJ
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampDown"));
+    vec_short_name_mc.push_back("TTLJ_hdampDown_2");
+    vec_short_name_mc.push_back("TTLJ_hdampDown_4");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampUp"));
+    vec_short_name_mc.push_back("TTLJ_hdampUp_2");
+    vec_short_name_mc.push_back("TTLJ_hdampUp_4");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Down"));
+    vec_short_name_mc.push_back("TTLJ_CP5Down_2");
+    vec_short_name_mc.push_back("TTLJ_CP5Down_4");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Up"));
+    vec_short_name_mc.push_back("TTLJ_CP5Up_2");
+    vec_short_name_mc.push_back("TTLJ_CP5Up_4");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop171p5"));
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_2");
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_4");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop173p5"));
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_2");
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_4");
+
+    // TTLJ_WtoCB
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampDown"));
+    vec_short_name_mc.push_back("TTLJ_hdampDown_45");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampUp"));
+    vec_short_name_mc.push_back("TTLJ_hdampUp_45");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Down"));
+    vec_short_name_mc.push_back("TTLJ_CP5Down_45");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Up"));
+    vec_short_name_mc.push_back("TTLJ_CP5Up_45");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop171p5"));
+    vec_short_name_mc.push_back("TTLJ_mtop171p5_45");
+
+    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop173p5"));
+    vec_short_name_mc.push_back("TTLJ_mtop173p5_45");
+  }
+
   n_sample_merge_mc = vec_short_name_mc.size();
   cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
+  for (int i = 0; i < vec_short_name_mc.size(); i++)
+  {
+    cout << vec_short_name_mc[i] << endl;
+  }
 
   if (mode == "Analysis")
     Run_Analysis();
@@ -175,7 +359,11 @@ Tagging_RF_DL::~Tagging_RF_DL()
 
   if (mode == "Analysis")
   {
-    TString fout_name = "Vcb_Tagging_RF_DL_" + era + "_" + channel + ".root";
+    TString fout_name;
+    if (index_tree_type == -1)
+      fout_name = "Vcb_Tagging_RF_DL_" + era + "_" + channel + ".root";
+    else
+      fout_name = "Vcb_Tagging_RF_DL_" + era + "_" + channel + "_" + vec_tree_type[0] + ".root";
     fout = new TFile(fout_name, "RECREATE");
 
     fout->cd();
@@ -255,7 +443,7 @@ Tagging_RF_DL::~Tagging_RF_DL()
 
           histo_closure_n_jet[i][j][k]->Write();
           histo_closure_ht[i][j][k]->Write();
-          histo_closure_n_pv[i][j][k]->Write();
+          histo_closure_n_pileup[i][j][k]->Write();
 
           histo_closure_bvsc[i][j][k]->Write();
           histo_closure_cvsb[i][j][k]->Write();
@@ -324,7 +512,7 @@ float Tagging_RF_DL::Get_Tagging_RF_DL_B_Tag(const TString &sample, const TStrin
 
 //////////
 
-float Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const int &n_pv_, const float &ht_)
+float Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const int &n_pileup_, const float &ht_)
 {
   if (!syst.Contains("C_Tag"))
   {
@@ -347,25 +535,25 @@ float Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag(const TString &sample, const TStrin
     exit(1);
   }
 
-  float n_pv = n_pv_;
+  float n_pileup = n_pileup_;
   float ht = ht_;
 
   // handle underflow
-  if (n_pv_ < bin_npv[0])
-    n_pv = bin_npv[0] + 0.1;
+  if (n_pileup_ < bin_n_pileup[0])
+    n_pileup = bin_n_pileup[0] + 0.1;
   if (ht_ < bin_ht[0])
     ht = bin_ht[0] + 0.1;
 
   // handle overflow
-  if (bin_npv[bin_npv.size() - 1] < n_pv_)
-    n_pv = bin_npv[bin_npv.size() - 1] - 0.1;
+  if (bin_n_pileup[bin_n_pileup.size() - 1] < n_pileup_)
+    n_pileup = bin_n_pileup[bin_n_pileup.size() - 1] - 0.1;
   if (bin_ht[bin_ht.size() - 1] < ht_)
     ht = bin_ht[bin_ht.size() - 1] - 0.1;
 
-  int bin = ratio_c[sample_index][syst_index]->FindBin(n_pv, ht);
+  int bin = ratio_c[sample_index][syst_index]->FindBin(n_pileup, ht);
 
   return ratio_c[sample_index][syst_index]->GetBinContent(bin);
-} // float Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag(const TString &syst_name, const int &n_pv, const float& ht)
+} // float Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag(const TString &syst_name, const int &n_pileup, const float& ht)
 
 //////////
 
@@ -525,110 +713,11 @@ void Tagging_RF_DL::Combine_Lepton_Channel()
         histo_after_combine->Write();
         ratio_average->Write();
       } // if (key_name.Contains("Ratio_"))
-    }   // loop over key entries
-  }     // loop over dir entries
+    } // loop over key entries
+  } // loop over dir entries
 
   return;
 } // void Tagging_RF_DL::Combine()
-
-//////////
-
-void Tagging_RF_DL::Combine_TT()
-{
-  cout << "Tagging_RF_DL::Combine_TT" << endl;
-
-  TDirectory *dir_ttlj = fout->mkdir("TTLJ_HF");
-  TDirectory *dir_ttll = fout->mkdir("TTLL_HF");
-
-  TDirectory *dir_jj = (TDirectory *)fout->Get("TTLL_JJ");
-  TList *list = dir_jj->GetListOfKeys();
-  for (int i = 0; i < list->GetEntries(); i++)
-  {
-    TObject *key = (TObject *)list->At(i);
-    TString key_name = key->GetName();
-
-    cout << key_name << endl;
-
-    TString temp = key_name;
-    int first = temp.First('_');
-    temp.Remove(0, first + 1);
-
-    int second = temp.First('_');
-    temp.Remove(0, second + 1);
-
-    int third = temp.First('_');
-    TString syst = temp.Remove(0, third + 1);
-
-    for (int j = 0; j < 2; j++)
-    {
-      TString species;
-      if (j == 0)
-        species = "TTLJ";
-      else
-        species = "TTLL";
-
-      cout << species << " " << syst << endl;
-
-      TH1 *ratio_jj;
-      TH1 *ratio_cc;
-      TH1 *ratio_bb;
-
-      if (syst.Contains("B_Tag"))
-      {
-        ratio_jj = (TH2D *)fout->Get(species + "_JJ/Ratio_" + species + "_JJ_" + syst)->Clone();
-        ratio_cc = (TH2D *)fout->Get(species + "_CC/Ratio_" + species + "_CC_" + syst)->Clone();
-        ratio_bb = (TH2D *)fout->Get(species + "_BB/Ratio_" + species + "_BB_" + syst)->Clone();
-      }
-      else if (syst.Contains("C_Tag"))
-      {
-        // ratio_jj = (TH1D *)fout->Get(species + "_JJ/Ratio_" + species + "_JJ_" + syst)->Clone();
-        // ratio_cc = (TH1D *)fout->Get(species + "_CC/Ratio_" + species + "_CC_" + syst)->Clone();
-        // ratio_bb = (TH1D *)fout->Get(species + "_BB/Ratio_" + species + "_BB_" + syst)->Clone();
-        ratio_jj = (TH2D *)fout->Get(species + "_JJ/Ratio_" + species + "_JJ_" + syst)->Clone();
-        ratio_cc = (TH2D *)fout->Get(species + "_CC/Ratio_" + species + "_CC_" + syst)->Clone();
-        ratio_bb = (TH2D *)fout->Get(species + "_BB/Ratio_" + species + "_BB_" + syst)->Clone();
-      }
-
-      cout << "KS test result (JJ and CC): " << ratio_jj->KolmogorovTest(ratio_cc) << endl;
-      cout << "KS test result (JJ and BB): " << ratio_jj->KolmogorovTest(ratio_bb) << endl;
-      cout << "KS test result (CC and BB): " << ratio_cc->KolmogorovTest(ratio_bb) << endl;
-
-      ratio_jj->SetBit(TH1::kIsAverage);
-      ratio_cc->SetBit(TH1::kIsAverage);
-      ratio_bb->SetBit(TH1::kIsAverage);
-
-      // Average all
-      //  TH1 *ratio_averaged = ratio_jj;
-      //  ratio_averaged->Add(ratio_cc);
-      //  ratio_averaged->Add(ratio_bb);
-
-      // Average TTBB+TTCC
-      TH1 *ratio_averaged = ratio_cc;
-      ratio_averaged->Add(ratio_bb);
-
-      if (species == "TTLJ")
-      {
-        TString name = "Ratio_TTLJ_HF_" + syst;
-        ratio_averaged->SetName(name);
-        ratio_averaged->SetTitle(name);
-
-        dir_ttlj->cd();
-        ratio_averaged->Write();
-      }
-      else if (species == "TTLL")
-      {
-        TString name = "Ratio_TTLL_HF_" + syst;
-        ratio_averaged->SetName(name);
-        ratio_averaged->SetTitle(name);
-
-        dir_ttll->cd();
-        ratio_averaged->Write();
-      }
-    }
-  }
-
-  return;
-} // void Tagging_RF_DL::Combine_TT()
 
 //////////
 
@@ -639,36 +728,95 @@ void Tagging_RF_DL::Draw_Result()
   gStyle->SetPaintTextFormat("0.3f");
   gStyle->SetOptStat(0);
 
-  vector<TString> syst_to_draw = {"B_Tag_Nominal",
-                                  "B_Tag_HF_Down", "B_Tag_HF_Up",
-                                  "B_Tag_JES_Down", "B_Tag_JES_Up",
-                                  "B_Tag_LF_Down", "B_Tag_LF_Up",
-                                  "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up",
-                                  "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up",
-                                  "B_Tag_CFErr1_Down", "B_Tag_CFErr1_Up",
-                                  "B_Tag_CFErr2_Down", "B_Tag_CFErr2_Up",
-                                  "B_Tag_HFStats1_Down", "B_Tag_HFStats1_Up",
-                                  "B_Tag_HFStats2_Down", "B_Tag_HFStats2_Up"};
-
   /*
-  vector<TString> syst_to_draw = {"C_Tag_Nominal",
-                                    "C_Tag_Extrap_Down", "C_Tag_Extrap_Up",
-                                    "C_Tag_Interp_Down", "C_Tag_Interp_Up",
-                                    "C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up",
-                                    "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up",
-                                    "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up",
-                                    "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up",
-                                    "C_Tag_PU_Down", "C_Tag_PU_Up",
-                                    "C_Tag_Stat_Down", "C_Tag_Stat_Up",
-                                    "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up",
-                                    "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up",
-                                    "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
-                                    "C_Tag_JER_Down", "C_Tag_JER_Up",
-                                    "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up"};
-                                    */
+    vector<TString> syst_to_draw = {"B_Tag_Nominal",
+                                    "B_Tag_HF_Down", "B_Tag_HF_Up",
+                                    "B_Tag_JES_Down", "B_Tag_JES_Up",
+                                    "B_Tag_LF_Down", "B_Tag_LF_Up",
+                                    "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up",
+                                    "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up",
+                                    "B_Tag_CFErr1_Down", "B_Tag_CFErr1_Up",
+                                    "B_Tag_CFErr2_Down", "B_Tag_CFErr2_Up",
+                                    "B_Tag_HFStats1_Down", "B_Tag_HFStats1_Up",
+                                    "B_Tag_HFStats2_Down", "B_Tag_HFStats2_Up"};
+  */
 
-  // compare decay mode
-  vector<TString> sample_to_draw = {"TTLJ_JJ", "TTLJ_CC", "TTLJ_BB"};
+  vector<TString> syst_to_draw = {"C_Tag_Nominal"};
+  // "C_Tag_Extrap_Down", "C_Tag_Extrap_Up",
+  // "C_Tag_Interp_Down", "C_Tag_Interp_Up",
+  // "C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up",
+  // "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up",
+  // "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up",
+  // "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up",
+  // "C_Tag_PU_Down", "C_Tag_PU_Up",
+  // "C_Tag_Stat_Down", "C_Tag_Stat_Up",
+  // "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up",
+  // "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up",
+  // "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
+  // "C_Tag_JER_Down", "C_Tag_JER_Up",
+  // "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up"};
+
+  vector<TString> sample_to_draw;
+
+  // /* compare TTHF */
+  // for (unsigned i = 0; i < syst_to_draw.size(); i++)
+  // {
+  //   TString can_name = Form("Comp_Tagging_RF_DL_TTHF_%s_%s", syst_to_draw[i].Data(), era.Data());
+  //   TCanvas *canvas = new TCanvas(can_name, can_name, 1600, 1000);
+  //   canvas->Divide(2, 1);
+  //   canvas->Draw();
+
+  //   TH2D *histo[3];
+  //   histo[0] = (TH2D *)fout->Get(Form("TTLL_JJ/Ratio_TTLL_JJ_%s", syst_to_draw[i].Data()));
+  //   histo[1] = (TH2D *)fout->Get(Form("TTLL_CC/Ratio_TTLL_CC_%s", syst_to_draw[i].Data()));
+  //   histo[2] = (TH2D *)fout->Get(Form("TTLL_BB/Ratio_TTLL_BB_%s", syst_to_draw[i].Data()));
+
+  //   TH1D *histo_proj_x[3];
+  //   TH1D *histo_proj_y[3];
+
+  //   for (unsigned int j = 0; j < 3; j++)
+  //   {
+  //     histo_proj_x[j] = (TH1D *)histo[j]->ProjectionX()->Clone();
+  //     histo_proj_y[j] = (TH1D *)histo[j]->ProjectionY()->Clone();
+
+  //     histo_proj_x[j]->Scale(1. / histo[j]->GetNbinsY());
+  //     histo_proj_y[j]->Scale(1. / histo[j]->GetNbinsX());
+
+  //     histo_proj_x[j]->SetLineColor(j + 1);
+  //     histo_proj_y[j]->SetLineColor(j + 1);
+
+  //     canvas->cd(1);
+  //     if (j == 0)
+  //     {
+  //       if (tagger == "B_Tagger")
+  //         histo_proj_x[j]->GetXaxis()->SetTitle("Jet Multiplicity");
+  //       else if (tagger == "C_Tagger")
+  //         histo_proj_x[j]->GetXaxis()->SetTitle("NPV");
+  //       histo_proj_x[j]->GetYaxis()->SetRangeUser(0.6, 1.4);
+  //       histo_proj_x[j]->Draw();
+  //     }
+  //     histo_proj_x[j]->Draw("same");
+
+  //     canvas->cd(2);
+  //     if (j == 0)
+  //     {
+  //       histo_proj_y[j]->GetXaxis()->SetTitle("HT [GeV]");
+  //       histo_proj_y[j]->GetYaxis()->SetRangeUser(0.6, 1.4);
+  //       histo_proj_y[j]->Draw();
+  //     }
+  //     histo_proj_y[j]->Draw("same");
+  //   } // loop over TTHH
+
+  //   canvas->Print(can_name + "." + extension, extension);
+  // } // for(unsigned i=0; i<syst_to_draw.size(); i++)
+
+  /* compare decay mode */
+  // w decay mode
+
+  if (chk_tthf_breakdown)
+    sample_to_draw = {"TTLJ_JJ", "TTLJ_CC", "TTLJ_BB"};
+  else
+    sample_to_draw = {"TTLJ"};
 
   for (unsigned int i = 0; i < sample_to_draw.size(); i++)
   {
@@ -679,7 +827,7 @@ void Tagging_RF_DL::Draw_Result()
     {
       cout << syst_to_draw[j] << endl;
 
-      TString can_name = Form("Comp_Tagging_RF_Decay_Mode_%s_%s_%s", sample_to_draw[i].Data(), syst_to_draw[j].Data(), era.Data());
+      TString can_name = Form("Comp_Tagging_RF_DL_Decay_Mode_%s_%s_%s", sample_to_draw[i].Data(), syst_to_draw[j].Data(), era.Data());
       TCanvas *canvas = new TCanvas(can_name, can_name, 1600, 1000);
       canvas->Divide(2, 1);
       canvas->Draw();
@@ -729,8 +877,11 @@ void Tagging_RF_DL::Draw_Result()
     }
   } // loop over sample
 
-  sample_to_draw = {"TTLL_JJ", "TTLL_CC", "TTLL_BB",
-                    "TTLJ_JJ", "TTLJ_CC", "TTLJ_BB"};
+  if (chk_tthf_breakdown)
+    sample_to_draw = {"TTLL_JJ", "TTLL_CC", "TTLL_BB",
+                      "TTLJ_JJ", "TTLJ_CC", "TTLJ_BB"};
+  else
+    sample_to_draw = {"TTLL", "TTLJ_2"};
 
   for (unsigned int i = 0; i < sample_to_draw.size(); i++)
   {
@@ -836,16 +987,18 @@ void Tagging_RF_DL::Draw_Validation()
 
   gStyle->SetOptStat(0);
 
-  vector<TString> vec_sample_to_draw = {"TTLJ_JJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
-                                        "TTLJ_JJ_4", "TTLJ_CC_4", "TTLJ_BB_4",
-                                        "TTLJ_JJ_45", "TTLJ_CC_45", "TTLJ_BB_45",
-                                        "TTLL_JJ", "TTLL_CC", "TTLL_BB",
-                                        "TTLL_hdampDown_JJ", "TTLL_hdampDown_CC", "TTLL_hdampDown_BB",
-                                        "TTLL_hdampUp_JJ", "TTLL_hdampUp_CC", "TTLL_hdampUp_BB",
-                                        "TTLL_CP5Down_JJ", "TTLL_CP5Down_CC", "TTLL_CP5Down_BB",
-                                        "TTLL_CP5Up_JJ", "TTLL_CP5Up_CC", "TTLL_CP5Up_BB",
-                                        "TTLL_mtop171p5_JJ", "TTLL_mtop171p5_CC", "TTLL_mtop171p5_BB",
-                                        "TTLL_mtop173p5_JJ", "TTLL_mtop173p5_CC", "TTLL_mtop173p5_BB"};
+  // vector<TString> vec_sample_to_draw = {"TTLJ_JJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
+  //                                       "TTLJ_JJ_4", "TTLJ_CC_4", "TTLJ_BB_4",
+  //                                       "TTLJ_JJ_45", "TTLJ_CC_45", "TTLJ_BB_45",
+  //                                       "TTLL_JJ", "TTLL_CC", "TTLL_BB",
+  //                                       "TTLL_hdampDown_JJ", "TTLL_hdampDown_CC", "TTLL_hdampDown_BB",
+  //                                       "TTLL_hdampUp_JJ", "TTLL_hdampUp_CC", "TTLL_hdampUp_BB",
+  //                                       "TTLL_CP5Down_JJ", "TTLL_CP5Down_CC", "TTLL_CP5Down_BB",
+  //                                       "TTLL_CP5Up_JJ", "TTLL_CP5Up_CC", "TTLL_CP5Up_BB",
+  //                                       "TTLL_mtop171p5_JJ", "TTLL_mtop171p5_CC", "TTLL_mtop171p5_BB",
+  //                                       "TTLL_mtop173p5_JJ", "TTLL_mtop173p5_CC", "TTLL_mtop173p5_BB"};
+  vector<TString> vec_sample_to_draw = {"TTLL", "TTLJ_mtop171p5_45"};
+  ;
 
   TLatex *latex = new TLatex();
   latex->SetTextSize(0.03);
@@ -861,8 +1014,8 @@ void Tagging_RF_DL::Draw_Validation()
     else if (tagger == "C_Tagger")
       n_syst = n_syst_c;
 
-    // for (int j = 0; j < n_syst; j++)
-    for (int j = 0; j < 3; j++)
+    for (int j = 0; j < n_syst; j++)
+    // for (int j = 0; j < 3; j++)
     {
       TString syst_name;
       if (tagger == "B_Tagger")
@@ -1016,14 +1169,14 @@ void Tagging_RF_DL::Draw_Validation()
 
       canvas->Print(can_name + "." + extension, extension);
     } // loop over n_syst_c
-  }   // loop over vec_sample_to_draw
+  } // loop over vec_sample_to_draw
 
   return;
 } // void Tagging_RF_DL::Draw_Validation()
 
 //////////
 
-void Tagging_RF_DL::Fill_Histo_MC(const TString &sample_name, const TString &syst_type)
+void Tagging_RF_DL::Fill_Histo_MC(const TString &sample_name, const TString &tree_type)
 {
   int sample_index = Histo_Index(sample_name);
 
@@ -1045,7 +1198,10 @@ void Tagging_RF_DL::Fill_Histo_MC(const TString &sample_name, const TString &sys
   weight *= weight_el_id;
   weight *= weight_el_reco;
 
-  if (syst_type == "Central")
+  if (TMath::IsNaN(weight) || TMath::IsNaN(weight_scale_variation_1) || TMath::IsNaN(weight_scale_variation_2) || TMath::IsNaN(weight_scale_variation_3) || TMath::IsNaN(weight_scale_variation_6))
+    return;
+
+  if (tree_type == "Central")
   {
     // norminal
     histo_mc_before_b[sample_index][0]->Fill(n_jets, ht, weight);
@@ -1059,189 +1215,457 @@ void Tagging_RF_DL::Fill_Histo_MC(const TString &sample_name, const TString &sys
     histo_mc_after_b[sample_index][2]->Fill(n_jets, ht, weight * weight_b_tag_hf_up);
 
     // lf
-    // hf
     histo_mc_before_b[sample_index][3]->Fill(n_jets, ht, weight);
     histo_mc_after_b[sample_index][3]->Fill(n_jets, ht, weight * weight_b_tag_lf_down);
 
     histo_mc_before_b[sample_index][4]->Fill(n_jets, ht, weight);
     histo_mc_after_b[sample_index][4]->Fill(n_jets, ht, weight * weight_b_tag_lf_up);
+
+    // lfstats1
+    histo_mc_before_b[sample_index][5]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][5]->Fill(n_jets, ht, weight * weight_b_tag_lfstats1_down);
+
+    histo_mc_before_b[sample_index][6]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][6]->Fill(n_jets, ht, weight * weight_b_tag_lfstats1_up);
+
+    // lfstats2
+    histo_mc_before_b[sample_index][7]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][7]->Fill(n_jets, ht, weight * weight_b_tag_lfstats2_down);
+
+    histo_mc_before_b[sample_index][8]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][8]->Fill(n_jets, ht, weight * weight_b_tag_lfstats2_up);
+
+    // cferr1
+    histo_mc_before_b[sample_index][9]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][9]->Fill(n_jets, ht, weight * weight_b_tag_cferr1_down);
+
+    histo_mc_before_b[sample_index][10]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][10]->Fill(n_jets, ht, weight * weight_b_tag_cferr1_up);
+
+    // cferr2
+    histo_mc_before_b[sample_index][11]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][11]->Fill(n_jets, ht, weight * weight_b_tag_cferr2_down);
+
+    histo_mc_before_b[sample_index][12]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][12]->Fill(n_jets, ht, weight * weight_b_tag_cferr2_up);
+
+    // hfstats1
+    histo_mc_before_b[sample_index][13]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][13]->Fill(n_jets, ht, weight * weight_b_tag_hfstats1_down);
+
+    histo_mc_before_b[sample_index][14]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][14]->Fill(n_jets, ht, weight * weight_b_tag_hfstats1_up);
+
+    // hfstats2
+    histo_mc_before_b[sample_index][15]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][15]->Fill(n_jets, ht, weight * weight_b_tag_hfstats2_down);
+
+    histo_mc_before_b[sample_index][16]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][16]->Fill(n_jets, ht, weight * weight_b_tag_hfstats2_up);
   }
 
   // jet en down
-  if (syst_type == "JetEnDown")
+  else if (tree_type == "JetEnDown")
   {
-    histo_mc_before_b[sample_index][5]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][5]->Fill(n_jets, ht, weight * weight_b_tag_jes_down);
+    histo_mc_before_b[sample_index][17]->Fill(n_jets, ht, weight);
+    histo_mc_after_b[sample_index][17]->Fill(n_jets, ht, weight * weight_b_tag_jes_down);
   }
 
   // jet en up
-  if (syst_type == "JetEnUp")
+  else if (tree_type == "JetEnUp")
   {
-    histo_mc_before_b[sample_index][6]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][6]->Fill(n_jets, ht, weight * weight_b_tag_jes_up);
-  }
-
-  if (syst_type == "Central")
-  {
-    // lfstats1
-    histo_mc_before_b[sample_index][7]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][7]->Fill(n_jets, ht, weight * weight_b_tag_lfstats1_down);
-
-    histo_mc_before_b[sample_index][8]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][8]->Fill(n_jets, ht, weight * weight_b_tag_lfstats1_up);
-
-    // lfstats2
-    histo_mc_before_b[sample_index][9]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][9]->Fill(n_jets, ht, weight * weight_b_tag_lfstats2_down);
-
-    histo_mc_before_b[sample_index][10]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][10]->Fill(n_jets, ht, weight * weight_b_tag_lfstats2_up);
-
-    // cferr1
-    histo_mc_before_b[sample_index][11]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][11]->Fill(n_jets, ht, weight * weight_b_tag_cferr1_down);
-
-    histo_mc_before_b[sample_index][12]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][12]->Fill(n_jets, ht, weight * weight_b_tag_cferr1_up);
-
-    // cferr2
-    histo_mc_before_b[sample_index][13]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][13]->Fill(n_jets, ht, weight * weight_b_tag_cferr2_down);
-
-    histo_mc_before_b[sample_index][14]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][14]->Fill(n_jets, ht, weight * weight_b_tag_cferr2_up);
-
-    // hfstats1
-    histo_mc_before_b[sample_index][15]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][15]->Fill(n_jets, ht, weight * weight_b_tag_hfstats1_down);
-
-    histo_mc_before_b[sample_index][16]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][16]->Fill(n_jets, ht, weight * weight_b_tag_hfstats1_up);
-
-    // hfstats2
-    histo_mc_before_b[sample_index][17]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][17]->Fill(n_jets, ht, weight * weight_b_tag_hfstats2_down);
-
     histo_mc_before_b[sample_index][18]->Fill(n_jets, ht, weight);
-    histo_mc_after_b[sample_index][18]->Fill(n_jets, ht, weight * weight_b_tag_hfstats2_up);
+    histo_mc_after_b[sample_index][18]->Fill(n_jets, ht, weight * weight_b_tag_jes_up);
   }
 
-  if (syst_type == "Central")
+  // jes break down
+  if (chk_jes_breakdown == true)
+  {
+    if (tree_type == "JetEnAbsoluteDown")
+    {
+      histo_mc_before_b[sample_index][19]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][19]->Fill(n_pileup, ht, weight * weight_b_tag_jes_down);
+    }
+
+    else if (tree_type == "JetEnAbsoluteUp")
+    {
+      histo_mc_before_b[sample_index][20]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][20]->Fill(n_pileup, ht, weight * weight_b_tag_jes_up);
+    }
+
+    else if (tree_type == "JetEnBBEC1Down")
+    {
+      histo_mc_before_b[sample_index][21]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][21]->Fill(n_pileup, ht, weight * weight_b_tag_jes_down);
+    }
+
+    else if (tree_type == "JetEnBBEC1Up")
+    {
+      histo_mc_before_b[sample_index][22]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][22]->Fill(n_pileup, ht, weight * weight_b_tag_jes_up);
+    }
+
+    else if (tree_type == "JetEnEC2Down")
+    {
+      histo_mc_before_b[sample_index][23]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][23]->Fill(n_pileup, ht, weight * weight_b_tag_jes_down);
+    }
+
+    else if (tree_type == "JetEnEC2Up")
+    {
+      histo_mc_before_b[sample_index][24]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][24]->Fill(n_pileup, ht, weight * weight_b_tag_jes_up);
+    }
+
+    else if (tree_type == "JetEnFlavorQCDDown")
+    {
+      histo_mc_before_b[sample_index][25]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][25]->Fill(n_pileup, ht, weight * weight_b_tag_jes_down);
+    }
+
+    else if (tree_type == "JetEnFlavorQCDUp")
+    {
+      histo_mc_before_b[sample_index][26]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][26]->Fill(n_pileup, ht, weight * weight_b_tag_jes_up);
+    }
+
+    else if (tree_type == "JetEnHFDown")
+    {
+      histo_mc_before_b[sample_index][27]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][27]->Fill(n_pileup, ht, weight * weight_b_tag_jes_down);
+    }
+
+    else if (tree_type == "JetEnHFUp")
+    {
+      histo_mc_before_b[sample_index][28]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][28]->Fill(n_pileup, ht, weight * weight_b_tag_jes_up);
+    }
+
+    else if (tree_type == "JetEnRelativeBalDown")
+    {
+      histo_mc_before_b[sample_index][29]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][29]->Fill(n_pileup, ht, weight * weight_b_tag_jes_down);
+    }
+
+    else if (tree_type == "JetEnRelativeBalUp")
+    {
+      histo_mc_before_b[sample_index][30]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][30]->Fill(n_pileup, ht, weight * weight_b_tag_jes_up);
+    }
+
+    else if (tree_type == "JetEnAbsolute2016Down" || tree_type == "JetEnAbsolute2017Down" || tree_type == "JetEnAbsolute2018Down")
+    {
+      histo_mc_before_b[sample_index][31]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][31]->Fill(n_pileup, ht, weight * weight_b_tag_jes_down);
+    }
+
+    else if (tree_type == "JetEnAbsolute2016Up" || tree_type == "JetEnAbsolute2017Up" || tree_type == "JetEnAbsolute2018Up")
+    {
+      histo_mc_before_b[sample_index][32]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][32]->Fill(n_pileup, ht, weight * weight_b_tag_jes_up);
+    }
+
+    else if (tree_type == "JetEnBBEC12016Down" || tree_type == "JetEnBBEC12017Down" || tree_type == "JetEnBBEC12018Down")
+    {
+      histo_mc_before_b[sample_index][33]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][33]->Fill(n_pileup, ht, weight * weight_b_tag_jes_down);
+    }
+
+    else if (tree_type == "JetEnBBEC12016Up" || tree_type == "JetEnBBEC12017Up" || tree_type == "JetEnBBEC12018Up")
+    {
+      histo_mc_before_b[sample_index][34]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][34]->Fill(n_pileup, ht, weight * weight_b_tag_jes_up);
+    }
+
+    else if (tree_type == "JetEnEC22016Down" || tree_type == "JetEnEC22017Down" || tree_type == "JetEnEC22018Down")
+    {
+      histo_mc_before_b[sample_index][35]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][35]->Fill(n_pileup, ht, weight * weight_b_tag_jes_down);
+    }
+
+    else if (tree_type == "JetEnEC22016Up" || tree_type == "JetEnEC22017Up" || tree_type == "JetEnEC22018Up")
+    {
+      histo_mc_before_b[sample_index][36]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][36]->Fill(n_pileup, ht, weight * weight_b_tag_jes_up);
+    }
+
+    else if (tree_type == "JetEnHF2016Down" || tree_type == "JetEnHF2017Down" || tree_type == "JetEnHF2018Down")
+    {
+      histo_mc_before_b[sample_index][37]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][37]->Fill(n_pileup, ht, weight * weight_b_tag_jes_down);
+    }
+
+    else if (tree_type == "JetEnHF2016Up" || tree_type == "JetEnHF2017Up" || tree_type == "JetEnHF2018Up")
+    {
+      histo_mc_before_b[sample_index][38]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][38]->Fill(n_pileup, ht, weight * weight_b_tag_jes_up);
+    }
+
+    else if (tree_type == "JetEnRelativeSample2016Down" || tree_type == "JetEnRelativeSample2017Down" || tree_type == "JetEnRelativeSample2018Down")
+    {
+      histo_mc_before_b[sample_index][39]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][39]->Fill(n_pileup, ht, weight * weight_b_tag_jes_down);
+    }
+
+    else if (tree_type == "JetEnRelativeSample2016Up" || tree_type == "JetEnRelativeSample2017Up" || tree_type == "JetEnRelativeSample2018Up")
+    {
+      histo_mc_before_b[sample_index][40]->Fill(n_pileup, ht, weight);
+      histo_mc_after_b[sample_index][40]->Fill(n_pileup, ht, weight * weight_b_tag_jes_up);
+    }
+  } // if (chk_jes_breakdown == true)
+
+  if (tree_type == "Central")
   {
     // norminal
-    histo_mc_before_c[sample_index][0]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][0]->Fill(n_pv, ht, weight * weight_c_tag);
+    histo_mc_before_c[sample_index][0]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][0]->Fill(n_pileup, ht, weight * weight_c_tag);
 
     // extrap
-    histo_mc_before_c[sample_index][1]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][1]->Fill(n_pv, ht, weight * weight_c_tag_extrap_down);
+    histo_mc_before_c[sample_index][1]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][1]->Fill(n_pileup, ht, weight * weight_c_tag_extrap_down);
 
-    histo_mc_before_c[sample_index][2]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][2]->Fill(n_pv, ht, weight * weight_c_tag_extrap_up);
+    histo_mc_before_c[sample_index][2]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][2]->Fill(n_pileup, ht, weight * weight_c_tag_extrap_up);
 
     // interp
-    histo_mc_before_c[sample_index][3]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][3]->Fill(n_pv, ht, weight * weight_c_tag_interp_down);
+    histo_mc_before_c[sample_index][3]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][3]->Fill(n_pileup, ht, weight * weight_c_tag_interp_down);
 
-    histo_mc_before_c[sample_index][4]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][4]->Fill(n_pv, ht, weight * weight_c_tag_interp_up);
+    histo_mc_before_c[sample_index][4]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][4]->Fill(n_pileup, ht, weight * weight_c_tag_interp_up);
 
     // muf
-    histo_mc_before_c[sample_index][5]->Fill(n_pv, ht, weight * weight_scale_variation_2);
-    histo_mc_after_c[sample_index][5]->Fill(n_pv, ht, weight * weight_scale_variation_2 * weight_c_tag_lhe_scale_muf_down);
+    histo_mc_before_c[sample_index][5]->Fill(n_pileup, ht, weight * weight_scale_variation_2);
+    histo_mc_after_c[sample_index][5]->Fill(n_pileup, ht, weight * weight_scale_variation_2 * weight_c_tag_lhe_scale_muf_down);
 
-    histo_mc_before_c[sample_index][6]->Fill(n_pv, ht, weight * weight_scale_variation_1);
-    histo_mc_after_c[sample_index][6]->Fill(n_pv, ht, weight * weight_scale_variation_1 * weight_c_tag_lhe_scale_muf_up);
+    histo_mc_before_c[sample_index][6]->Fill(n_pileup, ht, weight * weight_scale_variation_1);
+    histo_mc_after_c[sample_index][6]->Fill(n_pileup, ht, weight * weight_scale_variation_1 * weight_c_tag_lhe_scale_muf_up);
 
     // mur
-    histo_mc_before_c[sample_index][7]->Fill(n_pv, ht, weight * weight_scale_variation_6);
-    histo_mc_after_c[sample_index][7]->Fill(n_pv, ht, weight * weight_scale_variation_6 * weight_c_tag_lhe_scale_mur_down);
+    histo_mc_before_c[sample_index][7]->Fill(n_pileup, ht, weight * weight_scale_variation_6);
+    histo_mc_after_c[sample_index][7]->Fill(n_pileup, ht, weight * weight_scale_variation_6 * weight_c_tag_lhe_scale_mur_down);
 
-    histo_mc_before_c[sample_index][8]->Fill(n_pv, ht, weight * weight_scale_variation_3);
-    histo_mc_after_c[sample_index][8]->Fill(n_pv, ht, weight * weight_scale_variation_3 * weight_c_tag_lhe_scale_mur_up);
+    histo_mc_before_c[sample_index][8]->Fill(n_pileup, ht, weight * weight_scale_variation_3);
+    histo_mc_after_c[sample_index][8]->Fill(n_pileup, ht, weight * weight_scale_variation_3 * weight_c_tag_lhe_scale_mur_up);
 
     // fsr
-    histo_mc_before_c[sample_index][9]->Fill(n_pv, ht, weight * weight_ps[0]);
-    histo_mc_after_c[sample_index][9]->Fill(n_pv, ht, weight * weight_ps[0] * weight_c_tag_ps_fsr_fixed_down);
+    histo_mc_before_c[sample_index][9]->Fill(n_pileup, ht, weight * weight_ps[0]);
+    histo_mc_after_c[sample_index][9]->Fill(n_pileup, ht, weight * weight_ps[0] * weight_c_tag_ps_fsr_fixed_down);
 
-    histo_mc_before_c[sample_index][10]->Fill(n_pv, ht, weight * weight_ps[1]);
-    histo_mc_after_c[sample_index][10]->Fill(n_pv, ht, weight * weight_ps[1] * weight_c_tag_ps_fsr_fixed_up);
+    histo_mc_before_c[sample_index][10]->Fill(n_pileup, ht, weight * weight_ps[1]);
+    histo_mc_after_c[sample_index][10]->Fill(n_pileup, ht, weight * weight_ps[1] * weight_c_tag_ps_fsr_fixed_up);
 
     // isr
-    histo_mc_before_c[sample_index][11]->Fill(n_pv, ht, weight * weight_ps[2]);
-    histo_mc_after_c[sample_index][11]->Fill(n_pv, ht, weight * weight_ps[2] * weight_c_tag_ps_isr_fixed_down);
+    histo_mc_before_c[sample_index][11]->Fill(n_pileup, ht, weight * weight_ps[2]);
+    histo_mc_after_c[sample_index][11]->Fill(n_pileup, ht, weight * weight_ps[2] * weight_c_tag_ps_isr_fixed_down);
 
-    histo_mc_before_c[sample_index][12]->Fill(n_pv, ht, weight * weight_ps[3]);
-    histo_mc_after_c[sample_index][12]->Fill(n_pv, ht, weight * weight_ps[3] * weight_c_tag_ps_isr_fixed_up);
+    histo_mc_before_c[sample_index][12]->Fill(n_pileup, ht, weight * weight_ps[3]);
+    histo_mc_after_c[sample_index][12]->Fill(n_pileup, ht, weight * weight_ps[3] * weight_c_tag_ps_isr_fixed_up);
 
     // pu
-    histo_mc_before_c[sample_index][13]->Fill(n_pv, ht, weight * weight_pileup_down / weight_pileup);
-    histo_mc_after_c[sample_index][13]->Fill(n_pv, ht, weight * weight_pileup_down / weight_pileup * weight_c_tag_pu_down);
+    histo_mc_before_c[sample_index][13]->Fill(n_pileup, ht, weight * weight_pileup_down / weight_pileup);
+    histo_mc_after_c[sample_index][13]->Fill(n_pileup, ht, weight * weight_pileup_down / weight_pileup * weight_c_tag_pu_down);
 
-    histo_mc_before_c[sample_index][14]->Fill(n_pv, ht, weight * weight_pileup_up / weight_pileup);
-    histo_mc_after_c[sample_index][14]->Fill(n_pv, ht, weight * weight_pileup_up / weight_pileup * weight_c_tag_pu_up);
+    histo_mc_before_c[sample_index][14]->Fill(n_pileup, ht, weight * weight_pileup_up / weight_pileup);
+    histo_mc_after_c[sample_index][14]->Fill(n_pileup, ht, weight * weight_pileup_up / weight_pileup * weight_c_tag_pu_up);
 
     // stat
-    histo_mc_before_c[sample_index][15]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][15]->Fill(n_pv, ht, weight * weight_c_tag_stat_down);
+    histo_mc_before_c[sample_index][15]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][15]->Fill(n_pileup, ht, weight * weight_c_tag_stat_down);
 
-    histo_mc_before_c[sample_index][16]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][16]->Fill(n_pv, ht, weight * weight_c_tag_stat_up);
+    histo_mc_before_c[sample_index][16]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][16]->Fill(n_pileup, ht, weight * weight_c_tag_stat_up);
 
     // unc_dyjets_b
-    histo_mc_before_c[sample_index][17]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][17]->Fill(n_pv, ht, weight * weight_c_tag_xsec_br_unc_dyjets_b_down);
+    histo_mc_before_c[sample_index][17]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][17]->Fill(n_pileup, ht, weight * weight_c_tag_xsec_br_unc_dyjets_b_down);
 
-    histo_mc_before_c[sample_index][18]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][18]->Fill(n_pv, ht, weight * weight_c_tag_xsec_br_unc_dyjets_b_up);
+    histo_mc_before_c[sample_index][18]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][18]->Fill(n_pileup, ht, weight * weight_c_tag_xsec_br_unc_dyjets_b_up);
 
     // unc_dyjets_c
-    histo_mc_before_c[sample_index][19]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][19]->Fill(n_pv, ht, weight * weight_c_tag_xsec_br_unc_dyjets_c_down);
+    histo_mc_before_c[sample_index][19]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][19]->Fill(n_pileup, ht, weight * weight_c_tag_xsec_br_unc_dyjets_c_down);
 
-    histo_mc_before_c[sample_index][20]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][20]->Fill(n_pv, ht, weight * weight_c_tag_xsec_br_unc_dyjets_c_up);
+    histo_mc_before_c[sample_index][20]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][20]->Fill(n_pileup, ht, weight * weight_c_tag_xsec_br_unc_dyjets_c_up);
 
     // unc_wjets_c
-    histo_mc_before_c[sample_index][21]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][21]->Fill(n_pv, ht, weight * weight_c_tag_xsec_br_unc_wjets_c_down);
+    histo_mc_before_c[sample_index][21]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][21]->Fill(n_pileup, ht, weight * weight_c_tag_xsec_br_unc_wjets_c_down);
 
-    histo_mc_before_c[sample_index][22]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][22]->Fill(n_pv, ht, weight * weight_c_tag_xsec_br_unc_wjets_c_up);
+    histo_mc_before_c[sample_index][22]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][22]->Fill(n_pileup, ht, weight * weight_c_tag_xsec_br_unc_wjets_c_up);
   }
 
   // jer
-  if (syst_type == "JetResDown")
+  else if (tree_type == "JetResDown")
   {
-    histo_mc_before_c[sample_index][23]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][23]->Fill(n_pv, ht, weight * weight_c_tag_jer_down);
+    histo_mc_before_c[sample_index][23]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][23]->Fill(n_pileup, ht, weight * weight_c_tag_jer_down);
   }
 
-  if (syst_type == "JetResUp")
+  else if (tree_type == "JetResUp")
   {
-    histo_mc_before_c[sample_index][24]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][24]->Fill(n_pv, ht, weight * weight_c_tag_jer_up);
+    histo_mc_before_c[sample_index][24]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][24]->Fill(n_pileup, ht, weight * weight_c_tag_jer_up);
   }
 
   // jes
-  if (syst_type == "JetEnDown")
+  else if (tree_type == "JetEnDown")
   {
-    histo_mc_before_c[sample_index][25]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][25]->Fill(n_pv, ht, weight * weight_c_tag_jes_total_down);
+    histo_mc_before_c[sample_index][25]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][25]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
   }
 
-  if (syst_type == "JetEnUp")
+  else if (tree_type == "JetEnUp")
   {
-    histo_mc_before_c[sample_index][26]->Fill(n_pv, ht, weight);
-    histo_mc_after_c[sample_index][26]->Fill(n_pv, ht, weight * weight_c_tag_jes_total_up);
+    histo_mc_before_c[sample_index][26]->Fill(n_pileup, ht, weight);
+    histo_mc_after_c[sample_index][26]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
   }
+
+  // jes break down
+  if (chk_jes_breakdown == true)
+  {
+    if (tree_type == "JetEnAbsoluteDown")
+    {
+      histo_mc_before_c[sample_index][27]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][27]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
+    }
+
+    else if (tree_type == "JetEnAbsoluteUp")
+    {
+      histo_mc_before_c[sample_index][28]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][28]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
+    }
+
+    else if (tree_type == "JetEnBBEC1Down")
+    {
+      histo_mc_before_c[sample_index][29]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][29]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
+    }
+
+    else if (tree_type == "JetEnBBEC1Up")
+    {
+      histo_mc_before_c[sample_index][30]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][30]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
+    }
+
+    else if (tree_type == "JetEnEC2Down")
+    {
+      histo_mc_before_c[sample_index][31]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][31]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
+    }
+
+    else if (tree_type == "JetEnEC2Up")
+    {
+      histo_mc_before_c[sample_index][32]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][32]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
+    }
+
+    else if (tree_type == "JetEnFlavorQCDDown")
+    {
+      histo_mc_before_c[sample_index][33]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][33]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
+    }
+
+    else if (tree_type == "JetEnFlavorQCDUp")
+    {
+      histo_mc_before_c[sample_index][34]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][34]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
+    }
+
+    else if (tree_type == "JetEnHFDown")
+    {
+      histo_mc_before_c[sample_index][35]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][35]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
+    }
+
+    else if (tree_type == "JetEnHFUp")
+    {
+      histo_mc_before_c[sample_index][36]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][36]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
+    }
+
+    else if (tree_type == "JetEnRelativeBalDown")
+    {
+      histo_mc_before_c[sample_index][37]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][37]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
+    }
+
+    else if (tree_type == "JetEnRelativeBalUp")
+    {
+      histo_mc_before_c[sample_index][38]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][38]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
+    }
+
+    else if (tree_type == "JetEnAbsolute2016Down" || tree_type == "JetEnAbsolute2017Down" || tree_type == "JetEnAbsolute2018Down")
+    {
+      histo_mc_before_c[sample_index][39]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][39]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
+    }
+
+    else if (tree_type == "JetEnAbsolute2016Up" || tree_type == "JetEnAbsolute2017Up" || tree_type == "JetEnAbsolute2018Up")
+    {
+      histo_mc_before_c[sample_index][40]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][40]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
+    }
+
+    else if (tree_type == "JetEnBBEC12016Down" || tree_type == "JetEnBBEC12017Down" || tree_type == "JetEnBBEC12018Down")
+    {
+      histo_mc_before_c[sample_index][41]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][41]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
+    }
+
+    else if (tree_type == "JetEnBBEC12016Up" || tree_type == "JetEnBBEC12017Up" || tree_type == "JetEnBBEC12018Up")
+    {
+      histo_mc_before_c[sample_index][42]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][42]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
+    }
+
+    else if (tree_type == "JetEnEC22016Down" || tree_type == "JetEnEC22017Down" || tree_type == "JetEnEC22018Down")
+    {
+      histo_mc_before_c[sample_index][43]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][43]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
+    }
+
+    else if (tree_type == "JetEnEC22016Up" || tree_type == "JetEnEC22017Up" || tree_type == "JetEnEC22018Up")
+    {
+      histo_mc_before_c[sample_index][44]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][44]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
+    }
+
+    else if (tree_type == "JetEnHF2016Down" || tree_type == "JetEnHF2017Down" || tree_type == "JetEnHF2018Down")
+    {
+      histo_mc_before_c[sample_index][45]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][45]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
+    }
+
+    else if (tree_type == "JetEnHF2016Up" || tree_type == "JetEnHF2017Up" || tree_type == "JetEnHF2018Up")
+    {
+      histo_mc_before_c[sample_index][46]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][46]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
+    }
+
+    else if (tree_type == "JetEnRelativeSample2016Down" || tree_type == "JetEnRelativeSample2017Down" || tree_type == "JetEnRelativeSample2018Down")
+    {
+      histo_mc_before_c[sample_index][47]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][47]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_down);
+    }
+
+    else if (tree_type == "JetEnRelativeSample2016Up" || tree_type == "JetEnRelativeSample2017Up" || tree_type == "JetEnRelativeSample2018Up")
+    {
+      histo_mc_before_c[sample_index][48]->Fill(n_pileup, ht, weight);
+      histo_mc_after_c[sample_index][48]->Fill(n_pileup, ht, weight * weight_c_tag_jes_total_up);
+    }
+  } // if (chk_jes_breakdown == true)
 
   return;
 } // void Tagging_RF_DL::Fill_Histo_MC()
 
 //////////
 
-void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name, const TString &syst_type)
+void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name, const TString &tree_type)
 {
   int sample_index = Histo_Index(sample_name);
   TString histo_name_rf = Histo_Name_RF(sample_name);
@@ -1250,23 +1674,39 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name
   {
     TString b_tag_type = syst_name_b[i];
 
-    if (syst_type == "Central")
+    if (tree_type == "Central")
     {
-      if (b_tag_type == "B_Tag_JES_Down" || b_tag_type == "B_Tag_JES_Up")
+      if (b_tag_type.Contains("B_Tag_JES"))
         continue;
     }
-    else if (syst_type == "JetEnDown")
-    {
-      if (b_tag_type != "B_Tag_JES_Down")
-        continue;
-    }
-    else if (syst_type == "JetEnUp")
-    {
-      if (b_tag_type != "B_Tag_JES_Up")
-        continue;
-    }
-    else if (syst_type == "JetResDown" || syst_type == "JetResUp")
+    else if (tree_type.Contains("JetRes"))
       continue;
+    else if (tree_type == "JetEnDown")
+    {
+      if (b_tag_type != "B_Tag_JES_Total_Down")
+        continue;
+    }
+    else if (tree_type == "JetEnUp")
+    {
+      if (b_tag_type != "B_Tag_JES_Total_Up")
+        continue;
+    }
+    // JES Breakdown
+    else if (tree_type.Contains("JetEn"))
+    {
+      TString direction;
+      if (tree_type.Contains("Down"))
+        direction = "Down";
+      else if (tree_type.Contains("Up"))
+        direction = "Up";
+
+      TString tmp = tree_type;
+      tmp.ReplaceAll(direction, "");
+      tmp.ReplaceAll("JetEn", "");
+
+      if (b_tag_type != "B_Tag_JES_" + tmp + "_" + direction)
+        continue;
+    }
 
     float weight_raw = weight_hem_veto;
     weight_raw *= weight_lumi;
@@ -1294,10 +1734,6 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name
       weight_b_sf = weight_b_tag_lf_down;
     else if (b_tag_type == "B_Tag_LF_Up")
       weight_b_sf = weight_b_tag_lf_up;
-    else if (b_tag_type == "B_Tag_JES_Down")
-      weight_b_sf = weight_b_tag_jes_down;
-    else if (b_tag_type == "B_Tag_JES_Up")
-      weight_b_sf = weight_b_tag_jes_up;
     else if (b_tag_type == "B_Tag_LFStats1_Down")
       weight_b_sf = weight_b_tag_lfstats1_down;
     else if (b_tag_type == "B_Tag_LFStats1_Up")
@@ -1322,6 +1758,10 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name
       weight_b_sf = weight_b_tag_hfstats2_down;
     else if (b_tag_type == "B_Tag_HFStats2_Up")
       weight_b_sf = weight_b_tag_hfstats2_up;
+    else if (b_tag_type.Contains("B_Tag_JES") && b_tag_type.Contains("Down"))
+      weight_b_sf = weight_b_tag_jes_down;
+    else if (b_tag_type.Contains("B_Tag_JES") && b_tag_type.Contains("Up"))
+      weight_b_sf = weight_b_tag_jes_up;
 
     float weight_sf = weight_raw * weight_b_sf;
 
@@ -1340,7 +1780,7 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name
 
       histo_closure_n_jet[sample_index][i][j]->Fill(n_jets, weight);
       histo_closure_ht[sample_index][i][j]->Fill(ht, weight);
-      histo_closure_n_pv[sample_index][i][j]->Fill(n_pv, weight);
+      histo_closure_n_pileup[sample_index][i][j]->Fill(n_pileup, weight);
 
       histo_closure_bvsc[sample_index][i][j]->Fill(leading_jet_bvsc, weight);
       histo_closure_cvsb[sample_index][i][j]->Fill(leading_jet_cvsb, weight);
@@ -1352,11 +1792,11 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name
   }
 
   return;
-} // void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name, const TString &syst_type)
+} // void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name, const TString &tree_type)
 
 //////////
 
-void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &syst_type)
+void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &tree_type)
 {
 
   int sample_index = Histo_Index(sample_name);
@@ -1366,17 +1806,49 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name
   {
     TString c_tag_type = syst_name_c[i];
 
-    if ((c_tag_type == "C_Tag_JER_Down" && syst_type != "JetResDown") || (c_tag_type != "C_Tag_JER_Down" && syst_type == "JetResDown"))
-      continue;
+    if (tree_type == "Central")
+    {
+      // if (c_tag_type == "C_Tag_JER_Down" || c_tag_type == "C_Tag_JER_Up" || c_tag_type == "C_Tag_JES_Total_Down" || c_tag_type == "C_Tag_JES_Total_Up")
+      if (c_tag_type.Contains("C_Tag_JER") || c_tag_type.Contains("C_Tag_JES"))
+        continue;
+    }
+    else if (tree_type == "JetResDown")
+    {
+      if (c_tag_type != "C_Tag_JER_Down")
+        continue;
+    }
+    else if (tree_type == "JetResUp")
+    {
+      if (c_tag_type != "C_Tag_JER_Up")
+        continue;
+    }
+    else if (tree_type == "JetEnDown")
+    {
+      if (c_tag_type != "C_Tag_JES_Total_Down")
+        continue;
+    }
+    else if (tree_type == "JetEnUp")
+    {
+      if (c_tag_type != "C_Tag_JES_Total_Up")
+        continue;
+    }
 
-    if ((c_tag_type == "C_Tag_JER_Up" && syst_type != "JetResUp") || (c_tag_type != "C_Tag_JER_Up" && syst_type == "JetResUp"))
-      continue;
+    // JES breakdown
+    else if (tree_type.Contains("JetEn"))
+    {
+      TString direction;
+      if (tree_type.Contains("Down"))
+        direction = "Down";
+      else if (tree_type.Contains("Up"))
+        direction = "Up";
 
-    if ((c_tag_type == "C_Tag_JES_Total_Down" && syst_type != "JetEnDown") || (c_tag_type != "C_Tag_JES_Total_Down" && syst_type == "JetEnDown"))
-      continue;
+      TString tmp = tree_type;
+      tmp.ReplaceAll(direction, "");
+      tmp.ReplaceAll("JetEn", "");
 
-    if ((c_tag_type == "C_Tag_JES_Total_Up" && syst_type != "JetEnUp") || (c_tag_type != "C_Tag_JES_Total_Up" && syst_type == "JetEnUp"))
-      continue;
+      if (c_tag_type != "C_Tag_JES_" + tmp + "_" + direction)
+        continue;
+    }
 
     float weight_raw = weight_hem_veto;
     weight_raw *= weight_lumi;
@@ -1469,14 +1941,14 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name
       weight_c_sf = weight_c_tag_jer_down;
     else if (c_tag_type == "C_Tag_JER_Up")
       weight_c_sf = weight_c_tag_jer_up;
-    else if (c_tag_type == "C_Tag_JES_Total_Down")
+    else if (c_tag_type.Contains("C_Tag_JES") && c_tag_type.Contains("Down"))
       weight_c_sf = weight_c_tag_jes_total_down;
-    else if (c_tag_type == "C_Tag_JES_Total_Up")
+    else if (c_tag_type.Contains("C_Tag_JES") && c_tag_type.Contains("Up"))
       weight_c_sf = weight_c_tag_jes_total_up;
 
     float weight_sf = weight_raw * weight_c_sf;
 
-    float c_rf = Get_Tagging_RF_DL_C_Tag(histo_name_rf, c_tag_type, n_pv, ht);
+    float c_rf = Get_Tagging_RF_DL_C_Tag(histo_name_rf, c_tag_type, n_pileup, ht);
     float weight_rf = weight_sf * c_rf;
 
     for (int j = 0; j < 3; j++)
@@ -1491,7 +1963,7 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name
 
       histo_closure_n_jet[sample_index][i][j]->Fill(n_jets, weight);
       histo_closure_ht[sample_index][i][j]->Fill(ht, weight);
-      histo_closure_n_pv[sample_index][i][j]->Fill(n_pv, weight);
+      histo_closure_n_pileup[sample_index][i][j]->Fill(n_pileup, weight);
 
       histo_closure_bvsc[sample_index][i][j]->Fill(leading_jet_bvsc, weight);
       histo_closure_cvsb[sample_index][i][j]->Fill(leading_jet_cvsb, weight);
@@ -1503,7 +1975,7 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name
   }
 
   return;
-} // void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const int& sample_index)
+} // void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &tree_type)
 
 //////////
 
@@ -1513,41 +1985,45 @@ int Tagging_RF_DL::Histo_Index(const TString &sample_name)
 
   if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   {
-    bool chk_b = false;
-    bool chk_c = false;
-
-    // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
-    for (unsigned int i = 0; i < vec_sel_gen_hf_flavour->size(); i++)
-    {
-      int flavour = vec_sel_gen_hf_flavour->at(i);
-      int origin = vec_sel_gen_hf_origin->at(i);
-
-      if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
-      {
-        chk_b = true;
-        break;
-      }
-      else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
-        chk_c = true;
-    }
-
     TString histo_name = sample_name;
 
     if (histo_name.Contains("WtoCB"))
-      histo_name = "TTLJ";
+      histo_name.ReplaceAll("TTLJ_WtoCB", "TTLJ");
 
-    // // for top syst
-    // if (sample_name.Contains("TTLJ"))
-    //   histo_name = "TTLJ";
-    // if (sample_name.Contains("TTLL"))
-    //   histo_name = "TTLL";
+    if (chk_tthf_breakdown)
+    {
+      bool chk_b = false;
+      bool chk_c = false;
 
-    if (chk_b)
-      histo_name += "_BB";
-    else if (chk_c)
-      histo_name += "_CC";
-    else
-      histo_name += "_JJ";
+      // // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
+      // for (unsigned int i = 0; i < vec_sel_gen_hf_flavour->size(); i++)
+      // {
+      //   int flavour = vec_sel_gen_hf_flavour->at(i);
+      //   int origin = vec_sel_gen_hf_origin->at(i);
+
+      //   if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
+      //   // if (flavour == 5 && abs(origin) == 21)
+      //   {
+      //     chk_b = true;
+      //     break;
+      //   }
+      //   else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
+      //     // else if (flavour == 4 && abs(origin) == 21)
+      //     chk_c = true;
+      // }
+
+      if (51 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 55)
+        chk_b = true;
+      else if (41 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 45)
+        chk_c = true;
+
+      if (chk_b)
+        histo_name += "_BB";
+      else if (chk_c)
+        histo_name += "_CC";
+      else
+        histo_name += "_JJ";
+    } // if (chk_tthf_breakdown)
 
     if (decay_mode == 21 || decay_mode == 23)
       histo_name += "_2";
@@ -1561,7 +2037,7 @@ int Tagging_RF_DL::Histo_Index(const TString &sample_name)
     // cout << "test Histo_Index: " << sample_name << " " << histo_name << " " << index << " " << vec_short_name_mc.size() << endl;
   } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   else
-    index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), samples.map_short_short_name[sample_name]) - vec_short_name_mc.begin();
+    index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), samples.map_short_name_mc[sample_name]) - vec_short_name_mc.begin();
 
   return index;
 } // int Tagging_RF_DL::Histo_Index(const TString &sample_name)
@@ -1576,41 +2052,51 @@ TString Tagging_RF_DL::Histo_Name_RF(const TString &sample_name)
   {
     histo_name_rf = sample_name;
 
-    bool chk_b = false;
-    bool chk_c = false;
-
-    // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
-    for (unsigned int i = 0; i < vec_sel_gen_hf_flavour->size(); i++)
-    {
-      int flavour = vec_sel_gen_hf_flavour->at(i);
-      int origin = vec_sel_gen_hf_origin->at(i);
-
-      if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
-      {
-        chk_b = true;
-        break;
-      }
-      else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
-        chk_c = true;
-    }
-
     if (histo_name_rf.Contains("WtoCB"))
-      histo_name_rf = "TTLJ";
+      histo_name_rf.ReplaceAll("TTLJ_WtoCB", "TTLJ");
 
-    // if (histo_name_rf.Contains("CP5") || histo_name_rf.Contains("hdamp") || histo_name_rf.Contains("mtop"))
-    // {
-    //   if (histo_name_rf.Contains("TTLJ"))
-    //     histo_name_rf = "TTLJ";
-    //   else if (histo_name_rf.Contains("TTLL"))
-    //     histo_name_rf = "TTLL";
-    // }
+    if (chk_tthf_breakdown)
+    {
+      bool chk_b = false;
+      bool chk_c = false;
 
-    if (chk_b)
-      histo_name_rf += "_BB";
-    else if (chk_c)
-      histo_name_rf += "_CC";
-    else
-      histo_name_rf += "_JJ";
+      // // for (unsigned int i = 0; i < vec_gen_hf_flavour->size(); i++)
+      // for (unsigned int i = 0; i < vec_sel_gen_hf_flavour->size(); i++)
+      // {
+      //   int flavour = vec_sel_gen_hf_flavour->at(i);
+      //   int origin = vec_sel_gen_hf_origin->at(i);
+
+      //   if (flavour == 5 && abs(origin) != 6 && abs(origin) != 24)
+      //   // if (flavour == 5 && abs(origin) == 21)
+      //   {
+      //     chk_b = true;
+      //     break;
+      //   }
+      //   else if (flavour == 4 && abs(origin) != 6 && abs(origin) != 24)
+      //     // else if (flavour == 4 && abs(origin) == 21)
+      //     chk_c = true;
+      // }
+
+      if (51 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 55)
+        chk_b = true;
+      else if (41 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 45)
+        chk_c = true;
+
+      // if (histo_name_rf.Contains("CP5") || histo_name_rf.Contains("hdamp") || histo_name_rf.Contains("mtop"))
+      // {
+      //   if (histo_name_rf.Contains("TTLJ"))
+      //     histo_name_rf = "TTLJ";
+      //   else if (histo_name_rf.Contains("TTLL"))
+      //     histo_name_rf = "TTLL";
+      // }
+
+      if (chk_b)
+        histo_name_rf += "_BB";
+      else if (chk_c)
+        histo_name_rf += "_CC";
+      else
+        histo_name_rf += "_JJ";
+    } // if (chk_tthf_breakdown)
 
     if (decay_mode == 21 || decay_mode == 23)
       histo_name_rf += "_2";
@@ -1620,9 +2106,7 @@ TString Tagging_RF_DL::Histo_Name_RF(const TString &sample_name)
       histo_name_rf += "_45";
   } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   else
-    histo_name_rf = samples.map_short_short_name[sample_name];
-
-  // cout << "test " << sample_name << " " << histo_name_rf << endl;
+    histo_name_rf = samples.map_short_name_mc[sample_name];
 
   return histo_name_rf;
 } // int Tagging_RF_DL::Histo_Name_RF(const TString &sample_name)
@@ -1674,7 +2158,7 @@ void Tagging_RF_DL::Ratio()
       for (int j = 0; j < n_syst_c; j++)
       {
         TString ratio_name = "Ratio_" + vec_short_name_mc[i] + "_" + syst_name_c[j];
-        ratio_c[i][j] = new TH1D(ratio_name, ratio_name, bin_npv.size() - 1, bin_npv.data());
+        ratio_c[i][j] = new TH1D(ratio_name, ratio_name, bin_n_pileup.size() - 1, bin_n_pileup.data());
 
         ratio_c[i][j]->Divide(histo_mc_before_c[i], histo_mc_after_c[i][j]);
       }
@@ -1688,7 +2172,7 @@ void Tagging_RF_DL::Ratio()
     for (int j = 0; j < n_syst_c; j++)
     {
       TString ratio_name = "Ratio_" + vec_short_name_mc[i] + "_" + syst_name_c[j];
-      ratio_c[i][j] = new TH2D(ratio_name, ratio_name, bin_npv.size() - 1, bin_npv.data(), bin_ht.size() - 1, bin_ht.data());
+      ratio_c[i][j] = new TH2D(ratio_name, ratio_name, bin_n_pileup.size() - 1, bin_n_pileup.data(), bin_ht.size() - 1, bin_ht.data());
 
       ratio_c[i][j]->Divide(histo_mc_before_c[i][j], histo_mc_after_c[i][j]);
     }
@@ -1705,16 +2189,18 @@ void Tagging_RF_DL::Read_Tree()
 
   for (auto it_map_map = map_map_tree_mc.begin(); it_map_map != map_map_tree_mc.end(); it_map_map++)
   {
-    TString syst_type = it_map_map->first;
-    cout << "Syst_Type = " << syst_type << endl;
+    TString tree_type = it_map_map->first;
+
+    cout << endl;
+    cout << "Tree_Type = " << tree_type << endl;
 
     map<TString, TTree *> *map_tree = it_map_map->second;
 
     for (auto it = map_tree->begin(); it != map_tree->end(); it++)
     {
-      cout << it->first << endl;
-
+      TString sample_name = it->first;
       TString sample_name_short = samples.map_short_name_mc[it->first];
+      cout << sample_name << ", " << sample_name_short << endl;
 
       Long64_t n_entries = it->second->GetEntries();
       n_entries /= reduction;
@@ -1727,18 +2213,24 @@ void Tagging_RF_DL::Read_Tree()
 
         it->second->GetEntry(i);
 
+        // if ((channel == "MM" || channel == "EE") && abs(event.dilepton_mass - Z_MASS) < 15)
+        //   continue;
+
         if (mode == "Analysis")
-          Fill_Histo_MC(sample_name_short, syst_type);
+          Fill_Histo_MC(sample_name, tree_type);
         else if (mode == "Validation")
         {
+          // if (n_bjets < 2)
+          //   continue;
+
           if (tagger == "B_Tagger")
-            Fill_Histo_Validation_MC_B_Tagger(sample_name_short, syst_type);
+            Fill_Histo_Validation_MC_B_Tagger(sample_name, tree_type);
           else if (tagger == "C_Tagger")
-            Fill_Histo_Validation_MC_C_Tagger(sample_name_short, syst_type);
+            Fill_Histo_Validation_MC_C_Tagger(sample_name, tree_type);
         }
       } // loop over entries
-    }   // loop over map_mc
-  }     // loop over map_map_mc
+    } // loop over map_mc
+  } // loop over map_map_mc
 
   return;
 } // void Tagging_RF_DL::Read_Tree()
@@ -1767,7 +2259,7 @@ void Tagging_RF_DL::Run_Analysis()
 void Tagging_RF_DL::Run_Combine()
 {
   Combine_Lepton_Channel();
-  Combine_Decay_Mode();
+  // Combine_Decay_Mode();
   Draw_Result();
 
   return;
@@ -1804,12 +2296,40 @@ void Tagging_RF_DL::Setup_Analysis()
 {
   cout << "[Tagging_RF_DL::Setup_Analysis]: Init analysis" << endl;
 
-  reduction = 1;
-
-  TString path_base = getenv("Vcb_Post_Analysis_WD");
-  path_base += "/Sample/" + era + "/" + channel + "/Tagging_RF_DL/";
+  TString path_base = getenv("Vcb_Post_Analysis_Sample_Dir");
+  path_base += era + "/" + "/Tagging_RF_DL/";
 
   n_sample = samples.map_mc.size();
+
+  // fix tree
+  if (index_tree_type != -1)
+  {
+    TString tree_type_fixed;
+
+    // To split jobs for Central tree
+    if (n_tree_type <= index_tree_type)
+    {
+      cerr << "Out of Tree_Type" << endl;
+      exit(1);
+    }
+    else
+      tree_type_fixed = vec_tree_type[index_tree_type];
+
+    cout << "Fixing tree_type. Index = " << index_tree_type << " Tree_Type " << tree_type_fixed << " " << endl;
+
+    vec_tree_type.clear();
+    vec_tree_type.shrink_to_fit();
+
+    vec_tree_type.push_back(tree_type_fixed);
+  }
+  else
+    cout << "Iterate all tree_type" << endl;
+
+  for (unsigned int i = 0; i < vec_tree_type.size(); i++)
+  {
+    map<TString, TTree *> map_tree_mc;
+    vec_map_tree_mc.push_back(map_tree_mc);
+  }
 
   for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
   {
@@ -1817,36 +2337,26 @@ void Tagging_RF_DL::Setup_Analysis()
 
     map_fin_mc[it->first] = new TFile(path_base + it->second);
 
-    // central
-    map_tree_mc[it->first] = (TTree *)map_fin_mc[it->first]->Get("Central/Result_Tree");
-    Setup_Tree(map_tree_mc[it->first], "Central");
+    for (unsigned int i = 0; i < vec_tree_type.size(); i++)
+    {
+      TString tree_type = vec_tree_type[i];
 
-    if (it->first.Contains("CP5") || it->first.Contains("hdamp") || it->first.Contains("mtop17"))
-      continue;
+      if ((it->first.Contains("CP5") || it->first.Contains("hdamp") || it->first.Contains("mtop17")) && tree_type != "Central")
+        continue;
 
-    // JetEnDown
-    map_tree_mc_jec_down[it->first] = (TTree *)map_fin_mc[it->first]->Get("JetEnDown/Result_Tree");
-    Setup_Tree(map_tree_mc_jec_down[it->first], "JetEnDown");
+      // cout << tree_type << endl;
 
-    // JetEnUp
-    map_tree_mc_jec_up[it->first] = (TTree *)map_fin_mc[it->first]->Get("JetEnUp/Result_Tree");
-    Setup_Tree(map_tree_mc_jec_up[it->first], "JetEnUp");
-
-    // JetRerDown
-    map_tree_mc_jer_down[it->first] = (TTree *)map_fin_mc[it->first]->Get("JetResDown/Result_Tree");
-    Setup_Tree(map_tree_mc_jer_down[it->first], "JetResDown");
-
-    // JetRerUp
-    map_tree_mc_jer_up[it->first] = (TTree *)map_fin_mc[it->first]->Get("JetResUp/Result_Tree");
-    Setup_Tree(map_tree_mc_jer_up[it->first], "JetResUp");
+      vec_map_tree_mc[i][it->first] = (TTree *)map_fin_mc[it->first]->Get(channel + "/" + tree_type + "/Result_Tree");
+      Setup_Tree(vec_map_tree_mc[i][it->first], tree_type);
+    } // for (unsigned int i = 0; i < vec_tree_type.size(); i++)
   }
 
   // TTree handlers
-  map_map_tree_mc["Central"] = &map_tree_mc;
-  map_map_tree_mc["JetEnDown"] = &map_tree_mc_jec_down;
-  map_map_tree_mc["JetEnUp"] = &map_tree_mc_jec_up;
-  map_map_tree_mc["JetResDown"] = &map_tree_mc_jer_down;
-  map_map_tree_mc["JetResUp"] = &map_tree_mc_jer_up;
+  for (unsigned int i = 0; i < vec_tree_type.size(); i++)
+  {
+    TString tree_type = vec_tree_type[i];
+    map_map_tree_mc[tree_type] = &vec_map_tree_mc[i];
+  }
 
   return;
 } // void Tagging_RF_DL::Setup_Analysis()
@@ -1875,41 +2385,77 @@ void Tagging_RF_DL::Setup_Application()
   */
 
   // set this manually
-  vec_sample_tagging_rf = {"ttV", "VV", "VJets", "ST", "QCD_bEn",
-                           "TTLJ_JJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
-                           "TTLJ_JJ_4", "TTLJ_CC_4", "TTLJ_BB_4",
-                           "TTLJ_JJ_45", "TTLJ_CC_45", "TTLJ_BB_45",
-                           /* CP5 */
-                           "TTLJ_CP5Down_JJ_2", "TTLJ_CP5Down_CC_2", "TTLJ_CP5Down_BB_2",
-                           "TTLJ_CP5Down_JJ_4", "TTLJ_CP5Down_CC_4", "TTLJ_CP5Down_BB_4",
-                           //"TTLJ_CP5Down_JJ_45", "TTLJ_CP5Down_CC_45", "TTLJ_CP5Down_BB_45",
-                           "TTLJ_CP5Up_JJ_2", "TTLJ_CP5Up_CC_2", "TTLJ_CP5Up_BB_2",
-                           "TTLJ_CP5Up_JJ_4", "TTLJ_CP5Up_CC_4", "TTLJ_CP5Up_BB_4",
-                           //"TTLJ_CP5Up_JJ_45", "TTLJ_CP5Up_CC_45", "TTLJ_CP5Up_BB_45",
-                           /* mtop */
-                           "TTLJ_mtop171p5_JJ_2", "TTLJ_mtop171p5_CC_2", "TTLJ_mtop171p5_BB_2",
-                           "TTLJ_mtop171p5_JJ_4", "TTLJ_mtop171p5_CC_4", "TTLJ_mtop171p5_BB_4",
-                           //"TTLJ_mtop171p5_JJ_45", "TTLJ_mtop171p5_CC_45", "TTLJ_mtop171p5_BB_45",
-                           "TTLJ_mtop173p5_JJ_2", "TTLJ_mtop173p5_CC_2", "TTLJ_mtop173p5_BB_2",
-                           "TTLJ_mtop173p5_JJ_4", "TTLJ_mtop173p5_CC_4", "TTLJ_mtop173p5_BB_4",
-                           //"TTLJ_mtop173p5_JJ_45", "TTLJ_mtop173p5_CC_45", "TTLJ_mtop173p5_BB_45",
-                           /* hdamp */
-                           "TTLJ_hdampDown_JJ_2", "TTLJ_hdampDown_CC_2", "TTLJ_hdampDown_BB_2",
-                           "TTLJ_hdampDown_JJ_4", "TTLJ_hdampDown_CC_4", "TTLJ_hdampDown_BB_4",
-                           //"TTLJ_hdampDown_JJ_45", "TTLJ_hdampDown_CC_45", "TTLJ_hdampDown_BB_45",
-                           "TTLJ_hdampUp_JJ_2", "TTLJ_hdampUp_CC_2", "TTLJ_hdampUp_BB_2",
-                           "TTLJ_hdampUp_JJ_4", "TTLJ_hdampUp_CC_4", "TTLJ_hdampUp_BB_4",
-                           //"TTLJ_hdampUp_JJ_45", "TTLJ_hdampUp_CC_45", "TTLJ_hdampUp_BB_45",
-                           "TTLL_JJ", "TTLL_CC", "TTLL_BB",
-                           /* CP5 */
-                           "TTLL_CP5Down_JJ", "TTLL_CP5Down_CC", "TTLL_CP5Down_BB",
-                           "TTLL_CP5Up_JJ", "TTLL_CP5Up_CC", "TTLL_CP5Up_BB",
-                           /* mtop */
-                           "TTLL_mtop171p5_JJ", "TTLL_mtop171p5_CC", "TTLL_mtop171p5_BB",
-                           "TTLL_mtop173p5_JJ", "TTLL_mtop173p5_CC", "TTLL_mtop173p5_BB",
-                           /* hdamp */
-                           "TTLL_hdampDown_JJ", "TTLL_hdampDown_CC", "TTLL_hdampDown_BB",
-                           "TTLL_hdampUp_JJ", "TTLL_hdampUp_CC", "TTLL_hdampUp_BB"};
+  if (chk_tthf_breakdown)
+  {
+    vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
+                             "ST_sch", "ST_tch", "ST_tw",
+                             "WJets", "DYJets",
+                             "QCD_bEn",
+                             "ttHTobb", "ttHToNonbb", "ttWToLNu", "ttWToQQ", "ttZToLLNuNu", "ttZToQQ",
+                             "WW", "WZ", "ZZ",
+                             "TTLJ_JJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
+                             "TTLJ_JJ_4", "TTLJ_CC_4", "TTLJ_BB_4",
+                             "TTLJ_JJ_45", "TTLJ_CC_45", "TTLJ_BB_45",
+                             /* CP5 */
+                             "TTLJ_CP5Down_JJ_2", "TTLJ_CP5Down_CC_2", "TTLJ_CP5Down_BB_2",
+                             "TTLJ_CP5Down_JJ_4", "TTLJ_CP5Down_CC_4", "TTLJ_CP5Down_BB_4",
+                             "TTLJ_CP5Down_JJ_45", "TTLJ_CP5Down_CC_45", "TTLJ_CP5Down_BB_45",
+                             "TTLJ_CP5Up_JJ_2", "TTLJ_CP5Up_CC_2", "TTLJ_CP5Up_BB_2",
+                             "TTLJ_CP5Up_JJ_4", "TTLJ_CP5Up_CC_4", "TTLJ_CP5Up_BB_4",
+                             "TTLJ_CP5Up_JJ_45", "TTLJ_CP5Up_CC_45", "TTLJ_CP5Up_BB_45",
+                             /* mtop */
+                             "TTLJ_mtop171p5_JJ_2", "TTLJ_mtop171p5_CC_2", "TTLJ_mtop171p5_BB_2",
+                             "TTLJ_mtop171p5_JJ_4", "TTLJ_mtop171p5_CC_4", "TTLJ_mtop171p5_BB_4",
+                             "TTLJ_mtop171p5_JJ_45", "TTLJ_mtop171p5_CC_45", "TTLJ_mtop171p5_BB_45",
+                             "TTLJ_mtop173p5_JJ_2", "TTLJ_mtop173p5_CC_2", "TTLJ_mtop173p5_BB_2",
+                             "TTLJ_mtop173p5_JJ_4", "TTLJ_mtop173p5_CC_4", "TTLJ_mtop173p5_BB_4",
+                             "TTLJ_mtop173p5_JJ_45", "TTLJ_mtop173p5_CC_45", "TTLJ_mtop173p5_BB_45",
+                             /* hdamp */
+                             "TTLJ_hdampDown_JJ_2", "TTLJ_hdampDown_CC_2", "TTLJ_hdampDown_BB_2",
+                             "TTLJ_hdampDown_JJ_4", "TTLJ_hdampDown_CC_4", "TTLJ_hdampDown_BB_4",
+                             "TTLJ_hdampDown_JJ_45", "TTLJ_hdampDown_CC_45", "TTLJ_hdampDown_BB_45",
+                             "TTLJ_hdampUp_JJ_2", "TTLJ_hdampUp_CC_2", "TTLJ_hdampUp_BB_2",
+                             "TTLJ_hdampUp_JJ_4", "TTLJ_hdampUp_CC_4", "TTLJ_hdampUp_BB_4",
+                             "TTLJ_hdampUp_JJ_45", "TTLJ_hdampUp_CC_45", "TTLJ_hdampUp_BB_45",
+                             "TTLL_JJ", "TTLL_CC", "TTLL_BB",
+                             /* CP5 */
+                             "TTLL_CP5Down_JJ", "TTLL_CP5Down_CC", "TTLL_CP5Down_BB",
+                             "TTLL_CP5Up_JJ", "TTLL_CP5Up_CC", "TTLL_CP5Up_BB",
+                             /* mtop */
+                             "TTLL_mtop171p5_JJ", "TTLL_mtop171p5_CC", "TTLL_mtop171p5_BB",
+                             "TTLL_mtop173p5_JJ", "TTLL_mtop173p5_CC", "TTLL_mtop173p5_BB",
+                             /* hdamp */
+                             "TTLL_hdampDown_JJ", "TTLL_hdampDown_CC", "TTLL_hdampDown_BB",
+                             "TTLL_hdampUp_JJ", "TTLL_hdampUp_CC", "TTLL_hdampUp_BB"};
+  }
+  else
+  {
+    vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
+                             "ST_sch", "ST_tch", "ST_tw",
+                             "WJets", "DYJets",
+                             "QCD_bEn",
+                             "ttHTobb", "ttHToNonbb",
+                             "ttWToLNu", "ttWToQQ",
+                             "ttZToLLNuNu", "ttZToQQ_ll", "ttZToQQ",
+                             "WW", "WZ", "ZZ",
+                             "TTLJ_2", "TTLJ_4", "TTLJ_45",
+                             /* CP5 */
+                             "TTLJ_CP5Down_2", "TTLJ_CP5Down_4", "TTLJ_CP5Down_45",
+                             "TTLJ_CP5Up_2", "TTLJ_CP5Up_4", "TTLJ_CP5Up_45",
+                             /* mtop */
+                             "TTLJ_mtop171p5_2", "TTLJ_mtop171p5_4", "TTLJ_mtop171p5_45",
+                             "TTLJ_mtop173p5_2", "TTLJ_mtop173p5_4", "TTLJ_mtop173p5_45",
+                             /* hdamp */
+                             "TTLJ_hdampDown_2", "TTLJ_hdampDown_4", "TTLJ_hdampDown_45",
+                             "TTLJ_hdampUp_2", "TTLJ_hdampUp_4", "TTLJ_hdampUp_45",
+                             "TTLL",
+                             /* CP5 */
+                             "TTLL_CP5Down", "TTLL_CP5Up",
+                             /* mtop */
+                             "TTLL_mtop171p5", "TTLL_mtop173p5",
+                             /* hdamp */
+                             "TTLL_hdampDown", "TTLL_hdampUp"};
+  }
 
   n_sample_tagging_rf = vec_sample_tagging_rf.size();
 
@@ -1941,9 +2487,18 @@ void Tagging_RF_DL::Setup_Application()
 
 void Tagging_RF_DL::Setup_Binning()
 {
-  bin_njet = {4, 5, 6, 7, 8, 10, 12, 14, 20};
-  bin_ht = {80, 180, 230, 280, 330, 400, 500, 1000};
-  bin_npv = {0, 20, 25, 30, 35, 40, 50, 70};
+  if (era == "2017" || era == "2018")
+  {
+    bin_njet = {4, 5, 6, 7, 8, 10, 12, 14, 20};
+    bin_ht = {80, 180, 230, 280, 330, 400, 500, 1000};
+    bin_n_pileup = {0, 20, 25, 30, 35, 40, 50, 70};
+  }
+  else if (era == "2016preVFP" || era == "2016postVFP")
+  {
+    bin_njet = {4, 5, 6, 7, 8, 10, 12, 14, 20};
+    bin_ht = {80, 230, 330, 500, 1000};
+    bin_n_pileup = {0, 25, 35, 70};
+  }
 
   return;
 } // void Tagging_RF_DL::Setup_Binning()
@@ -1980,10 +2535,10 @@ void Tagging_RF_DL::Setup_Histo()
     for (int j = 0; j < n_syst_c; j++)
     {
       TString histo_name = vec_short_name_mc[i] + "_" + syst_name_c[j] + "_Before";
-      histo_mc_before_c[i][j] = new TH2D(histo_name, histo_name, bin_npv.size() - 1, bin_npv.data(), bin_ht.size() - 1, bin_ht.data());
+      histo_mc_before_c[i][j] = new TH2D(histo_name, histo_name, bin_n_pileup.size() - 1, bin_n_pileup.data(), bin_ht.size() - 1, bin_ht.data());
 
       histo_name = vec_short_name_mc[i] + "_" + syst_name_c[j] + "_After";
-      histo_mc_after_c[i][j] = new TH2D(histo_name, histo_name, bin_npv.size() - 1, bin_npv.data(), bin_ht.size() - 1, bin_ht.data());
+      histo_mc_after_c[i][j] = new TH2D(histo_name, histo_name, bin_n_pileup.size() - 1, bin_n_pileup.data(), bin_ht.size() - 1, bin_ht.data());
     }
   }
 
@@ -1996,7 +2551,7 @@ void Tagging_RF_DL::Setup_Histo_Validation()
 {
   histo_closure_n_jet = new TH1D ***[n_sample_merge_mc];
   histo_closure_ht = new TH1D ***[n_sample_merge_mc];
-  histo_closure_n_pv = new TH1D ***[n_sample_merge_mc];
+  histo_closure_n_pileup = new TH1D ***[n_sample_merge_mc];
   histo_closure_bvsc = new TH1D ***[n_sample_merge_mc];
   histo_closure_cvsb = new TH1D ***[n_sample_merge_mc];
   histo_closure_cvsl = new TH1D ***[n_sample_merge_mc];
@@ -2010,7 +2565,7 @@ void Tagging_RF_DL::Setup_Histo_Validation()
 
     histo_closure_n_jet[i] = new TH1D **[n_syst_c];
     histo_closure_ht[i] = new TH1D **[n_syst_c];
-    histo_closure_n_pv[i] = new TH1D **[n_syst_c];
+    histo_closure_n_pileup[i] = new TH1D **[n_syst_c];
     histo_closure_bvsc[i] = new TH1D **[n_syst_c];
     histo_closure_cvsb[i] = new TH1D **[n_syst_c];
     histo_closure_cvsl[i] = new TH1D **[n_syst_c];
@@ -2027,7 +2582,7 @@ void Tagging_RF_DL::Setup_Histo_Validation()
     {
       histo_closure_n_jet[i][j] = new TH1D *[3];
       histo_closure_ht[i][j] = new TH1D *[3];
-      histo_closure_n_pv[i][j] = new TH1D *[3];
+      histo_closure_n_pileup[i][j] = new TH1D *[3];
       histo_closure_bvsc[i][j] = new TH1D *[3];
       histo_closure_cvsb[i][j] = new TH1D *[3];
       histo_closure_cvsl[i][j] = new TH1D *[3];
@@ -2051,7 +2606,7 @@ void Tagging_RF_DL::Setup_Histo_Validation()
         histo_closure_ht[i][j][k] = new TH1D(histo_name, histo_name, bin_ht.size() - 1, bin_ht.data());
 
         histo_name = histo_name_base + "_N_PV_" + to_string(k);
-        histo_closure_n_pv[i][j][k] = new TH1D(histo_name, histo_name, bin_npv.size() - 1, bin_npv.data());
+        histo_closure_n_pileup[i][j][k] = new TH1D(histo_name, histo_name, bin_n_pileup.size() - 1, bin_n_pileup.data());
 
         histo_name = histo_name_base + "_Leading_Jet_BvsC_" + to_string(k);
         histo_closure_bvsc[i][j][k] = new TH1D(histo_name, histo_name, 100, 0, 1);
@@ -2164,20 +2719,27 @@ void Tagging_RF_DL::Setup_Tree(TTree *tree, const TString &syst)
     tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_down);
     tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_up);
   }
-  else if (syst == "JetEnDown")
-    tree->SetBranchAddress("weight_c_tag_down_jes_total", &weight_c_tag_jes_total_down);
-  else if (syst == "JetEnUp")
-    tree->SetBranchAddress("weight_c_tag_up_jes_total", &weight_c_tag_jes_total_up);
   else if (syst == "JetResDown")
     tree->SetBranchAddress("weight_c_tag_down_jer", &weight_c_tag_jer_down);
   else if (syst == "JetResUp")
     tree->SetBranchAddress("weight_c_tag_up_jer", &weight_c_tag_jer_up);
+  else if (syst.Contains("JetEn") && syst.Contains("Down"))
+    tree->SetBranchAddress("weight_c_tag_down_jes_total", &weight_c_tag_jes_total_down);
+  else if (syst.Contains("JetEn") && syst.Contains("Up"))
+    tree->SetBranchAddress("weight_c_tag_up_jes_total", &weight_c_tag_jes_total_up);
+  else
+    tree->SetBranchAddress("weight_c_tag", &weight_c_tag);
 
   tree->SetBranchAddress("n_jets", &n_jets);
+  tree->SetBranchAddress("n_bjets", &n_bjets);
   tree->SetBranchAddress("ht", &ht);
-  tree->SetBranchAddress("n_vertex", &n_pv);
+
+  tree->SetBranchAddress("n_vertex", &n_pileup);
+  tree->SetBranchAddress("n_pileup", &n_pileup);
 
   tree->SetBranchAddress("decay_mode", &decay_mode);
+
+  tree->SetBranchAddress("genTtbarId", &gen_ttbar_id);
 
   tree->SetBranchAddress("Gen_HF_Flavour", &vec_gen_hf_flavour);
   tree->SetBranchAddress("Gen_HF_Origin", &vec_gen_hf_origin);
