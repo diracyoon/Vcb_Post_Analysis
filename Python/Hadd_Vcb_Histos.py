@@ -12,18 +12,20 @@ args = parser.parse_args()
 if args.era=="2016a": args.era="2016preVFP"
 if args.era=="2016b": args.era="2016postVFP"
 
-target=f"Vcb_Histos_{args.era}_{args.channel}_All.root"
+path = os.environ['Vcb_Post_Analysis_WD']
+path = f"{path}/Workplace/Histo_Syst"
+
+target=f"{path}/Vcb_2D_{args.era}_{args.channel}_All.root"
 
 try: os.remove(target)
 except OSError:
     pass
 
-root_list = os.listdir(".")
+root_list = [os.path.join(path, root_list) for root_list in os.listdir(path)]
 root_list = [root_file for root_file in root_list if root_file.endswith(".root")] 
-root_list = [root_file for root_file in root_list if not root_file.find(f"Vcb_Histos_{args.era}_{args.channel}_")]
-print(root_list)
+root_list = [root_file for root_file in root_list if f"Vcb_2D_{args.era}_{args.channel}" in root_file]
 
-hadd_cmd = f"hadd {target} "
+hadd_cmd = f"hadd -j 12 {target} "
 for root_file in root_list:
     hadd_cmd += root_file + " "
 
