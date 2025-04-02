@@ -1,0 +1,11 @@
+Job Analysis Submit_Analysis.jds
+Job Hadd Submit_Hadd_Analysis.jds
+Job Ratio Submit_Ratio.jds
+Job Combine Submit_Combine.jds
+
+PARENT Analysis CHILD Hadd
+PARENT Hadd CHILD Ratio
+PARENT Ratio CHILD Combine
+
+ABORT-DAG-ON Analysis 1
+ABORT-DAG-ON Hadd 1

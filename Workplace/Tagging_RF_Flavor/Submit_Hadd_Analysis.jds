@@ -1,0 +1,15 @@
+executable = Hadd_Tagging_RF.py
+jobbatchname = Vcb_Tagging_RF_Hadd
+universe   = vanilla
+arguments  = -e $(Era) -ch $(Channel) -a Tagging_RF_Flavor -analysis
+log = condor.log
+getenv     = True
+transfer_input_files = Hadd_Tagging_RF.py
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+request_cpus = 4
+output = job_Hadd_Analysis_$(Era)_$(Channel).log
+error = job_Hadd_Analysis_$(Era)_$(Channel).err
+concurrency_limits = n1100.isyoon
+
+queue Era, Channel from external_hadd.dat

@@ -1,0 +1,21 @@
+executable = Run_Job.sh
+jobbatchname = Tagging_RF_Flavor_Ratio
+universe   = vanilla
+arguments  = Tagging_RF_Flavor.py -e $(Era) -ch $(Channel) -ratio
+log = condor.log
+getenv     = True
+transfer_input_files = Tagging_RF_Flavor.py
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+request_cpus = 1
+output = job_Tagging_RF_Ratio_$(Era)_$(Channel)_$(Index_Tree_Type).log
+error = job_Tagging_RF_Ratio_$(Era)_$(Channel)_$(Index_Tree_Type).err
+request_memory = 10*1024
+concurrency_limits = n1100.isyoon
+
+queue Era,Channel from external_hadd.dat
+
+#Era = 2018
+#Channel = Mu
+#queue Index_Tree_Type from seq 0 34 |
+#queue Index_Tree_Type from seq 0 12 |
