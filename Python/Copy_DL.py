@@ -2,7 +2,7 @@
 
 import argparse
 parser = argparse.ArgumentParser(description='Vcb_Post_Analysis Command')
-parser.add_argument('-a', dest='Analyzer', default="Vcb")
+parser.add_argument('-a', dest='Analyzer', default="Vcb_DL")
 parser.add_argument('-e', dest='Era', default="2017")
 parser.add_argument('-Data', action='store_true')
 parser.add_argument('-MC', action='store_true')
@@ -15,6 +15,8 @@ if args.Era=="2016b": args.Era="2016postVFP"
 import shutil
 import subprocess
 import os
+
+args.Analyzer = "Vcb_DL"
 
 ## data
 if args.Data == True:
@@ -92,8 +94,8 @@ if args.MC == True:
                 #src = f"/gv0/Users/isyoon/SKFlatOutput/Run2UltraLegacy_v3/{args.Analyzer}/{args.Era}/RunResult__RunSyst__/{args.Analyzer}_{mc}.root"
                 src = f"/gv0/Users/isyoon/SKFlatOutput/Run2UltraLegacy_v3/{args.Analyzer}/{args.Era}/RunResult__RunSyst__RunNoJESBreakdown__/{args.Analyzer}_{mc}.root"
             elif args.Analyzer == "Vcb_DL":
+                src = f"/gv0/Users/isyoon/SKFlatOutput/Run2UltraLegacy_v3/{args.Analyzer}/{args.Era}/RunSyst__/{args.Analyzer}_{mc}.root"
                 #src = f"/gv0/Users/isyoon/SKFlatOutput/Run2UltraLegacy_v3/{args.Analyzer}/{args.Era}/RunSyst__RunNoJESBreakdown__/{args.Analyzer}_{mc}.root"
-                src = f"/gv0/Users/isyoon/SKFlatOutput/Run2UltraLegacy_v3/{args.Analyzer}/{args.Era}/RunSyst__RunNoJESBreakdown__/{args.Analyzer}_{mc}.root"
             
             dst = f"/gv0/Users/isyoon/Vcb_Post_Analysis/Sample/{args.Era}/{args.Analyzer}/Central_Syst/{args.Analyzer}_{mc}.root"
             print(src, "to", dst)
@@ -137,7 +139,7 @@ if args.MC == True:
 
             dst_dir = os.path.dirname(dst)
             os.makedirs(dst_dir, exist_ok=True)
-            
+
             if os.path.exists(dst):
                 os.remove(dst)
             

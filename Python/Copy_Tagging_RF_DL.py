@@ -9,6 +9,8 @@ args = parser.parse_args()
 if args.Era=="2016a": args.Era="2016preVFP"
 if args.Era=="2016b": args.Era="2016postVFP"
 
+args.Analyzer = "Tagging_RF_DL"
+
 #import shutil
 import subprocess
 import os

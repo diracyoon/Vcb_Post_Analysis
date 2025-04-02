@@ -12,8 +12,8 @@ args = parser.parse_args()
 if args.era=="2016a": args.era="2016preVFP"
 if args.era=="2016b": args.era="2016postVFP"
 
-path = os.environ['Vcb_Post_Analysis_WD']
-path = f"{path}/Workplace/Histo_Syst"
+path_base = os.environ['Vcb_Post_Analysis_WD']
+path = f"{path_base}/Workplace/Histo_Syst"
 
 target=f"{path}/Vcb_2D_{args.era}_{args.channel}_All.root"
 
@@ -25,7 +25,7 @@ root_list = [os.path.join(path, root_list) for root_list in os.listdir(path)]
 root_list = [root_file for root_file in root_list if root_file.endswith(".root")] 
 root_list = [root_file for root_file in root_list if f"Vcb_2D_{args.era}_{args.channel}" in root_file]
 
-hadd_cmd = f"hadd -j 12 {target} "
+hadd_cmd = f"hadd -d {path_base}/Tmp -j 5 {target} "
 for root_file in root_list:
     hadd_cmd += root_file + " "
 

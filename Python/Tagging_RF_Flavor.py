@@ -27,3 +27,5 @@ if args.analysis == True:
     print("lazy")
 elif args.validation == True:
     tagging_rf = ROOT.Tagging_RF_Flavor(args.era, "Validation", args.Channel, args.Tagger, args.index_tree_type, args.last_index_tree_type)
+elif args.draw_validation == True: 
+    tagging_rf = ROOT.Tagging_RF_Flavor(args.era, "Draw_Validation", args.Channel, args.Tagger, -1, -1)
