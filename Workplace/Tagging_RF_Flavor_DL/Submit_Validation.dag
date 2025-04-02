@@ -1,0 +1,8 @@
+Job Validation Submit_Validation.jds
+Job Hadd Submit_Hadd_Validation.jds
+Job Draw Submit_Draw_Validation.jds
+
+PARENT Validation CHILD Hadd
+PARENT Hadd CHILD Draw
+
+ABORT-DAG-ON Validation 1

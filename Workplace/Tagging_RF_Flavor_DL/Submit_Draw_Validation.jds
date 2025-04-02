@@ -1,0 +1,16 @@
+executable = Run_Job.sh
+jobbatchname = Tagging_RF_Flavor_DL_Draw_Validation
+universe   = vanilla
+arguments  = Tagging_RF_Flavor_DL.py -e $(Era) -ch $(Channel) -draw_validation -tagger C
+log = condor.log
+getenv     = True
+transfer_input_files = Tagging_RF_Flavor_DL.py
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+request_cpus = 1
+output = job_Tagging_RF_DL_Draw_Validation_$(Era)_$(Channel).log
+error = job_Tagging_RF_DL_Draw_Validation_$(Era)_$(Channel).err
+#request_memory = 10*1024
+concurrency_limits = n1100.isyoon
+
+queue Era, Channel from external_hadd.dat

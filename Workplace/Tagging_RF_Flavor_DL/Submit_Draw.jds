@@ -1,0 +1,14 @@
+executable = Tagging_RF_DL.py
+jobbatchname = Tagging_RF_DL
+universe   = vanilla
+arguments  = -e 2016preVFP -combine
+log = condor.log
+getenv     = True
+should_transfer_files = YES
+when_to_transfer_output = ON_EXIT
+request_cpus = 1
+output = job_Tagging_RF_Combine.log
+error = job_Tagging_RF_Combine.err
+#request_memory = 10*1024
+
+queue 1

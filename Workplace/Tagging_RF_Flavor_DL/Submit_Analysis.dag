@@ -1,0 +1,9 @@
+Job Analysis Submit_Analysis.jds
+Job Hadd Submit_Hadd_Analysis.jds
+Job Combine Submit_Combine.jds
+
+PARENT Analysis CHILD Hadd
+PARENT Hadd CHILD Combine
+
+ABORT-DAG-ON Analysis 1
+ABORT-DAG-ON Hadd 1
