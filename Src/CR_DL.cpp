@@ -7,7 +7,7 @@ ClassImp(CR_DL);
 CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_tagger, const int &a_index_tree_type)
     : samples(a_era, a_channel, "Vcb_DL"), tagging_rf_dl(a_era)
 {
-  ROOT::EnableImplicitMT(10);
+  ROOT::EnableImplicitMT(2);
 
   TH1::AddDirectory(kFALSE);
 
@@ -27,6 +27,9 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ta
 
   chk_rf_tthf_breakdown = false;
   chk_jes_breakdown = false;
+
+  // chk_bin_optimizer = true;
+  chk_bin_optimizer = false;
 
   if (samples.map_mc.size() != samples.map_short_name_mc.size() || samples.map_data.size() != samples.map_short_name_data.size())
   {
@@ -90,209 +93,6 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ta
 
   n_sample_merge_mc = vec_short_name_mc.size();
   cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
-
-  // Systs
-  syst_name = {"Nominal",
-               "Jet_En_Down", "Jet_En_Up",
-               "Jet_Res_Down", "Jet_Res_Up",
-               "UE_Down", "UE_Up",
-               "PDF_Alternative", "PDF_As_Down", "PDF_As_Up",
-               "Pileup_Down", "Pileup_Up",
-               "PU_Jet_Veto_Down", "PU_Jet_Veto_Up",
-               "Prefire_Down", "Prefire_Up",
-               "MuF_TT_Down", "MuF_TT_Up", "MuF_ST_Down", "MuF_ST_Up", "MuF_WJets_Down", "MuF_WJets_Up", "MuF_DYJets_Down", "MuF_DYJets_Up",
-               "MuR_TT_Down", "MuR_TT_Up", "MuR_ST_Down", "MuR_ST_Up", "MuR_WJets_Down", "MuR_WJets_Up", "MuR_DYJets_Down", "MuR_DYJets_Up",
-               //"MuF_MuR_Down", "MuR_MuR_Up",
-               "FSR_Down", "FSR_Up",
-               "ISR_TT_Down", "ISR_TT_Up", "ISR_ST_Down", "ISR_ST_Up", "ISR_WJets_Down", "ISR_WJets_Up", "ISR_DYJets_Down", "ISR_DYJets_Up",
-               "Top_Pt_Reweight",
-               "CP5_Down", "CP5_Up",
-               "hdamp_Down", "hdamp_Up",
-               "mtop_171p5", "mtop_173p5"};
-
-  if (chk_jes_breakdown == true)
-  {
-    vector<TString> syst_name_jes_breakdown = {"Jet_En_Absolute_Down", "Jet_En_Absolute_Up",
-                                               "Jet_En_BBEC1_Down", "Jet_En_BBEC1_Up",
-                                               "Jet_En_EC2_Down", "Jet_En_EC2_Up",
-                                               "Jet_En_FlavorQCD_Down", "Jet_En_FlavorQCD_Up",
-                                               "Jet_En_HF_Down", "Jet_En_HF_Up",
-                                               "Jet_En_RelativeBal_Down", "Jet_En_RelativeBal_Up"};
-
-    vector<TString> syst_name_jes_breakdown_year = {"Jet_En_Absolute", "Jet_En_BBEC1", "Jet_En_EC2", "Jet_En_HF", "Jet_En_RelativeSample"};
-    for (unsigned int i = 0; i < syst_name_jes_breakdown_year.size(); i++)
-    {
-      syst_name_jes_breakdown.push_back(syst_name_jes_breakdown_year[i] + year + "_Down");
-      syst_name_jes_breakdown.push_back(syst_name_jes_breakdown_year[i] + year + "_Up");
-    }
-
-    syst_name.insert(syst_name.end(), syst_name_jes_breakdown.begin(), syst_name_jes_breakdown.end());
-  }
-
-  if (tagger == "B")
-  {
-    vector<TString> syst_tagger = {"B_Tag_HF_Down", "B_Tag_HF_Up",
-                                   "B_Tag_LF_Down", "B_Tag_LF_Up",
-                                   // "B_Tag_JES_Down", "B_Tag_JES_Up",
-                                   "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up",
-                                   "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up",
-                                   "B_Tag_CFErr1_Down", "B_Tag_CFErr1_Up",
-                                   "B_Tag_CFErr2_Down", "B_Tag_CFErr2_Up",
-                                   "B_Tag_HFStats1_Down", "B_Tag_HFStats1_Up",
-                                   "B_Tag_HFStats2_Down", "B_Tag_HFStats2_Up"};
-
-    syst_name.insert(syst_name.end(), syst_tagger.begin(), syst_tagger.end());
-  }
-  else if (tagger == "C")
-  {
-    vector<TString> syst_tagger = {"C_Tag_Extrap_Down", "C_Tag_Extrap_Up",
-                                   "C_Tag_Interp_Down", "C_Tag_Interp_Up",
-                                   //"C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up",
-                                   //"C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up",
-                                   //"C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up",
-                                   //"C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up",
-                                   //"C_Tag_PU_Down", "C_Tag_PU_Up",
-                                   "C_Tag_Stat_Down", "C_Tag_Stat_Up",
-                                   "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up",
-                                   "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up",
-                                   "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up"};
-    //"C_Tag_JER_Down", "C_Tag_JER_Up",
-    //"C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up",};
-
-    syst_name.insert(syst_name.end(), syst_tagger.begin(), syst_tagger.end());
-  }
-
-  if (channel == "MM")
-  {
-    syst_name.push_back("Mu_Trig_Down");
-    syst_name.push_back("Mu_Trig_Up");
-    syst_name.push_back("Mu_Id_Down");
-    syst_name.push_back("Mu_Id_Up");
-    syst_name.push_back("Mu_Iso_Down");
-    syst_name.push_back("Mu_Iso_Up");
-  }
-  else if (channel == "ME")
-  {
-    syst_name.push_back("Mu_Trig_Down");
-    syst_name.push_back("Mu_Trig_Up");
-    syst_name.push_back("El_Trig_Down");
-    syst_name.push_back("El_Trig_Up");
-
-    syst_name.push_back("Mu_Id_Down");
-    syst_name.push_back("Mu_Id_Up");
-    syst_name.push_back("Mu_Iso_Down");
-    syst_name.push_back("Mu_Iso_Up");
-
-    syst_name.push_back("El_Id_Down");
-    syst_name.push_back("El_Id_Up");
-    syst_name.push_back("El_Reco_Down");
-    syst_name.push_back("El_Reco_Up");
-    // syst_name.push_back("El_En_Down");
-    // syst_name.push_back("El_En_Up");
-    // syst_name.push_back("El_Res_Down");
-    // syst_name.push_back("El_Res_Up");
-  }
-  else if (channel == "EE")
-  {
-    syst_name.push_back("El_Trig_Down");
-    syst_name.push_back("El_Trig_Up");
-
-    syst_name.push_back("El_Id_Down");
-    syst_name.push_back("El_Id_Up");
-    syst_name.push_back("El_Reco_Down");
-    syst_name.push_back("El_Reco_Up");
-    // syst_name.push_back("El_En_Down");
-    // syst_name.push_back("El_En_Up");
-    // syst_name.push_back("El_Res_Down");
-    // syst_name.push_back("El_Res_Up");
-  }
-
-  for (int i = 0; i < sizeof(event.weight_pdf_error_set) / sizeof(float); i++)
-  {
-    TString pdf_error_set = "PDF_Error_Set_" + to_string(i);
-    syst_name.push_back(pdf_error_set);
-  }
-
-  n_syst = syst_name.size();
-  cout << "N_Syst = " << n_syst << endl;
-
-  bin_bvsc.push_back(0);
-  if (era == "2016preVFP")
-  {
-    bin_bvsc.push_back(bvsc_wp_l_2016preVFP);
-    bin_bvsc.push_back(bvsc_wp_m_2016preVFP);
-    bin_bvsc.push_back(bvsc_wp_t_2016preVFP);
-    // bin_bvsc.push_back(0.05);
-    // bin_bvsc.push_back(0.1);
-    // bin_bvsc.push_back(0.3);
-    // bin_bvsc.push_back(0.6);
-  }
-  else if (era == "2016postVFP")
-  {
-    bin_bvsc.push_back(bvsc_wp_l_2016postVFP);
-    bin_bvsc.push_back(bvsc_wp_m_2016postVFP);
-    bin_bvsc.push_back(bvsc_wp_t_2016postVFP);
-    // bin_bvsc.push_back(0.05);
-    // bin_bvsc.push_back(0.1);
-    // bin_bvsc.push_back(0.3);
-    // bin_bvsc.push_back(0.6);
-  }
-  else if (era == "2017")
-  {
-    bin_bvsc.push_back(bvsc_wp_l_2017);
-    bin_bvsc.push_back(bvsc_wp_m_2017);
-    bin_bvsc.push_back(bvsc_wp_t_2017);
-    // bin_bvsc.push_back(0.05);
-    // bin_bvsc.push_back(0.1);
-    // bin_bvsc.push_back(0.3);
-    // bin_bvsc.push_back(0.6);
-  }
-  else if (era == "2018")
-  {
-    bin_bvsc.push_back(bvsc_wp_l_2018);
-    bin_bvsc.push_back(bvsc_wp_m_2018);
-    bin_bvsc.push_back(bvsc_wp_t_2018);
-    // bin_bvsc.push_back(0.05);
-    // bin_bvsc.push_back(0.1);
-    // bin_bvsc.push_back(0.3);
-    // bin_bvsc.push_back(0.6);
-  }
-  bin_bvsc.push_back(1);
-  sort(bin_bvsc.begin(), bin_bvsc.end());
-  int n_bin_bvsc = bin_bvsc.size() - 1;
-
-  // set variables to be drawn
-  variable_conf = {{"BvsC_3rd_4th_Jets_Unrolled", n_bin_bvsc * n_bin_bvsc, 0., (float)n_bin_bvsc * n_bin_bvsc},
-                   {"N_Vertex", 40, 0, 80},
-                   {"Leading_Lepton_Eta", 30, -3, 3},
-                   {"Leading_Lepton_Pt", 50, 0, 400},
-                   {"Subleading_Lepton_Eta", 50, -3, 3},
-                   {"Subleading_Lepton_Pt", 50, 0, 400},
-                   {"DiLepton_Mass", 50, 0, 500},
-                   {"N_Jet", 20, 0, 20},
-                   {"N_B_Jet", 10, 0, 10},
-                   {"N_C_Jet", 15, 0, 15},
-                   {"HT", 50, 0, 1000},
-                   {"Leading_Jet_BvsC", 20, 0, 1},
-                   {"Leading_Jet_CvsB", 20, 0, 1},
-                   {"Leading_Jet_CvsL", 20, 0, 1},
-                   {"Subleading_Jet_BvsC", 20, 0, 1},
-                   {"Subleading_Jet_CvsB", 20, 0, 1},
-                   {"Subleading_Jet_CvsL", 20, 0, 1},
-                   {"Met_Pt", 50, 0, 500},
-                   {"Met_Phi", 40, -4, 4},
-                   {"Leading_Jet_Charge", 30, -1.5, 1.5},
-                   {"Subleading_jet_Charge", 30, -1.5, 1.5},
-                   {"Leading_Jet_Pt", 50, 0, 400},
-                   {"Subleading_Jet_Pt", 50, 0, 400},
-                   {"BvsC_Third_Pt", 50, 0, 400},
-                   {"BvsC_Third_Eta", 50, -3, 3},
-                   {"BvsC_Fourth_Pt", 50, 0, 400},
-                   {"BvsC_Fourth_Eta", 50, -3, 3}};
-  n_variable = variable_conf.size();
-
-  variable_conf_2d = {{"BvsC_3rd_4th_Jets", n_bin_bvsc, bin_bvsc.data(), n_bin_bvsc, bin_bvsc.data()}};
-  n_variable_2d = variable_conf_2d.size();
 } // CR_DL(const TString &a_era = "2018", const TString &a_channel = "MM", const TString &a_run_flag = "All");
 
 //////////
@@ -400,6 +200,8 @@ CR_DL::~CR_DL()
 void CR_DL::Run()
 {
   Setup_Analysis();
+  Setup_Syst();
+  Setup_Variable();
   Setup_Histo();
   Read_Tree();
   Unroller();
@@ -750,6 +552,303 @@ void CR_DL::Setup_Histo()
 
 //////////
 
+void CR_DL::Setup_Syst()
+{
+  cout << "[CR_DL::Setup_Syst]: Init" << endl;
+
+  // Systs
+  syst_name = {"Nominal",
+               "Jet_En_Down", "Jet_En_Up",
+               "Jet_Res_Down", "Jet_Res_Up",
+               "UE_Down", "UE_Up",
+               "PDF_Alternative", "PDF_As_Down", "PDF_As_Up",
+               "Pileup_Down", "Pileup_Up",
+               "PU_Jet_Veto_Down", "PU_Jet_Veto_Up",
+               "Prefire_Down", "Prefire_Up",
+               "MuF_TT_Down", "MuF_TT_Up", "MuF_ST_Down", "MuF_ST_Up", "MuF_WJets_Down", "MuF_WJets_Up", "MuF_DYJets_Down", "MuF_DYJets_Up",
+               "MuR_TT_Down", "MuR_TT_Up", "MuR_ST_Down", "MuR_ST_Up", "MuR_WJets_Down", "MuR_WJets_Up", "MuR_DYJets_Down", "MuR_DYJets_Up",
+               //"MuF_MuR_Down", "MuR_MuR_Up",
+               "FSR_Down", "FSR_Up",
+               "ISR_TT_Down", "ISR_TT_Up", "ISR_ST_Down", "ISR_ST_Up", "ISR_WJets_Down", "ISR_WJets_Up", "ISR_DYJets_Down", "ISR_DYJets_Up",
+               "Top_Pt_Reweight",
+               "CP5_Down", "CP5_Up",
+               "hdamp_Down", "hdamp_Up",
+               "mtop_171p5", "mtop_173p5"};
+
+  if (chk_jes_breakdown == true)
+  {
+    vector<TString> syst_name_jes_breakdown = {"Jet_En_Absolute_Down", "Jet_En_Absolute_Up",
+                                               "Jet_En_BBEC1_Down", "Jet_En_BBEC1_Up",
+                                               "Jet_En_EC2_Down", "Jet_En_EC2_Up",
+                                               "Jet_En_FlavorQCD_Down", "Jet_En_FlavorQCD_Up",
+                                               "Jet_En_HF_Down", "Jet_En_HF_Up",
+                                               "Jet_En_RelativeBal_Down", "Jet_En_RelativeBal_Up"};
+
+    vector<TString> syst_name_jes_breakdown_year = {"Jet_En_Absolute", "Jet_En_BBEC1", "Jet_En_EC2", "Jet_En_HF", "Jet_En_RelativeSample"};
+    for (unsigned int i = 0; i < syst_name_jes_breakdown_year.size(); i++)
+    {
+      syst_name_jes_breakdown.push_back(syst_name_jes_breakdown_year[i] + year + "_Down");
+      syst_name_jes_breakdown.push_back(syst_name_jes_breakdown_year[i] + year + "_Up");
+    }
+
+    syst_name.insert(syst_name.end(), syst_name_jes_breakdown.begin(), syst_name_jes_breakdown.end());
+  }
+
+  if (tagger == "B")
+  {
+    vector<TString> syst_tagger = {"B_Tag_HF_Down", "B_Tag_HF_Up",
+                                   "B_Tag_LF_Down", "B_Tag_LF_Up",
+                                   // "B_Tag_JES_Down", "B_Tag_JES_Up",
+                                   "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up",
+                                   "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up",
+                                   "B_Tag_CFErr1_Down", "B_Tag_CFErr1_Up",
+                                   "B_Tag_CFErr2_Down", "B_Tag_CFErr2_Up",
+                                   "B_Tag_HFStats1_Down", "B_Tag_HFStats1_Up",
+                                   "B_Tag_HFStats2_Down", "B_Tag_HFStats2_Up"};
+
+    syst_name.insert(syst_name.end(), syst_tagger.begin(), syst_tagger.end());
+  }
+  else if (tagger == "C")
+  {
+    vector<TString> syst_tagger = {"C_Tag_Extrap_Down", "C_Tag_Extrap_Up",
+                                   "C_Tag_Interp_Down", "C_Tag_Interp_Up",
+                                   //"C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up",
+                                   //"C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up",
+                                   //"C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up",
+                                   //"C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up",
+                                   //"C_Tag_PU_Down", "C_Tag_PU_Up",
+                                   "C_Tag_Stat_Down", "C_Tag_Stat_Up",
+                                   "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up",
+                                   "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up",
+                                   "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up"};
+    //"C_Tag_JER_Down", "C_Tag_JER_Up",
+    //"C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up",};
+
+    syst_name.insert(syst_name.end(), syst_tagger.begin(), syst_tagger.end());
+  }
+
+  if (channel == "MM")
+  {
+    syst_name.push_back("Mu_Trig_Down");
+    syst_name.push_back("Mu_Trig_Up");
+    syst_name.push_back("Mu_Id_Down");
+    syst_name.push_back("Mu_Id_Up");
+    syst_name.push_back("Mu_Iso_Down");
+    syst_name.push_back("Mu_Iso_Up");
+  }
+  else if (channel == "ME")
+  {
+    syst_name.push_back("Mu_Trig_Down");
+    syst_name.push_back("Mu_Trig_Up");
+    syst_name.push_back("El_Trig_Down");
+    syst_name.push_back("El_Trig_Up");
+
+    syst_name.push_back("Mu_Id_Down");
+    syst_name.push_back("Mu_Id_Up");
+    syst_name.push_back("Mu_Iso_Down");
+    syst_name.push_back("Mu_Iso_Up");
+
+    syst_name.push_back("El_Id_Down");
+    syst_name.push_back("El_Id_Up");
+    syst_name.push_back("El_Reco_Down");
+    syst_name.push_back("El_Reco_Up");
+    // syst_name.push_back("El_En_Down");
+    // syst_name.push_back("El_En_Up");
+    // syst_name.push_back("El_Res_Down");
+    // syst_name.push_back("El_Res_Up");
+  }
+  else if (channel == "EE")
+  {
+    syst_name.push_back("El_Trig_Down");
+    syst_name.push_back("El_Trig_Up");
+
+    syst_name.push_back("El_Id_Down");
+    syst_name.push_back("El_Id_Up");
+    syst_name.push_back("El_Reco_Down");
+    syst_name.push_back("El_Reco_Up");
+    // syst_name.push_back("El_En_Down");
+    // syst_name.push_back("El_En_Up");
+    // syst_name.push_back("El_Res_Down");
+    // syst_name.push_back("El_Res_Up");
+  }
+
+  for (int i = 0; i < sizeof(event.weight_pdf_error_set) / sizeof(float); i++)
+  {
+    TString pdf_error_set = "PDF_Error_Set_" + to_string(i);
+    syst_name.push_back(pdf_error_set);
+  }
+
+  n_syst = syst_name.size();
+  cout << "N_Syst = " << n_syst << endl;
+
+  cout << "[CR_DL::Setup_Syst]: Done" << endl;
+
+  return;
+} // void CR_DL::Setup_Syst()
+
+//////////
+
+void CR_DL::Setup_Variable()
+{
+  cout << "[CR_DL::Setup_Variable]: Init" << endl;
+
+  if (chk_bin_optimizer)
+  {
+    int n_bin = 40;
+    for (int i = 0; i < n_bin; i++)
+      bin_bvsc.push_back(1. / n_bin * i);
+    bin_bvsc.push_back(1);
+  } // if(chk_bin_optimizer)
+  else
+  {
+    // Data Driven
+    if (era == "2016preVFP")
+    {
+      if (channel == "MM")
+        bin_bvsc = {0.0, 0.025, 0.075, 0.25, 1.0};
+      else if (channel == "ME")
+        bin_bvsc = {0.0, 0.025, 0.05, 0.125, 0.35, 1.0};
+      else if (channel == "EE")
+        bin_bvsc = {0.0, 0.025, 0.125, 1.0};
+    }
+    else if (era == "2016postVFP")
+    {
+      if (channel == "MM")
+        bin_bvsc = {0.0, 0.025, 0.075, 0.2, 1.0};
+      else if (channel == "ME")
+        bin_bvsc = {0.0, 0.025, 0.05, 0.125, 0.325, 1.0};
+      else if (channel == "EE")
+        bin_bvsc = {0.0, 0.025, 0.125, 1.0};
+    }
+    else if (era == "2017")
+    {
+      if (channel == "MM")
+        bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.2, 0.525, 1.0};
+      else if (channel == "ME")
+        bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.15, 0.3, 0.7, 1.0};
+      else if (channel == "EE")
+        bin_bvsc = {0.0, 0.025, 0.05, 0.1, 0.3, 1.0};
+    }
+    else if (era == "2018")
+    {
+      if (channel == "MM")
+        bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.15, 0.3, 0.7, 1.0};
+      else if (channel == "ME")
+        bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.125, 0.225, 0.425, 0.8, 1.0};
+      else if (channel == "EE")
+        bin_bvsc = {0.0, 0.025, 0.05, 0.125, 0.4, 1.0};
+    }
+
+    // // MC
+    // if (era == "2016preVFP")
+    // {
+    //   if (channel == "MM")
+    //     bin_bvsc = {0.0, 0.025, 0.075, 0.25, 1.0};
+    //   else if (channel == "ME")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.125, 0.35, 1.0};
+    //   else if (channel == "EE")
+    //     bin_bvsc = {0.0, 0.025, 0.1, 1.0};
+    // }
+    // else if (era == "2016postVFP")
+    // {
+    //   if (channel == "MM")
+    //     bin_bvsc = {0.0, 0.025, 0.075, 0.2, 1.0};
+    //   else if (channel == "ME")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.125, 0.3, 1.0};
+    //   else if (channel == "EE")
+    //     bin_bvsc = {0.0, 0.025, 0.1, 1.0};
+    // }
+    // else if (era == "2017")
+    // {
+    //   if (channel == "MM")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.2, 0.525, 1.0};
+    //   else if (channel == "ME")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.125, 0.275, 0.675, 1.0};
+    //   else if (channel == "EE")
+    //     bin_bvsc = {0.0, 0.025, 0.075, 0.275, 1.0};
+    // }
+    // else if (era == "2018")
+    // {
+    //   if (channel == "MM")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.15, 0.3, 0.7, 1.0};
+    //   else if (channel == "ME")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.125, 0.2, 0.4, 0.775, 1.0};
+    //   else if (channel == "EE")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.1, 0.35, 1.0};
+    // }
+
+    // // Old
+    // bin_bvsc.push_back(0);
+    // if (era == "2016preVFP")
+    // {
+    //   bin_bvsc.push_back(bvsc_wp_l_2016preVFP);
+    //   bin_bvsc.push_back(bvsc_wp_m_2016preVFP);
+    //   bin_bvsc.push_back(bvsc_wp_t_2016preVFP);
+    // }
+    // else if (era == "2016postVFP")
+    // {
+    //   bin_bvsc.push_back(bvsc_wp_l_2016postVFP);
+    //   bin_bvsc.push_back(bvsc_wp_m_2016postVFP);
+    //   bin_bvsc.push_back(bvsc_wp_t_2016postVFP);
+    // }
+    // else if (era == "2017")
+    // {
+    //   bin_bvsc.push_back(bvsc_wp_l_2017);
+    //   bin_bvsc.push_back(bvsc_wp_m_2017);
+    //   bin_bvsc.push_back(bvsc_wp_t_2017);
+    // }
+    // else if (era == "2018")
+    // {
+    //   bin_bvsc.push_back(bvsc_wp_l_2018);
+    //   bin_bvsc.push_back(bvsc_wp_m_2018);
+    //   bin_bvsc.push_back(bvsc_wp_t_2018);
+    // }
+    // bin_bvsc.push_back(1);
+  } // else
+
+  sort(bin_bvsc.begin(), bin_bvsc.end());
+  int n_bin_bvsc = bin_bvsc.size() - 1;
+
+  // set variables to be drawn
+  variable_conf = {{"BvsC_3rd_4th_Jets_Unrolled", TMath::Binomial(n_bin_bvsc, 2), 0., TMath::Binomial(n_bin_bvsc, 2)},
+                   {"N_Vertex", 40, 0, 80},
+                   {"Leading_Lepton_Eta", 30, -3, 3},
+                   {"Leading_Lepton_Pt", 50, 0, 400},
+                   {"Subleading_Lepton_Eta", 50, -3, 3},
+                   {"Subleading_Lepton_Pt", 50, 0, 400},
+                   {"DiLepton_Mass", 50, 0, 500},
+                   {"N_Jet", 20, 0, 20},
+                   {"N_B_Jet", 10, 0, 10},
+                   {"N_C_Jet", 15, 0, 15},
+                   {"HT", 50, 0, 1000},
+                   {"Leading_Jet_BvsC", 20, 0, 1},
+                   {"Leading_Jet_CvsB", 20, 0, 1},
+                   {"Leading_Jet_CvsL", 20, 0, 1},
+                   {"Subleading_Jet_BvsC", 20, 0, 1},
+                   {"Subleading_Jet_CvsB", 20, 0, 1},
+                   {"Subleading_Jet_CvsL", 20, 0, 1},
+                   {"Met_Pt", 50, 0, 500},
+                   {"Met_Phi", 40, -4, 4},
+                   {"Leading_Jet_Charge", 30, -1.5, 1.5},
+                   {"Subleading_jet_Charge", 30, -1.5, 1.5},
+                   {"Leading_Jet_Pt", 50, 0, 400},
+                   {"Subleading_Jet_Pt", 50, 0, 400},
+                   {"BvsC_Third_Pt", 50, 0, 400},
+                   {"BvsC_Third_Eta", 50, -3, 3},
+                   {"BvsC_Fourth_Pt", 50, 0, 400},
+                   {"BvsC_Fourth_Eta", 50, -3, 3}};
+  n_variable = variable_conf.size();
+
+  variable_conf_2d = {{"BvsC_3rd_4th_Jets", n_bin_bvsc, bin_bvsc.data(), n_bin_bvsc, bin_bvsc.data()}};
+  n_variable_2d = variable_conf_2d.size();
+
+  cout << "[CR_DL::Setup_Variable]: Done" << endl;
+
+  return;
+} // void CR_DL::Setup_Variable()
+
+//////////
+
 void CR_DL::Fill_Histo_Data()
 {
   int unrolled_bin = Unroller(event.bvsc_third, event.bvsc_fourth);
@@ -766,27 +865,11 @@ void CR_DL::Fill_Histo_Data()
   histo_data[9]->Fill(event.n_c_jet, 1);
   histo_data[10]->Fill(event.ht, 1.);
   histo_data[11]->Fill(event.leading_jet_bvsc, 1.);
-  if (abs(event.leading_jet_cvsb + 1) < 1e-5 && abs(event.leading_jet_cvsl + 1) < 1e-5)
-  {
-    histo_data[12]->Fill(-0.2, 1.);
-    histo_data[13]->Fill(-0.2, 1.);
-  }
-  else
-  {
-    histo_data[12]->Fill(event.leading_jet_cvsb, 1.);
-    histo_data[13]->Fill(event.leading_jet_cvsl, 1.);
-  }
+  histo_data[12]->Fill(event.leading_jet_cvsb, 1.);
+  histo_data[13]->Fill(event.leading_jet_cvsl, 1.);
   histo_data[14]->Fill(event.subleading_jet_bvsc, 1.);
-  if (abs(event.leading_jet_cvsb + 1) < 1e-5 && abs(event.leading_jet_cvsl + 1) < 1e-5)
-  {
-    histo_data[15]->Fill(-0.2, 1.);
-    histo_data[16]->Fill(-0.2, 1.);
-  }
-  else
-  {
-    histo_data[15]->Fill(event.subleading_jet_cvsb, 1.);
-    histo_data[16]->Fill(event.subleading_jet_cvsl, 1.);
-  }
+  histo_data[15]->Fill(event.subleading_jet_cvsb, 1.);
+  histo_data[16]->Fill(event.subleading_jet_cvsl, 1.);
   histo_data[17]->Fill(event.met_pt, 1.);
   histo_data[18]->Fill(event.met_phi, 1.);
   histo_data[19]->Fill(event.leading_jet_charge, 1);
@@ -1092,7 +1175,7 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
       }
 
       // cout << "test " << histo_name_rf << " " << b_tagging_rf_type << endl;
-      event.weight *= tagging_rf_dl.Get_Tagging_RF_DL_B_Tag(histo_name_rf, b_tagging_rf_type, event.n_jet, event.ht);
+      event.weight *= tagging_rf_dl.Get_Tagging_RF_DL_B_Tag(histo_name_rf, b_tagging_rf_type, event.vec_jet_pt, event.vec_jet_eta, event.vec_jet_flavor);
     } // if (tagger == "B")
     else if (tagger == "C")
     {
@@ -1283,7 +1366,7 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
       // }
       // c_tagging_rf_type = "C_Tag_Nominal";
 
-      event.weight *= tagging_rf_dl.Get_Tagging_RF_DL_C_Tag(histo_name_rf, c_tagging_rf_type, event.n_pileup, event.ht);
+      event.weight *= tagging_rf_dl.Get_Tagging_RF_DL_C_Tag(histo_name_rf, c_tagging_rf_type, event.vec_jet_pt, event.vec_jet_eta, event.vec_jet_flavor);
     }
 
     // histo_mc[i][histo_index][0]->Fill(unrolled_bin, event.weight);
@@ -1298,27 +1381,11 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
     histo_mc[i][histo_index][9]->Fill(event.n_c_jet, event.weight);
     histo_mc[i][histo_index][10]->Fill(event.ht, event.weight);
     histo_mc[i][histo_index][11]->Fill(event.leading_jet_bvsc, event.weight);
-    if (abs(event.leading_jet_cvsb + 1) < 1e-5 && abs(event.leading_jet_cvsl + 1) < 1e-5)
-    {
-      histo_mc[i][histo_index][12]->Fill(-0.2, event.weight);
-      histo_mc[i][histo_index][13]->Fill(-0.2, event.weight);
-    }
-    else
-    {
-      histo_mc[i][histo_index][12]->Fill(event.leading_jet_cvsb, event.weight);
-      histo_mc[i][histo_index][13]->Fill(event.leading_jet_cvsl, event.weight);
-    }
+    histo_mc[i][histo_index][12]->Fill(event.leading_jet_cvsb, event.weight);
+    histo_mc[i][histo_index][13]->Fill(event.leading_jet_cvsl, event.weight);
     histo_mc[i][histo_index][14]->Fill(event.subleading_jet_bvsc, event.weight);
-    if (abs(event.leading_jet_cvsb + 1) < 1e-5 && abs(event.leading_jet_cvsl + 1) < 1e-5)
-    {
-      histo_mc[i][histo_index][15]->Fill(-0.2, event.weight);
-      histo_mc[i][histo_index][16]->Fill(-0.2, event.weight);
-    }
-    else
-    {
-      histo_mc[i][histo_index][15]->Fill(event.subleading_jet_cvsb, event.weight);
-      histo_mc[i][histo_index][16]->Fill(event.subleading_jet_cvsl, event.weight);
-    }
+    histo_mc[i][histo_index][15]->Fill(event.subleading_jet_cvsb, event.weight);
+    histo_mc[i][histo_index][16]->Fill(event.subleading_jet_cvsl, event.weight);
     histo_mc[i][histo_index][17]->Fill(event.met_pt, event.weight);
     histo_mc[i][histo_index][18]->Fill(event.met_phi, event.weight);
     histo_mc[i][histo_index][19]->Fill(event.leading_jet_charge, event.weight);
@@ -1627,6 +1694,7 @@ void CR_DL::Merge_PDF_Error_Set()
 
 void CR_DL::Unroller()
 {
+  // unroll and remove empty bins
   cout << "[CR_DL::Unroller]: Init" << endl;
 
   // mc
@@ -1634,32 +1702,53 @@ void CR_DL::Unroller()
   {
     for (int j = 0; j < n_sample_merge_mc; j++)
     {
+      int bin_index = 1;
       for (int k = 0; k < histo_mc_2d[i][j][0]->GetNbinsX(); k++)
       {
         for (int l = 0; l < histo_mc_2d[i][j][0]->GetNbinsY(); l++)
         {
+          if (k < l)
+            continue;
+
           float content = histo_mc_2d[i][j][0]->GetBinContent(k + 1, l + 1);
           float error = histo_mc_2d[i][j][0]->GetBinError(k + 1, l + 1);
-          int unrolled_bin = 4 * l + k + 1;
 
-          histo_mc[i][j][0]->SetBinContent(unrolled_bin, content);
-          histo_mc[i][j][0]->SetBinError(unrolled_bin, error);
+          // int unrolled_bin = (bin_bvsc.size() - 1) * k + l + 1;
+          // histo_mc[i][j][0]->SetBinContent(unrolled_bin, content);
+          // histo_mc[i][j][0]->SetBinError(unrolled_bin, error);
+      
+
+          histo_mc[i][j][0]->SetBinContent(bin_index, content);
+          histo_mc[i][j][0]->SetBinError(bin_index, error);
+
+          bin_index++;
+
         } // loop over nbiny
       } // loop over nbinx
     } // loop over n_sample_merge_mc
   } // loop over n_syst
 
   // data
+  int bin_index = 1;
   for (int i = 0; i < histo_data_2d[0]->GetNbinsX(); i++)
   {
     for (int j = 0; j < histo_data_2d[0]->GetNbinsY(); j++)
     {
+      if (i < j)
+        continue;
+
       float content = histo_data_2d[0]->GetBinContent(i + 1, j + 1);
       float error = histo_data_2d[0]->GetBinError(i + 1, j + 1);
-      int unrolled_bin = 4 * j + i + 1;
 
-      histo_data[0]->SetBinContent(unrolled_bin, content);
-      histo_data[0]->SetBinError(unrolled_bin, error);
+      // int unrolled_bin = (bin_bvsc.size() - 1) * i + j + 1;
+      // histo_data[0]->SetBinContent(unrolled_bin, content);
+      // histo_data[0]->SetBinError(unrolled_bin, error);
+
+      histo_data[0]->SetBinContent(bin_index, content);
+      histo_data[0]->SetBinError(bin_index, error);
+
+      bin_index++;
+
     } // loop over nbiny
   } // loop over nbinx
 

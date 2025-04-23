@@ -4,6 +4,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <numeric>
 
 #include <TTree.h>
 #include <TH1D.h>
@@ -129,30 +130,35 @@ protected:
   vector<TString> region_name = {"A", "B", "C", "D"};
   int n_region = region_name.size();
 
+  vector<TString> flavor_name = {"L", "C", "B"};
+  const int n_flavor = flavor_name.size();
+
   TH2D ****histo_mc_before_b; // n_region, n_sample, n_syst_b
   TH2D ****histo_mc_after_b;  // n_region, n_sample, n_syst_b
 
   TH2D ****histo_mc_before_c; // n_region, n_sample, n_syst_c
   TH2D ****histo_mc_after_c;  // n_region, n_sample, n_syst_c
 
-  TH1D *****histo_closure_n_jet; // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D *****histo_closure_ht;    // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D *****histo_closure_n_pileup;  // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D *****histo_closure_bvsc;  // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D *****histo_closure_cvsb;  // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D *****histo_closure_cvsl;  // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D *****histo_closure_eta;   // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D *****histo_closure_pt;    // n_region, n_sample, n_syst, 3 (no tagging SF, tagging SF, tagging SF+RF)
-
-  THStack *stack_mc_before;
-  THStack **stack_mc_after_b; // n_syst_b
-  THStack **stack_mc_after_c; // n_syst_c
-
   TH2D ****ratio_b; // n_region, n_sample, n_syst_b
   TH2D ****ratio_c; // n_region, n_sample, n_syst_c
 
   TH2D ***ratio_b_averaged;
   TH2D ***ratio_c_averaged;
+
+  TH1D ******histo_closure_n_jet;    // n_region, n_sample, n_syst, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ******histo_closure_ht;       // n_region, n_sample, n_syst, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ******histo_closure_n_pileup; // n_region, n_sample, n_syst, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ******histo_closure_bvsc;     // n_region, n_sample, n_syst, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ******histo_closure_cvsb;     // n_region, n_sample, n_syst, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ******histo_closure_cvsl;     // n_region, n_sample, n_syst, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ******histo_closure_eta;      // n_region, n_sample, n_syst, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
+  TH1D ******histo_closure_pt;       // n_region, n_sample, n_syst, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
+
+  TH1D ****histo_rf; // n_region, 2 (ttbb, ttcc), n_syst
+
+  THStack *stack_mc_before;
+  THStack **stack_mc_after_b; // n_syst_b
+  THStack **stack_mc_after_c; // n_syst_c
 
   TCanvas **canvas_before_b; // n_sample
   TCanvas **canvas_before_c; // n_sample
@@ -164,7 +170,7 @@ protected:
   TLegend *legend;
 
   int n_jets;
-  
+
   int n_pv;
   int n_pileup;
 
@@ -193,11 +199,6 @@ protected:
   int decay_mode;
 
   int gen_ttbar_id;
-
-  vector<int> *vec_gen_hf_flavour = NULL;
-  vector<int> *vec_gen_hf_origin = NULL;
-  vector<int> *vec_sel_gen_hf_flavour = NULL;
-  vector<int> *vec_sel_gen_hf_origin = NULL;
 
   float sf_mu_id;
   float sf_mu_iso;
@@ -276,6 +277,16 @@ protected:
   float weight_c_tag_jes_total_down;
   float weight_c_tag_jes_total_up;
 
+  vector<int> *vec_gen_hf_flavour = NULL;
+  vector<int> *vec_gen_hf_origin = NULL;
+  vector<int> *vec_sel_gen_hf_flavour = NULL;
+  vector<int> *vec_sel_gen_hf_origin = NULL;
+
+  vector<int> *vec_jet_flavor = NULL;
+  vector<float> *vec_jet_bvsc = NULL;
+  vector<float> *vec_jet_cvsb = NULL;
+  vector<float> *vec_jet_cvsl = NULL;
+
   TFile *fin;
   TFile *fin_mu;
   TFile *fin_el;
@@ -288,8 +299,11 @@ protected:
   void Fill_Histo_MC(const int &region_index, const TString &sample_name, const TString &tree_type);
   void Fill_Histo_Validation_MC_B_Tagger(const int &region_index, const TString &sample_name, const TString &tree_type);
   void Fill_Histo_Validation_MC_C_Tagger(const int &region_index, const TString &sample_name, const TString &tree_type);
+  int Flavor_Index(const int &flavor);
   int Histo_Index(const TString &sample_name);
   TString Histo_Name_RF(const TString &sample_name);
+  int N_BJets();
+  int N_CJets();
   void Ratio();
   void Read_Tree();
   void Run_Analysis();
@@ -303,6 +317,7 @@ protected:
   void Setup_Histo_Validation();
   void Setup_Tree(TTree *tree, const TString &syst);
   int Set_ABCD_Region();
+  int TTHF_Breakdown_Index(const TString &sample_name);
 
 private:
   bool chk_draw_called = false;

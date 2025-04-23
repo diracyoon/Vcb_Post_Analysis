@@ -11,6 +11,8 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
 
   TH1::AddDirectory(kFALSE);
 
+  gROOT->SetBatch(kTRUE);
+
   era = a_era;
   channel = a_channel;
   analyser = a_analyser;
@@ -28,14 +30,14 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   TString path_base = getenv("Vcb_Post_Analysis_WD");
 
   // QCD data driven or MC
-  // chk_qcd_data_driven = true;
-  chk_qcd_data_driven = false;
+  chk_qcd_data_driven = true;
+  // chk_qcd_data_driven = false;
 
   // simplified drawing
   chk_simple = true;
 
   if (analyser == "Vcb")
-    signal_scale = 50;
+    signal_scale = 10;
   else if (analyser == "Vcb_DL")
   {
     signal_scale = 1000;
@@ -305,9 +307,9 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
 
   // setup histo_data
   Setup_Histo_Data();
-  cout << "test 2" << endl;
+
   Ordering_Sample_Name();
-  cout << "test 3" << endl;
+
   Run();
 } // Data_MC_Comparison::Data_MC_Comparison(const TString& a_era, const TString& a_channel))
 
@@ -333,8 +335,10 @@ void Data_MC_Comparison::Run()
   {
     if (analyser == "Vcb")
     {
-      Draw_Each(syst_name_short[i], "Best_MVA_Score");
+      // Draw_Each(syst_name_short[i], "Best_MVA_Score");
       Draw_Each(syst_name_short[i], "Template_MVA_Score");
+      Draw_Each(syst_name_short[i], "N_BJets");
+      Draw_Each(syst_name_short[i], "Total");
       // Draw_Each(syst_name_short[i], "N_BJets");
     }
     else if (analyser == "Vcb_DL")
@@ -512,7 +516,7 @@ void Data_MC_Comparison::Draw()
       TLegend *legend = (TLegend *)tl->Clone();
       legend->Draw("SAME");
 
-      if (region_name[i] != "Signal")
+      if (region_name[i] != "Signal" || variable_name[j] != "Template_MVA_Score")
       {
         histo_data[i][j]->Sumw2();
         histo_data[i][j]->SetMarkerStyle(8);
@@ -528,7 +532,6 @@ void Data_MC_Comparison::Draw()
       canvas[i][j]->cd();
       pad[i][j][1]->Draw();
       pad[i][j][1]->cd();
-      histo_ratio[i][j]->Draw();
 
       histo_ratio[i][j]->SetTitle("");
       // histo_ratio[i][j]->GetXaxis()->SetTitle(variable_conf[j].variable_title);
@@ -538,10 +541,14 @@ void Data_MC_Comparison::Draw()
       histo_ratio[i][j]->GetYaxis()->SetTitleOffset(0.3);
       histo_ratio[i][j]->GetYaxis()->SetRangeUser(0.5, 1.5);
       histo_ratio[i][j]->SetMarkerStyle(8);
+      histo_ratio[i][j]->Draw();
 
+      // if (region_name[i] != "Signal" || variable_name[j] != "Template_MVA_Score")
+      // {
       gr_ratio[i][j]->SetFillColor(1);
       gr_ratio[i][j]->SetFillStyle(3001);
       gr_ratio[i][j]->Draw("SAME3");
+      // }
 
       // canvas[i][j]->SetLogy();
 
@@ -713,7 +720,7 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
         if (k == 0)
         {
           histo_ratio->GetYaxis()->SetTitle("Divided by MC Nominal");
-          histo_ratio->GetYaxis()->SetRangeUser(0.8, 1.2);
+          histo_ratio->GetYaxis()->SetRangeUser(0.9, 1.1);
           histo_ratio->SetMarkerStyle(8);
           histo_ratio->Draw();
         }
@@ -1138,7 +1145,7 @@ void Data_MC_Comparison::Setup_Histo_Data()
     for (int j = 0; j < n_variable; j++)
     {
       TString histo_name = region_name[i] + "/Data/" + variable_name[j];
-      cout << histo_name << endl;
+
       histo_data[i][j] = (TH1D *)fin->Get(histo_name);
 
       Histo_Conf conf;
@@ -1147,6 +1154,7 @@ void Data_MC_Comparison::Setup_Histo_Data()
 
       for (int k = 0; k < conf.n_bin; k++)
         conf.vec_bin.push_back(histo_data[i][j]->GetBinLowEdge(k + 1));
+
       conf.vec_bin.push_back(histo_data[i][j]->GetBinLowEdge(conf.n_bin) + histo_data[i][j]->GetBinWidth(conf.n_bin));
 
       // cout << conf.variable_title << " " << conf.n_bin << " " << conf.x_low << " " << conf.x_up << endl;

@@ -18,6 +18,7 @@
 #include <TSystem.h>
 #include <TLatex.h>
 #include <TStyle.h>
+#include <TROOT.h>
 
 #include <Const_Def.h>
 #include <Samples.h>
@@ -76,7 +77,7 @@ protected:
   int n_variable;
   vector<TString> variable_name;
 
-  vector<Histo_Conf> variable_conf[2]; // region
+  vector<Histo_Conf> variable_conf[3]; // region
 
   map<TString, int> color;
 

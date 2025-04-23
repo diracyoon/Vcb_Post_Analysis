@@ -174,6 +174,10 @@ protected:
 
   float weight_top_pt;
 
+  vector<float> *vec_jet_pt = NULL;
+  vector<float> *vec_jet_eta = NULL;
+  vector<int> *vec_jet_flavor = NULL;
+
   ClassDef(Result_Event_CR_DL, 1);
 };
 

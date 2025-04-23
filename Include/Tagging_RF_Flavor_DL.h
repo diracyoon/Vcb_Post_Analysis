@@ -1,39 +1,35 @@
-#ifndef __Tagging_RF_DL_H__
-#define __Tagging_RF_DL_H__
+#ifndef __Tagging_RF_Flavor_DL_H__
+#define __Tagging_RF_Flavor_DL_H__
 
 #include <iostream>
-#include <map>
-#include <vector>
 
-#include <TTree.h>
 #include <TH1D.h>
-#include <TH2D.h>
-#include <TDirectory.h>
-#include <TFile.h>
-#include <THStack.h>
-#include <TCanvas.h>
-#include <TLegend.h>
-#include <TList.h>
 #include <TROOT.h>
-#include <TDirectory.h>
-#include <TList.h>
-#include <TBranch.h>
-#include "TRegexp.h"
-#include "TStyle.h"
-#include <TPad.h>
-#include <TLatex.h>
+#include <TTree.h>
+#include <TFile.h>
+#include <TH2D.h>
 #include <TMath.h>
+#include <TStyle.h>
+#include <TCanvas.h>
+#include <TLatex.h>
+#include <TLegend.h>
+
+#include <correction.h>
 
 #include <Samples.h>
-#include "Const_Def.h"
 
 using namespace std;
+using correction::Correction;
+using correction::CorrectionSet;
 
-class Tagging_RF_DL : public TObject
+class Tagging_RF_Flavor_DL : public TObject
 {
 public:
-  Tagging_RF_DL(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString &a_tagger = "C", const int &a_index_tree_type = -1, const TString &a_extension = "png");
-  ~Tagging_RF_DL();
+  Tagging_RF_Flavor_DL(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString &a_tagger = "C", const int &a_index_tree_type = -1, const TString &a_extension = "png");
+  ~Tagging_RF_Flavor_DL();
+
+  float Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const vector<float> *vec_jet_pt, const vector<float> *vec_jet_eta, const vector<int> *vec_jet_flavor) { return float(0); }
+  float Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const vector<float> *vec_jet_pt, const vector<float> *vec_jet_eta, const vector<int> *vec_jet_flavor);
 
   inline static bool Comparing_TString(const TString &str1, const TString &str2)
   {
@@ -43,10 +39,7 @@ public:
       return false;
   } // bool Comparing_TString(const TString &str1, const TString &str2)
 
-  float Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const int &n_jets_, const float &ht_);
-  float Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const int &n_pileup_, const float &ht_);
-
-protected:
+private:
   int reduction;
 
   TString mode;
@@ -64,56 +57,28 @@ protected:
   vector<TString> vec_tree_type;
   int n_tree_type;
 
-  bool chk_combine;
-
   Samples samples;
   int n_sample;
 
   vector<TString> vec_short_name_mc;
   int n_sample_merge_mc;
 
+  vector<TString> sample_name;
+  int n_sample_name;
+
   vector<TString> vec_sample_tagging_rf;
   int n_sample_tagging_rf;
 
-  int color[7] = {2, 3, 4, 5, 6, 7, 8}; // n_sample
-
-  vector<float> bin_njet;
-  vector<float> bin_ht;
-  vector<float> bin_n_pileup;
-
-  map<TString, TFile *> map_fin_mc;
-  vector<map<TString, TTree *>> vec_map_tree_mc;
-
-  // map<TString, TTree *> map_tree_mc;
-  // map<TString, TTree *> map_tree_mc_jec_down;
-  // map<TString, TTree *> map_tree_mc_jec_up;
-  // map<TString, TTree *> map_tree_mc_jer_down;
-  // map<TString, TTree *> map_tree_mc_jer_up;
-
-  map<TString, map<TString, TTree *> *> map_map_tree_mc;
-
-  vector<TString> sample_name;
-  vector<TString> syst_name_b;
   vector<TString> syst_name_c;
-  int n_sample_name;
-  int n_syst_b;
   int n_syst_c;
 
   vector<TString> flavor_name = {"L", "C", "B"};
   const int n_flavor = flavor_name.size();
 
-  TH2D ***histo_mc_before_b; // n_sample, n_syst_b
-  TH2D ***histo_mc_after_b;  // n_sample, n_syst_b
+  TH2D ****histo_mc_before_c; // n_sample, n_syst_c, n_flavor
+  TH2D ****histo_mc_after_c;  // n_sample, n_syst_c, n_flavor
 
-  TH2D ***histo_mc_before_c; // n_sample, n_syst_c
-  TH2D ***histo_mc_after_c;  // n_sample, n_syst_c
-
-  TH2D ***ratio_b; // n_sample, n_syst_b
-  TH2D ***ratio_c; // n_sample, n_syst_c
-
-  TH1D *****histo_closure_n_jet;    // n_sample, n_syst_c, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
-  TH1D *****histo_closure_ht;       // n_sample, n_syst_c, n_flavor, 3
-  TH1D *****histo_closure_n_pileup; // n_sample, n_syst_c, n_flavor, 3
+  TH2D ****ratio_c; // n_sample, n_syst_c, n_flavor
 
   TH1D *****histo_closure_bvsc; // n_sample, n_syst_c, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
   TH1D *****histo_closure_cvsb; // n_sample, n_syst_c, n_flavor, 3
@@ -122,18 +87,15 @@ protected:
   TH1D *****histo_closure_eta; // n_sample, n_syst_c, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
   TH1D *****histo_closure_pt;  // n_sample, n_syst_c, n_flavor, 3
 
-  THStack *stack_mc_before;
-  THStack **stack_mc_after_b; // n_syst_b
-  THStack **stack_mc_after_c; // n_syst_c
+  vector<float> bin_pt;
+  vector<float> bin_eta;
 
-  TCanvas **canvas_before_b; // n_sample
-  TCanvas **canvas_before_c; // n_sample
-  TCanvas ***canvas_after_b; // n_sample, n_syst_b
-  TCanvas ***canvas_after_c; // n_sample, n_syst_c
-  TCanvas ***canvas_ratio_b; // n_sample, n_syst_b
-  TCanvas ***canvas_ratio_c; // n_sample, n_syst_c
+  map<TString, TFile *> map_fin_mc;
+  vector<map<TString, TTree *>> vec_map_tree_mc;
 
-  TLegend *legend;
+  map<TString, map<TString, TTree *> *> map_map_tree_mc;
+
+  Correction::Ref correction_ref_ctag;
 
   int n_jets;
   int n_bjets;
@@ -243,7 +205,12 @@ protected:
   vector<int> *vec_sel_gen_hf_flavour = NULL;
   vector<int> *vec_sel_gen_hf_origin = NULL;
 
+  vector<float> *vec_jet_pt = NULL;
+  vector<float> *vec_jet_eta = NULL;
   vector<int> *vec_jet_flavor = NULL;
+  vector<float> *vec_jet_bvsc = NULL;
+  vector<float> *vec_jet_cvsb = NULL;
+  vector<float> *vec_jet_cvsl = NULL;
 
   TFile *fin;
   TFile *fin_mm;
@@ -251,12 +218,10 @@ protected:
   TFile *fin_ee;
   TFile *fout;
 
-  void Combine_Decay_Mode();
   void Combine_Lepton_Channel();
   void Draw_Result();
   void Draw_Validation();
   void Fill_Histo_MC(const TString &sample_name, const TString &tree_type);
-  void Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name, const TString &tree_type);
   void Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &tree_type);
   int Flavor_Index(const int &flavor);
   int Histo_Index(const TString &sample_name);
@@ -273,12 +238,8 @@ protected:
   void Setup_Histo();
   void Setup_Histo_Validation();
   void Setup_Tree(TTree *tree, const TString &syst);
-  // void Stack_MC();
 
-private:
-  bool chk_draw_called = false;
-
-  ClassDef(Tagging_RF_DL, 1);
+  ClassDef(Tagging_RF_Flavor_DL, 1);
 };
 
-#endif /* __Tagging_RF_DL_H__ */
+#endif /* __Tagging_RF_Flavor_DL_H__ */

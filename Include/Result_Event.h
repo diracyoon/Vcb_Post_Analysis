@@ -205,6 +205,10 @@ protected:
   bool pu_conta_had_t_b;
   bool pu_conta_lep_t_b;
 
+  vector<float> *vec_jet_pt = NULL;
+  vector<float> *vec_jet_eta = NULL;
+  vector<int> *vec_jet_flavor = NULL;
+
   ClassDef(Result_Event, 1);
 };
 

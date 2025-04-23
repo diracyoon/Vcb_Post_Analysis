@@ -20,6 +20,7 @@
 #include <Samples.h>
 #include <Result_Event_CR_DL.h>
 #include <Tagging_RF_DL.h>
+#include <Tagging_RF_Flavor_DL.h>
 
 using namespace std;
 
@@ -70,6 +71,8 @@ protected:
   bool chk_jes_breakdown = false;
   bool chk_print; // only for debug
 
+  bool chk_bin_optimizer = false;
+
   vector<TString> vec_tree_type;
 
   bool chk_merge_pdf_error_set = false;
@@ -82,7 +85,8 @@ protected:
   vector<TString> vec_short_name_mc;
   int n_sample_merge_mc;
 
-  Tagging_RF_DL tagging_rf_dl;
+  // Tagging_RF_DL tagging_rf_dl;
+  Tagging_RF_Flavor_DL tagging_rf_dl;
 
   map<TString, TFile *> map_fin_mc;
   map<TString, TFile *> map_fin_mc_cp5_down;
@@ -159,6 +163,8 @@ protected:
   float Reweight_TTHF(const TString &sample_name);
   void Setup_Analysis();
   void Setup_Histo();
+  void Setup_Syst();
+  void Setup_Variable();
   void Unroller();
   int Unroller(const float &bvsc_third, const float &bvsc_fourth);
 

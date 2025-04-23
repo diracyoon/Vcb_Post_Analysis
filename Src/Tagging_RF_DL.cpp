@@ -437,20 +437,23 @@ Tagging_RF_DL::~Tagging_RF_DL()
 
       for (int j = 0; j < n_syst; j++)
       {
-        for (int k = 0; k < 3; k++)
+        for (int k = 0; k < n_flavor; k++)
         {
-          dir->cd();
+          for (int l = 0; l < 3; l++)
+          {
+            dir->cd();
 
-          histo_closure_n_jet[i][j][k]->Write();
-          histo_closure_ht[i][j][k]->Write();
-          histo_closure_n_pileup[i][j][k]->Write();
+            histo_closure_n_jet[i][j][k][l]->Write();
+            histo_closure_ht[i][j][k][l]->Write();
+            histo_closure_n_pileup[i][j][k][l]->Write();
 
-          histo_closure_bvsc[i][j][k]->Write();
-          histo_closure_cvsb[i][j][k]->Write();
-          histo_closure_cvsl[i][j][k]->Write();
+            histo_closure_bvsc[i][j][k][l]->Write();
+            histo_closure_cvsb[i][j][k][l]->Write();
+            histo_closure_cvsl[i][j][k][l]->Write();
 
-          histo_closure_eta[i][j][k]->Write();
-          histo_closure_pt[i][j][k]->Write();
+            histo_closure_eta[i][j][k][l]->Write();
+            histo_closure_pt[i][j][k][l]->Write();
+          }
         }
       }
     }
@@ -997,8 +1000,14 @@ void Tagging_RF_DL::Draw_Validation()
   //                                       "TTLL_CP5Up_JJ", "TTLL_CP5Up_CC", "TTLL_CP5Up_BB",
   //                                       "TTLL_mtop171p5_JJ", "TTLL_mtop171p5_CC", "TTLL_mtop171p5_BB",
   //                                       "TTLL_mtop173p5_JJ", "TTLL_mtop173p5_CC", "TTLL_mtop173p5_BB"};
-  vector<TString> vec_sample_to_draw = {"TTLL", "TTLJ_mtop171p5_45"};
-  ;
+  vector<TString> vec_sample_to_draw = {"TTLL"};
+
+  vector<TString> vec_syst_to_draw;
+  vec_syst_to_draw = {"C_Tag_Nominal",
+                      "C_Tag_PU_Up", "C_Tag_PU_Down",
+                      "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up",
+                      "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up",
+                      "C_Tag_XSec_Br_Unc_WJets_C_Up", "C_Tag_XSec_Br_Unc_WJets_C_Down"};
 
   TLatex *latex = new TLatex();
   latex->SetTextSize(0.03);
@@ -1014,14 +1023,16 @@ void Tagging_RF_DL::Draw_Validation()
     else if (tagger == "C_Tagger")
       n_syst = n_syst_c;
 
-    for (int j = 0; j < n_syst; j++)
+    for (int j = 0; j < vec_syst_to_draw.size(); j++)
     // for (int j = 0; j < 3; j++)
     {
-      TString syst_name;
-      if (tagger == "B_Tagger")
-        syst_name = syst_name_b[j];
-      else if (tagger == "C_Tagger")
-        syst_name = syst_name_c[j];
+      // TString syst_name;
+      // if (tagger == "B_Tagger")
+      //   syst_name = syst_name_b[j];
+      // else if (tagger == "C_Tagger")
+      //   syst_name = syst_name_c[j];
+
+      TString syst_name = vec_syst_to_draw[j];
 
       TString can_name = "Validation_DL_" + channel + "_" + syst_name + "_" + sample_to_draw + "_" + era;
       cout << can_name << endl;
@@ -1038,7 +1049,8 @@ void Tagging_RF_DL::Draw_Validation()
         n_scores = 3;
 
       TPad *pad[n_scores][2];
-      TH1D *histo_closure[3];
+      TH1D *histo_closure[n_flavor][3];
+
       for (int k = 0; k < n_scores; k++)
       {
         TString score_type;
@@ -1049,19 +1061,24 @@ void Tagging_RF_DL::Draw_Validation()
         else if (k == 2)
           score_type = "CvsL";
 
-        for (int l = 0; l < 3; l++)
+        TString pad_name = to_string(k) + "_Absolute";
+        pad[k][0] = new TPad(pad_name, pad_name, 0, 0.3, 1, 1);
+
+        pad_name = to_string(k) + "_Ratio";
+        pad[k][1] = new TPad(pad_name, pad_name, 0, 0, 1, 0.3);
+
+        for (int l = 0; l < n_flavor; l++)
         {
-          TString pad_name = to_string(k) + "_" + to_string(l);
-          if (l == 0)
-            pad[k][l] = new TPad(pad_name, pad_name, 0, 0.3, 1, 1);
-          else if (l == 1)
-            pad[k][l] = new TPad(pad_name, pad_name, 0, 0, 1, 0.3);
+          for (int m = 0; m < 3; m++)
+          {
+            TString histo_name = "Closure_" + sample_to_draw + "_" + syst_name + "_" + flavor_name[l] + "_Leading_Jet_" + score_type + "_" + to_string(m);
+            cout << histo_name << endl;
 
-          TString histo_name = "Closure_" + sample_to_draw + "_" + syst_name + "_Leading_Jet_" + score_type + "_" + to_string(l);
-          cout << histo_name << endl;
-          histo_closure[l] = (TH1D *)fin->Get(sample_to_draw + "/" + histo_name);
-        }
+            histo_closure[l][m] = (TH1D *)fin->Get(sample_to_draw + "/" + histo_name);
+          } // loop over 3
+        } // loop over n_flavor
 
+        // Absolute
         if (tagger == "B_Tagger")
           canvas->cd();
         else if (tagger == "C_Tagger")
@@ -1070,53 +1087,73 @@ void Tagging_RF_DL::Draw_Validation()
         pad[k][0]->Draw();
         pad[k][0]->cd();
 
-        for (int l = 0; l < 3; l++)
+        for (int l = 0; l < n_flavor; l++)
         {
-          histo_closure[l]->SetLineColor(l + 2);
-
-          if (l == 0)
+          for (int m = 0; m < 3; m++)
           {
-            if (k == 0)
-              histo_closure[l]->GetXaxis()->SetTitle("BvsC");
-            else if (k == 1)
-              histo_closure[l]->GetXaxis()->SetTitle("CvsB");
-            else if (k == 2)
-              histo_closure[l]->GetXaxis()->SetTitle("CvsL");
+            if (l == 0)
+              histo_closure[l][m]->SetMarkerStyle(4);
+            else if (l == 1)
+              histo_closure[l][m]->SetMarkerStyle(33);
+            else if (l == 2)
+              histo_closure[l][m]->SetMarkerStyle(47);
 
-            histo_closure[l]->Draw();
-          }
-          else
-            histo_closure[l]->Draw("SAME");
-        }
+            histo_closure[l][m]->SetMarkerColor(m + 2);
+            histo_closure[l][m]->SetLineColor(m + 2);
 
-        float count_raw = histo_closure[0]->Integral();
-        float count_sf = histo_closure[1]->Integral();
-        float count_rf = histo_closure[2]->Integral();
+            histo_closure[l][m]->SetMarkerSize(1.5);
 
-        cout << "Count_Raw = " << count_raw << ", Count_SF = " << count_sf << ", Count_RF = " << count_rf << endl;
+            if (l == 0 && m == 0)
+            {
+              if (k == 0)
+                histo_closure[l][m]->GetXaxis()->SetTitle("BvsC");
+              else if (k == 1)
+                histo_closure[l][m]->GetXaxis()->SetTitle("CvsB");
+              else if (k == 2)
+                histo_closure[l][m]->GetXaxis()->SetTitle("CvsL");
 
+              histo_closure[l][m]->Draw();
+            }
+            else
+              histo_closure[l][m]->Draw("SAME");
+          } // loop over 3
+        } // loop over n_flavor
+
+        // legend & yield table
         if (k == 0)
         {
-          latex->DrawLatexNDC(0.3, 0.5, Form("Yield Raw = %.2f", count_raw));
-          latex->DrawLatexNDC(0.3, 0.45, Form("Yield SF = %.2f", count_sf));
-          latex->DrawLatexNDC(0.3, 0.4, Form("Yield Patched = %.2f", count_rf));
 
-          TLegend *tl = new TLegend(0.3, 0.6, 0.8, 0.8);
+          TLegend *tl = new TLegend(0.2, 0.55, 0.8, 0.8);
           tl->SetBorderSize(0);
-          tl->AddEntry(histo_closure[0], "Raw", "lep");
-          if (tagger == "B_Tagger")
-          {
-            tl->AddEntry(histo_closure[1], "+ B-Tagging SF", "lep");
-            tl->AddEntry(histo_closure[2], "+ B-Tagging SF + B-Tagging Patch", "lep");
-          }
-          else if (tagger == "C_Tagger")
-          {
-            tl->AddEntry(histo_closure[1], "+ C-Tagging SF", "lep");
-            tl->AddEntry(histo_closure[2], "+ C-Tagging SF + C-Tagging Patch", "lep");
-          }
-          tl->Draw("same");
-        }
+          tl->SetNColumns(3);
 
+          for (int l = 0; l < n_flavor; l++)
+          {
+            tl->AddEntry(histo_closure[l][0], Form("%s: Raw", flavor_name[l].Data()), "lep");
+            tl->AddEntry(histo_closure[l][1], Form("%s: + SF", flavor_name[l].Data()), "lep");
+            tl->AddEntry(histo_closure[l][2], Form("%s: + SF + Patch", flavor_name[l].Data()), "lep");
+
+            float count_raw = histo_closure[l][0]->Integral();
+            float count_sf = histo_closure[l][1]->Integral();
+            float count_rf = histo_closure[l][2]->Integral();
+
+            cout << flavor_name[l] << ": Count_Raw = " << count_raw << ", Count_SF = " << count_sf << ", Count_RF = " << count_rf << endl;
+
+            float y;
+            if (l == 0)
+              y = 0.5;
+            else if (l == 1)
+              y = 0.45;
+            else if (l == 2)
+              y = 0.4;
+
+            latex->DrawLatexNDC(0.3, y, Form("%s: %.2f, %.2f, %.2f", flavor_name[l].Data(), count_raw, count_sf, count_rf));
+          }
+
+          tl->Draw("same");
+        } //   if (k == 0)
+
+        // Ratio
         if (tagger == "B_Tagger")
           canvas->cd();
         else if (tagger == "C_Tagger")
@@ -1125,31 +1162,44 @@ void Tagging_RF_DL::Draw_Validation()
         pad[k][1]->Draw();
         pad[k][1]->cd();
 
-        TH1D *histo_closure_ratio[3];
-        for (int l = 0; l < 3; l++)
+        TH1D *histo_closure_ratio[n_flavor][3];
+
+        for (int l = 0; l < n_flavor; l++)
         {
-          histo_closure_ratio[l] = (TH1D *)histo_closure[l]->Clone();
-          histo_closure_ratio[l]->Divide(histo_closure[1]);
-
-          histo_closure_ratio[l]->SetLineColor(l + 2);
-          if (l == 0)
+          for (int m = 0; m < 3; m++)
           {
-            if (k == 0)
-              histo_closure_ratio[l]->GetXaxis()->SetTitle("BvsC");
-            else if (k == 1)
-              histo_closure_ratio[l]->GetXaxis()->SetTitle("CvsB");
-            else if (k == 2)
-              histo_closure_ratio[l]->GetXaxis()->SetTitle("CvsL");
+            histo_closure_ratio[l][m] = (TH1D *)histo_closure[l][m]->Clone();
+            histo_closure_ratio[l][m]->Divide(histo_closure[l][1]);
 
-            histo_closure_ratio[l]->GetYaxis()->SetTitle("Ratio");
-            histo_closure_ratio[l]->GetYaxis()->SetRangeUser(0.4, 1.6);
+            if (l == 0)
+              histo_closure[l][m]->SetMarkerStyle(4);
+            else if (l == 1)
+              histo_closure[l][m]->SetMarkerStyle(33);
+            else if (l == 2)
+              histo_closure[l][m]->SetMarkerStyle(47);
 
-            histo_closure_ratio[l]->Draw();
-          }
-          else if (l == 2)
-            histo_closure_ratio[l]->Draw("SAME");
-        }
-      }
+            histo_closure[l][m]->SetMarkerColor(m + 2);
+            histo_closure[l][m]->SetLineColor(m + 2);
+
+            if (m == 0 && l == 0)
+            {
+              if (k == 0)
+                histo_closure_ratio[l][m]->GetXaxis()->SetTitle("BvsC");
+              else if (k == 1)
+                histo_closure_ratio[l][m]->GetXaxis()->SetTitle("CvsB");
+              else if (k == 2)
+                histo_closure_ratio[l][m]->GetXaxis()->SetTitle("CvsL");
+
+              histo_closure_ratio[l][m]->GetYaxis()->SetTitle("Ratio");
+              histo_closure_ratio[l][m]->GetYaxis()->SetRangeUser(0.4, 1.6);
+
+              histo_closure_ratio[l][m]->Draw();
+            }
+            else if (m == 0 || m == 2)
+              histo_closure_ratio[l][m]->Draw("SAME");
+          } // loop over 3
+        } // loop over n_flavor
+      } // loop over n_scores
 
       /*
               float lumi;
@@ -1670,6 +1720,9 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name
   int sample_index = Histo_Index(sample_name);
   TString histo_name_rf = Histo_Name_RF(sample_name);
 
+  int leading_jet_flavor = vec_jet_flavor->at(0);
+  int index_leading_jet_flavor = Flavor_Index(leading_jet_flavor);
+
   for (int i = 0; i < n_syst_b; i++)
   {
     TString b_tag_type = syst_name_b[i];
@@ -1778,16 +1831,16 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name
       else if (j == 2)
         weight = weight_rf;
 
-      histo_closure_n_jet[sample_index][i][j]->Fill(n_jets, weight);
-      histo_closure_ht[sample_index][i][j]->Fill(ht, weight);
-      histo_closure_n_pileup[sample_index][i][j]->Fill(n_pileup, weight);
+      histo_closure_n_jet[sample_index][i][index_leading_jet_flavor][j]->Fill(n_jets, weight);
+      histo_closure_ht[sample_index][i][index_leading_jet_flavor][j]->Fill(ht, weight);
+      histo_closure_n_pileup[sample_index][i][index_leading_jet_flavor][j]->Fill(n_pileup, weight);
 
-      histo_closure_bvsc[sample_index][i][j]->Fill(leading_jet_bvsc, weight);
-      histo_closure_cvsb[sample_index][i][j]->Fill(leading_jet_cvsb, weight);
-      histo_closure_cvsl[sample_index][i][j]->Fill(leading_jet_cvsl, weight);
+      histo_closure_bvsc[sample_index][i][index_leading_jet_flavor][j]->Fill(leading_jet_bvsc, weight);
+      histo_closure_cvsb[sample_index][i][index_leading_jet_flavor][j]->Fill(leading_jet_cvsb, weight);
+      histo_closure_cvsl[sample_index][i][index_leading_jet_flavor][j]->Fill(leading_jet_cvsl, weight);
 
-      histo_closure_eta[sample_index][i][j]->Fill(leading_jet_eta, weight);
-      histo_closure_pt[sample_index][i][j]->Fill(leading_jet_pt, weight);
+      histo_closure_eta[sample_index][i][index_leading_jet_flavor][j]->Fill(leading_jet_eta, weight);
+      histo_closure_pt[sample_index][i][index_leading_jet_flavor][j]->Fill(leading_jet_pt, weight);
     }
   }
 
@@ -1798,9 +1851,11 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name
 
 void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &tree_type)
 {
-
   int sample_index = Histo_Index(sample_name);
   TString histo_name_rf = Histo_Name_RF(sample_name);
+
+  int leading_jet_flavor = vec_jet_flavor->at(0);
+  int index_leading_jet_flavor = Flavor_Index(leading_jet_flavor);
 
   for (int i = 0; i < n_syst_c; i++)
   {
@@ -1961,21 +2016,33 @@ void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name
       else if (j == 2)
         weight = weight_rf;
 
-      histo_closure_n_jet[sample_index][i][j]->Fill(n_jets, weight);
-      histo_closure_ht[sample_index][i][j]->Fill(ht, weight);
-      histo_closure_n_pileup[sample_index][i][j]->Fill(n_pileup, weight);
+      histo_closure_n_jet[sample_index][i][index_leading_jet_flavor][j]->Fill(n_jets, weight);
+      histo_closure_ht[sample_index][i][index_leading_jet_flavor][j]->Fill(ht, weight);
+      histo_closure_n_pileup[sample_index][i][index_leading_jet_flavor][j]->Fill(n_pileup, weight);
 
-      histo_closure_bvsc[sample_index][i][j]->Fill(leading_jet_bvsc, weight);
-      histo_closure_cvsb[sample_index][i][j]->Fill(leading_jet_cvsb, weight);
-      histo_closure_cvsl[sample_index][i][j]->Fill(leading_jet_cvsl, weight);
+      histo_closure_bvsc[sample_index][i][index_leading_jet_flavor][j]->Fill(leading_jet_bvsc, weight);
+      histo_closure_cvsb[sample_index][i][index_leading_jet_flavor][j]->Fill(leading_jet_cvsb, weight);
+      histo_closure_cvsl[sample_index][i][index_leading_jet_flavor][j]->Fill(leading_jet_cvsl, weight);
 
-      histo_closure_eta[sample_index][i][j]->Fill(leading_jet_eta, weight);
-      histo_closure_pt[sample_index][i][j]->Fill(leading_jet_pt, weight);
+      histo_closure_eta[sample_index][i][index_leading_jet_flavor][j]->Fill(leading_jet_eta, weight);
+      histo_closure_pt[sample_index][i][index_leading_jet_flavor][j]->Fill(leading_jet_pt, weight);
     }
   }
 
   return;
 } // void Tagging_RF_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &tree_type)
+
+//////////
+
+int Tagging_RF_DL::Flavor_Index(const int &flavor)
+{
+  if (TMath::Abs(flavor) == 5)
+    return 2;
+  else if (TMath::Abs(flavor) == 4)
+    return 1;
+  else
+    return 0;
+} // int Tagging_RF_DL::Flavor_Index()
 
 //////////
 
@@ -2269,6 +2336,8 @@ void Tagging_RF_DL::Run_Combine()
 
 void Tagging_RF_DL::Run_Draw_Validation()
 {
+  gROOT->SetBatch(kTRUE);
+
   Draw_Validation();
 
   return;
@@ -2549,28 +2618,27 @@ void Tagging_RF_DL::Setup_Histo()
 
 void Tagging_RF_DL::Setup_Histo_Validation()
 {
-  histo_closure_n_jet = new TH1D ***[n_sample_merge_mc];
-  histo_closure_ht = new TH1D ***[n_sample_merge_mc];
-  histo_closure_n_pileup = new TH1D ***[n_sample_merge_mc];
-  histo_closure_bvsc = new TH1D ***[n_sample_merge_mc];
-  histo_closure_cvsb = new TH1D ***[n_sample_merge_mc];
-  histo_closure_cvsl = new TH1D ***[n_sample_merge_mc];
-  histo_closure_eta = new TH1D ***[n_sample_merge_mc];
-  histo_closure_pt = new TH1D ***[n_sample_merge_mc];
+  histo_closure_n_jet = new TH1D ****[n_sample_merge_mc];
+  histo_closure_ht = new TH1D ****[n_sample_merge_mc];
+  histo_closure_n_pileup = new TH1D ****[n_sample_merge_mc];
+  histo_closure_bvsc = new TH1D ****[n_sample_merge_mc];
+  histo_closure_cvsb = new TH1D ****[n_sample_merge_mc];
+  histo_closure_cvsl = new TH1D ****[n_sample_merge_mc];
+  histo_closure_eta = new TH1D ****[n_sample_merge_mc];
+  histo_closure_pt = new TH1D ****[n_sample_merge_mc];
 
   for (int i = 0; i < n_sample_merge_mc; i++)
   {
-
     TString histo_name_base = "Closure_" + vec_short_name_mc[i];
 
-    histo_closure_n_jet[i] = new TH1D **[n_syst_c];
-    histo_closure_ht[i] = new TH1D **[n_syst_c];
-    histo_closure_n_pileup[i] = new TH1D **[n_syst_c];
-    histo_closure_bvsc[i] = new TH1D **[n_syst_c];
-    histo_closure_cvsb[i] = new TH1D **[n_syst_c];
-    histo_closure_cvsl[i] = new TH1D **[n_syst_c];
-    histo_closure_eta[i] = new TH1D **[n_syst_c];
-    histo_closure_pt[i] = new TH1D **[n_syst_c];
+    histo_closure_n_jet[i] = new TH1D ***[n_syst_c];
+    histo_closure_ht[i] = new TH1D ***[n_syst_c];
+    histo_closure_n_pileup[i] = new TH1D ***[n_syst_c];
+    histo_closure_bvsc[i] = new TH1D ***[n_syst_c];
+    histo_closure_cvsb[i] = new TH1D ***[n_syst_c];
+    histo_closure_cvsl[i] = new TH1D ***[n_syst_c];
+    histo_closure_eta[i] = new TH1D ***[n_syst_c];
+    histo_closure_pt[i] = new TH1D ***[n_syst_c];
 
     int n_syst;
     if (tagger == "B_Tagger")
@@ -2580,16 +2648,16 @@ void Tagging_RF_DL::Setup_Histo_Validation()
 
     for (int j = 0; j < n_syst; j++)
     {
-      histo_closure_n_jet[i][j] = new TH1D *[3];
-      histo_closure_ht[i][j] = new TH1D *[3];
-      histo_closure_n_pileup[i][j] = new TH1D *[3];
-      histo_closure_bvsc[i][j] = new TH1D *[3];
-      histo_closure_cvsb[i][j] = new TH1D *[3];
-      histo_closure_cvsl[i][j] = new TH1D *[3];
-      histo_closure_eta[i][j] = new TH1D *[3];
-      histo_closure_pt[i][j] = new TH1D *[3];
+      histo_closure_n_jet[i][j] = new TH1D **[n_flavor];
+      histo_closure_ht[i][j] = new TH1D **[n_flavor];
+      histo_closure_n_pileup[i][j] = new TH1D **[n_flavor];
+      histo_closure_bvsc[i][j] = new TH1D **[n_flavor];
+      histo_closure_cvsb[i][j] = new TH1D **[n_flavor];
+      histo_closure_cvsl[i][j] = new TH1D **[n_flavor];
+      histo_closure_eta[i][j] = new TH1D **[n_flavor];
+      histo_closure_pt[i][j] = new TH1D **[n_flavor];
 
-      for (int k = 0; k < 3; k++)
+      for (int k = 0; k < n_flavor; k++)
       {
         TString syst_name;
         if (tagger == "B_Tagger")
@@ -2597,31 +2665,44 @@ void Tagging_RF_DL::Setup_Histo_Validation()
         else if (tagger == "C_Tagger")
           syst_name = syst_name_c[j];
 
-        TString histo_name_base = "Closure_" + vec_short_name_mc[i] + "_" + syst_name;
+        histo_closure_n_jet[i][j][k] = new TH1D *[3];
+        histo_closure_ht[i][j][k] = new TH1D *[3];
+        histo_closure_n_pileup[i][j][k] = new TH1D *[3];
+        histo_closure_bvsc[i][j][k] = new TH1D *[3];
+        histo_closure_cvsb[i][j][k] = new TH1D *[3];
+        histo_closure_cvsl[i][j][k] = new TH1D *[3];
+        histo_closure_eta[i][j][k] = new TH1D *[3];
+        histo_closure_pt[i][j][k] = new TH1D *[3];
 
-        TString histo_name = histo_name_base + "_N_Jet_" + to_string(k);
-        histo_closure_n_jet[i][j][k] = new TH1D(histo_name, histo_name, bin_njet.size() - 1, bin_njet.data());
+        for (int l = 0; l < 3; l++)
+        {
+          TString histo_name_base = "Closure_" + vec_short_name_mc[i] + "_" + syst_name + "_" + flavor_name[k];
+          ;
 
-        histo_name = histo_name_base + "_HT_" + to_string(k);
-        histo_closure_ht[i][j][k] = new TH1D(histo_name, histo_name, bin_ht.size() - 1, bin_ht.data());
+          TString histo_name = histo_name_base + "_N_Jet_" + to_string(l);
+          histo_closure_n_jet[i][j][k][l] = new TH1D(histo_name, histo_name, bin_njet.size() - 1, bin_njet.data());
 
-        histo_name = histo_name_base + "_N_PV_" + to_string(k);
-        histo_closure_n_pileup[i][j][k] = new TH1D(histo_name, histo_name, bin_n_pileup.size() - 1, bin_n_pileup.data());
+          histo_name = histo_name_base + "_HT_" + to_string(l);
+          histo_closure_ht[i][j][k][l] = new TH1D(histo_name, histo_name, bin_ht.size() - 1, bin_ht.data());
 
-        histo_name = histo_name_base + "_Leading_Jet_BvsC_" + to_string(k);
-        histo_closure_bvsc[i][j][k] = new TH1D(histo_name, histo_name, 100, 0, 1);
+          histo_name = histo_name_base + "_N_PV_" + to_string(l);
+          histo_closure_n_pileup[i][j][k][l] = new TH1D(histo_name, histo_name, bin_n_pileup.size() - 1, bin_n_pileup.data());
 
-        histo_name = histo_name_base + "_Leading_Jet_CvsB_" + to_string(k);
-        histo_closure_cvsb[i][j][k] = new TH1D(histo_name, histo_name, 100, 0, 1);
+          histo_name = histo_name_base + "_Leading_Jet_BvsC_" + to_string(l);
+          histo_closure_bvsc[i][j][k][l] = new TH1D(histo_name, histo_name, 25, 0, 1);
 
-        histo_name = histo_name_base + "_Leading_Jet_CvsL_" + to_string(k);
-        histo_closure_cvsl[i][j][k] = new TH1D(histo_name, histo_name, 100, 0, 1);
+          histo_name = histo_name_base + "_Leading_Jet_CvsB_" + to_string(l);
+          histo_closure_cvsb[i][j][k][l] = new TH1D(histo_name, histo_name, 25, 0, 1);
 
-        histo_name = histo_name_base + "_Leading_Jet_Eta_" + to_string(k);
-        histo_closure_eta[i][j][k] = new TH1D(histo_name, histo_name, 60, -3, 3);
+          histo_name = histo_name_base + "_Leading_Jet_CvsL_" + to_string(l);
+          histo_closure_cvsl[i][j][k][l] = new TH1D(histo_name, histo_name, 25, 0, 1);
 
-        histo_name = histo_name_base + "_Leading_Jet_Pt_" + to_string(k);
-        histo_closure_pt[i][j][k] = new TH1D(histo_name, histo_name, 100, 0, 500);
+          histo_name = histo_name_base + "_Leading_Jet_Eta_" + to_string(l);
+          histo_closure_eta[i][j][k][l] = new TH1D(histo_name, histo_name, 12, -3, 3);
+
+          histo_name = histo_name_base + "_Leading_Jet_Pt_" + to_string(l);
+          histo_closure_pt[i][j][k][l] = new TH1D(histo_name, histo_name, 25, 0, 500);
+        }
       }
     }
   }
@@ -2741,10 +2822,10 @@ void Tagging_RF_DL::Setup_Tree(TTree *tree, const TString &syst)
 
   tree->SetBranchAddress("genTtbarId", &gen_ttbar_id);
 
-  tree->SetBranchAddress("Gen_HF_Flavour", &vec_gen_hf_flavour);
-  tree->SetBranchAddress("Gen_HF_Origin", &vec_gen_hf_origin);
-  tree->SetBranchAddress("Sel_Gen_HF_Flavour", &vec_sel_gen_hf_flavour);
-  tree->SetBranchAddress("Sel_Gen_HF_Origin", &vec_sel_gen_hf_origin);
+  // tree->SetBranchAddress("Gen_HF_Flavour", &vec_gen_hf_flavour);
+  // tree->SetBranchAddress("Gen_HF_Origin", &vec_gen_hf_origin);
+  // tree->SetBranchAddress("Sel_Gen_HF_Flavour", &vec_sel_gen_hf_flavour);
+  // tree->SetBranchAddress("Sel_Gen_HF_Origin", &vec_sel_gen_hf_origin);
 
   tree->SetBranchAddress("leading_jet_bvsc", &leading_jet_bvsc);
   tree->SetBranchAddress("leading_jet_cvsb", &leading_jet_cvsb);
@@ -2757,6 +2838,8 @@ void Tagging_RF_DL::Setup_Tree(TTree *tree, const TString &syst)
   tree->SetBranchAddress("subleading_jet_cvsl", &subleading_jet_cvsl);
   tree->SetBranchAddress("subleading_jet_eta", &subleading_jet_eta);
   tree->SetBranchAddress("subleading_jet_pt", &subleading_jet_pt);
+
+  tree->SetBranchAddress("Jet_Flavor", &vec_jet_flavor);
 
   return;
 } // void Tagging_RF_DL::Setup_Tree()

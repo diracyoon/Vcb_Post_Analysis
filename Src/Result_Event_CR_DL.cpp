@@ -67,10 +67,14 @@ void Result_Event_CR_DL::Setup_Tree(TTree *tree, const Syst syst, const bool chk
 
     tree->SetBranchAddress("genTtbarId", &gen_ttbar_id);
 
-    tree->SetBranchAddress("Gen_HF_Flavour", &vec_gen_hf_flavour);
-    tree->SetBranchAddress("Gen_HF_Origin", &vec_gen_hf_origin);
-    tree->SetBranchAddress("Sel_Gen_HF_Flavour", &vec_sel_gen_hf_flavour);
-    tree->SetBranchAddress("Sel_Gen_HF_Origin", &vec_sel_gen_hf_origin);
+    // tree->SetBranchAddress("Gen_HF_Flavour", &vec_gen_hf_flavour);
+    // tree->SetBranchAddress("Gen_HF_Origin", &vec_gen_hf_origin);
+    // tree->SetBranchAddress("Sel_Gen_HF_Flavour", &vec_sel_gen_hf_flavour);
+    // tree->SetBranchAddress("Sel_Gen_HF_Origin", &vec_sel_gen_hf_origin);
+
+    tree->SetBranchAddress("Jet_Pt", &vec_jet_pt);
+    tree->SetBranchAddress("Jet_Eta", &vec_jet_eta);
+    tree->SetBranchAddress("Jet_Flavor", &vec_jet_flavor);
 
     if (syst == Syst::Central && chk_all)
     {

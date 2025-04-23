@@ -22,6 +22,7 @@
 #include <Samples.h>
 #include <Result_Event.h>
 #include <Tagging_RF.h>
+#include <Tagging_RF_Flavor.h>
 
 using namespace std;
 
@@ -37,15 +38,6 @@ public:
     Histo_Conf() {}
 
     Histo_Conf(TString a_variable_title, int a_n_bin, float a_x_low, float a_x_up) : variable_title(a_variable_title), n_bin(a_n_bin), x_low(a_x_low), x_up(a_x_up)
-    {
-      chk_equal_interval = true;
-
-      for (int i = 0; i < n_bin; i++)
-        vec_bin.push_back(i * (x_up - x_low) / n_bin + x_low);
-      vec_bin.push_back(x_up);
-    }
-
-    Histo_Conf(TString a_variable_title, int a_n_bin, int a_x_low, int a_x_up) : variable_title(a_variable_title), n_bin(a_n_bin), x_low(a_x_low), x_up(a_x_up)
     {
       chk_equal_interval = true;
 
@@ -95,6 +87,8 @@ protected:
   bool chk_rf_tthf_breakdown = false;
   bool chk_jes_breakdown = false;
 
+  bool chk_bin_optimizer = false;
+
   int index_tree_type;
   int last_index_tree_type;
   vector<TString> vec_tree_type;
@@ -121,7 +115,8 @@ protected:
   TString key_base;
   TString tree_name;
 
-  Tagging_RF tagging_rf;
+  // Tagging_RF tagging_rf;
+  Tagging_RF_Flavor tagging_rf;
 
   TString data_short_name;
 
@@ -162,7 +157,7 @@ protected:
   int n_variable;
   vector<Histo_Conf> variable_conf;
 
-  vector<float> bin_template_mva_score[2];
+  vector<vector<float>> bin_template_mva_score;
   vector<float> bin_tf;
 
   float b_tag_rf;

@@ -280,6 +280,6 @@ static Syst StringToSyst(const TString &syst_str)
     }
 }
 
-const float threeb_cr_cut = 0.65;
+const float threeb_cr_cut = 0.95;
 
 #endif /* __Const_Def_H__ */

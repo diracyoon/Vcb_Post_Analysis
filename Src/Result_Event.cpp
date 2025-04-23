@@ -296,10 +296,10 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all, 
     tree->SetBranchAddress("decay_mode", &decay_mode);
     tree->SetBranchAddress("genTtbarId", &gen_ttbar_id);
 
-    tree->SetBranchAddress("Gen_HF_Flavour", &vec_gen_hf_flavour);
-    tree->SetBranchAddress("Gen_HF_Origin", &vec_gen_hf_origin);
-    tree->SetBranchAddress("Sel_Gen_HF_Flavour", &vec_sel_gen_hf_flavour);
-    tree->SetBranchAddress("Sel_Gen_HF_Origin", &vec_sel_gen_hf_origin);
+    // tree->SetBranchAddress("Gen_HF_Flavour", &vec_gen_hf_flavour);
+    // tree->SetBranchAddress("Gen_HF_Origin", &vec_gen_hf_origin);
+    // tree->SetBranchAddress("Sel_Gen_HF_Flavour", &vec_sel_gen_hf_flavour);
+    // tree->SetBranchAddress("Sel_Gen_HF_Origin", &vec_sel_gen_hf_origin);
 
     tree->SetBranchAddress("swapped_truth", &swapped_truth);
 
@@ -312,6 +312,10 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all, 
     tree->SetBranchAddress("pu_conta_w_u", &pu_conta_w_u);
     tree->SetBranchAddress("pu_conta_w_d", &pu_conta_w_d);
     tree->SetBranchAddress("pu_conta_lep_t_b", &pu_conta_lep_t_b);
+
+    tree->SetBranchAddress("Jet_Pt", &vec_jet_pt);
+    tree->SetBranchAddress("Jet_Eta", &vec_jet_eta);
+    tree->SetBranchAddress("Jet_Flavor", &vec_jet_flavor);
   }
   // cout << "[Result_Event::Setup_Tree]: Done" << endl;
 
