@@ -59,6 +59,7 @@ if args.MC == True:
         mc_list = ["TTLJ_WtoCB_powheg",
                    "TTLJ_powheg",
                    "TTLL_powheg",
+                   "TTJJ_powheg",
                    #"TTBB",
                    "SingleTop_sch_Lep",
                    "SingleTop_tW_antitop_NoFullyHad",
@@ -77,6 +78,21 @@ if args.MC == True:
                    "QCD_bEnriched_HT1000to1500",
                    "QCD_bEnriched_HT1500to2000",
                    "QCD_bEnriched_HT2000toInf",
+                   "QCD_Pt_15to30",
+                   "QCD_Pt_30to50",
+                   "QCD_Pt_50to80",
+                   "QCD_Pt_80to120",
+                   "QCD_Pt_120to170",
+                   "QCD_Pt_170to300",
+                   "QCD_Pt_300to470",
+                   "QCD_Pt_470to600",
+                   "QCD_Pt_600to800",
+                   "QCD_Pt_800to1000",
+                   "QCD_Pt_1000to1400",
+                   "QCD_Pt_1400to1800",
+                   "QCD_Pt_1800to2400",
+                   "QCD_Pt_2400to3200",
+                   "QCD_Pt_3200toInf",
                    "ttWToLNu",
                    "ttWToQQ",
                    "ttZToLLNuNu",
@@ -90,12 +106,15 @@ if args.MC == True:
         ]
         
         for mc in mc_list:
+            if "TTJJ" not in mc:
+                continue
+            
             if args.Analyzer == "Vcb":
                 #src = f"/gv0/Users/isyoon/SKFlatOutput/Run2UltraLegacy_v3/{args.Analyzer}/{args.Era}/RunResult__RunSyst__/{args.Analyzer}_{mc}.root"
                 src = f"/gv0/Users/isyoon/SKFlatOutput/Run2UltraLegacy_v3/{args.Analyzer}/{args.Era}/RunResult__RunSyst__RunNoJESBreakdown__/{args.Analyzer}_{mc}.root"
             elif args.Analyzer == "Vcb_DL":
-                src = f"/gv0/Users/isyoon/SKFlatOutput/Run2UltraLegacy_v3/{args.Analyzer}/{args.Era}/RunSyst__/{args.Analyzer}_{mc}.root"
-                #src = f"/gv0/Users/isyoon/SKFlatOutput/Run2UltraLegacy_v3/{args.Analyzer}/{args.Era}/RunSyst__RunNoJESBreakdown__/{args.Analyzer}_{mc}.root"
+                #src = f"/gv0/Users/isyoon/SKFlatOutput/Run2UltraLegacy_v3/{args.Analyzer}/{args.Era}/RunSyst__/{args.Analyzer}_{mc}.root"
+                src = f"/gv0/Users/isyoon/SKFlatOutput/Run2UltraLegacy_v3/{args.Analyzer}/{args.Era}/RunSyst__RunNoJESBreakdown__/{args.Analyzer}_{mc}.root"
             
             dst = f"/gv0/Users/isyoon/Vcb_Post_Analysis/Sample/{args.Era}/{args.Analyzer}/Central_Syst/{args.Analyzer}_{mc}.root"
             print(src, "to", dst)
