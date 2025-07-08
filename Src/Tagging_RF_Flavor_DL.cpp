@@ -1725,7 +1725,7 @@ void Tagging_RF_Flavor_DL::Setup_Application()
     vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
                              "ST_sch", "ST_tch", "ST_tw",
                              "WJets", "DYJets",
-                             "QCD_bEn",
+                             "QCD_bEn", "QCD",
                              "ttHTobb", "ttHToNonbb", "ttWToLNu", "ttWToQQ", "ttZToLLNuNu", "ttZToQQ",
                              "WW", "WZ", "ZZ",
                              "TTLJ_JJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
@@ -1768,7 +1768,7 @@ void Tagging_RF_Flavor_DL::Setup_Application()
     vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
                              "ST_sch", "ST_tch", "ST_tw",
                              "WJets", "DYJets",
-                             "QCD_bEn",
+                             "QCD_bEn", "QCD",
                              "ttHTobb", "ttHToNonbb",
                              "ttWToLNu", "ttWToQQ",
                              "ttZToLLNuNu", "ttZToQQ_ll", "ttZToQQ",
@@ -1789,7 +1789,8 @@ void Tagging_RF_Flavor_DL::Setup_Application()
                              /* mtop */
                              "TTLL_mtop171p5", "TTLL_mtop173p5",
                              /* hdamp */
-                             "TTLL_hdampDown", "TTLL_hdampUp"};
+                             "TTLL_hdampDown", "TTLL_hdampUp",
+                             "TTJJ"};
   }
 
   n_sample_tagging_rf = vec_sample_tagging_rf.size();

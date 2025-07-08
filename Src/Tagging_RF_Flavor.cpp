@@ -28,7 +28,9 @@ Tagging_RF_Flavor::Tagging_RF_Flavor(const TString &a_era, const TString &a_mode
     tagger = "B_Tagger";
 
   chk_tthf_breakdown = false;
+  chk_w_decay_breakdown = true;
   chk_jes_breakdown = false;
+  chk_top_syst_breakdown = false;
 
   // syst_tree
   vec_tree_type = {"JetResDown", "JetResUp",
@@ -116,186 +118,184 @@ Tagging_RF_Flavor::Tagging_RF_Flavor(const TString &a_era, const TString &a_mode
   sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
   vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
 
-  if (chk_tthf_breakdown)
-  {
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
-    vec_short_name_mc.push_back("TTLJ_2");    // TTLJ, w->ud or w->us
-    vec_short_name_mc.push_back("TTLJ_4");    // TTLJ, w->cd or w->cs
-    vec_short_name_mc.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
-    vec_short_name_mc.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
-    vec_short_name_mc.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
-    vec_short_name_mc.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
+  // if (chk_tthf_breakdown && chk_w_decay_breakdown)
+  // {
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
+  //   vec_short_name_mc.push_back("TTLJ_2");    // TTLJ, w->ud or w->us
+  //   vec_short_name_mc.push_back("TTLJ_4");    // TTLJ, w->cd or w->cs
+  //   vec_short_name_mc.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
+  //   vec_short_name_mc.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
+  //   vec_short_name_mc.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
+  //   vec_short_name_mc.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
-    vec_short_name_mc.push_back("TTLJ_45");    // TTLJ, w->cb
-    vec_short_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
-    vec_short_name_mc.push_back("TTLJ_BB_45"); // TTLJ+bb, w->cb
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
+  //   vec_short_name_mc.push_back("TTLJ_45");    // TTLJ, w->cb
+  //   vec_short_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
+  //   vec_short_name_mc.push_back("TTLJ_BB_45"); // TTLJ+bb, w->cb
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL"));
-    vec_short_name_mc.push_back("TTLL");    // TTLL+cc, w->ud or w->us
-    vec_short_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
-    vec_short_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL"));
+  //   vec_short_name_mc.push_back("TTLL");    // TTLL+cc, w->ud or w->us
+  //   vec_short_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
+  //   vec_short_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
 
-    // TT systematic
-    // TTLJ
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampDown"));
-    vec_short_name_mc.push_back("TTLJ_hdampDown_2");
-    vec_short_name_mc.push_back("TTLJ_hdampDown_4");
-    vec_short_name_mc.push_back("TTLJ_hdampDown_CC_2");
-    vec_short_name_mc.push_back("TTLJ_hdampDown_CC_4");
-    vec_short_name_mc.push_back("TTLJ_hdampDown_BB_2");
-    vec_short_name_mc.push_back("TTLJ_hdampDown_BB_4");
+  //   // TT systematic
+  //   // TTLJ
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampDown"));
+  //   vec_short_name_mc.push_back("TTLJ_hdampDown_2");
+  //   vec_short_name_mc.push_back("TTLJ_hdampDown_4");
+  //   vec_short_name_mc.push_back("TTLJ_hdampDown_CC_2");
+  //   vec_short_name_mc.push_back("TTLJ_hdampDown_CC_4");
+  //   vec_short_name_mc.push_back("TTLJ_hdampDown_BB_2");
+  //   vec_short_name_mc.push_back("TTLJ_hdampDown_BB_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampUp"));
-    vec_short_name_mc.push_back("TTLJ_hdampUp_2");
-    vec_short_name_mc.push_back("TTLJ_hdampUp_4");
-    vec_short_name_mc.push_back("TTLJ_hdampUp_CC_2");
-    vec_short_name_mc.push_back("TTLJ_hdampUp_CC_4");
-    vec_short_name_mc.push_back("TTLJ_hdampUp_BB_2");
-    vec_short_name_mc.push_back("TTLJ_hdampUp_BB_4");
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampUp"));
+  //   vec_short_name_mc.push_back("TTLJ_hdampUp_2");
+  //   vec_short_name_mc.push_back("TTLJ_hdampUp_4");
+  //   vec_short_name_mc.push_back("TTLJ_hdampUp_CC_2");
+  //   vec_short_name_mc.push_back("TTLJ_hdampUp_CC_4");
+  //   vec_short_name_mc.push_back("TTLJ_hdampUp_BB_2");
+  //   vec_short_name_mc.push_back("TTLJ_hdampUp_BB_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Down"));
-    vec_short_name_mc.push_back("TTLJ_CP5Down_2");
-    vec_short_name_mc.push_back("TTLJ_CP5Down_4");
-    vec_short_name_mc.push_back("TTLJ_CP5Down_CC_2");
-    vec_short_name_mc.push_back("TTLJ_CP5Down_CC_4");
-    vec_short_name_mc.push_back("TTLJ_CP5Down_BB_2");
-    vec_short_name_mc.push_back("TTLJ_CP5Down_BB_4");
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Down"));
+  //   vec_short_name_mc.push_back("TTLJ_CP5Down_2");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Down_4");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Down_CC_2");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Down_CC_4");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Down_BB_2");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Down_BB_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Up"));
-    vec_short_name_mc.push_back("TTLJ_CP5Up_2");
-    vec_short_name_mc.push_back("TTLJ_CP5Up_4");
-    vec_short_name_mc.push_back("TTLJ_CP5Up_CC_2");
-    vec_short_name_mc.push_back("TTLJ_CP5Up_CC_4");
-    vec_short_name_mc.push_back("TTLJ_CP5Up_BB_2");
-    vec_short_name_mc.push_back("TTLJ_CP5Up_BB_4");
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Up"));
+  //   vec_short_name_mc.push_back("TTLJ_CP5Up_2");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Up_4");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Up_CC_2");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Up_CC_4");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Up_BB_2");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Up_BB_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop171p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_2");
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_4");
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_CC_2");
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_CC_4");
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_BB_2");
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_BB_4");
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop171p5"));
+  //   vec_short_name_mc.push_back("TTLJ_mtop171p5_2");
+  //   vec_short_name_mc.push_back("TTLJ_mtop171p5_4");
+  //   vec_short_name_mc.push_back("TTLJ_mtop171p5_CC_2");
+  //   vec_short_name_mc.push_back("TTLJ_mtop171p5_CC_4");
+  //   vec_short_name_mc.push_back("TTLJ_mtop171p5_BB_2");
+  //   vec_short_name_mc.push_back("TTLJ_mtop171p5_BB_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop173p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_2");
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_4");
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_CC_2");
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_CC_4");
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_BB_2");
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_BB_4");
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop173p5"));
+  //   vec_short_name_mc.push_back("TTLJ_mtop173p5_2");
+  //   vec_short_name_mc.push_back("TTLJ_mtop173p5_4");
+  //   vec_short_name_mc.push_back("TTLJ_mtop173p5_CC_2");
+  //   vec_short_name_mc.push_back("TTLJ_mtop173p5_CC_4");
+  //   vec_short_name_mc.push_back("TTLJ_mtop173p5_BB_2");
+  //   vec_short_name_mc.push_back("TTLJ_mtop173p5_BB_4");
 
-    // TTLL
-    // vec_short_name_mc.push_back("TTLL_hdampDown");
-    vec_short_name_mc.push_back("TTLL_hdampDown_CC");
-    vec_short_name_mc.push_back("TTLL_hdampDown_BB");
+  //   // TTLL
+  //   // vec_short_name_mc.push_back("TTLL_hdampDown");
+  //   vec_short_name_mc.push_back("TTLL_hdampDown_CC");
+  //   vec_short_name_mc.push_back("TTLL_hdampDown_BB");
 
-    // vec_short_name_mc.push_back("TTLL_hdampUp");
-    vec_short_name_mc.push_back("TTLL_hdampUp_CC");
-    vec_short_name_mc.push_back("TTLL_hdampUp_BB");
+  //   // vec_short_name_mc.push_back("TTLL_hdampUp");
+  //   vec_short_name_mc.push_back("TTLL_hdampUp_CC");
+  //   vec_short_name_mc.push_back("TTLL_hdampUp_BB");
 
-    // vec_short_name_mc.push_back("TTLL_CP5Down");
-    vec_short_name_mc.push_back("TTLL_CP5Down_CC");
-    vec_short_name_mc.push_back("TTLL_CP5Down_BB");
+  //   // vec_short_name_mc.push_back("TTLL_CP5Down");
+  //   vec_short_name_mc.push_back("TTLL_CP5Down_CC");
+  //   vec_short_name_mc.push_back("TTLL_CP5Down_BB");
 
-    // vec_short_name_mc.push_back("TTLL_CP5Up");
-    vec_short_name_mc.push_back("TTLL_CP5Up_CC");
-    vec_short_name_mc.push_back("TTLL_CP5Up_BB");
+  //   // vec_short_name_mc.push_back("TTLL_CP5Up");
+  //   vec_short_name_mc.push_back("TTLL_CP5Up_CC");
+  //   vec_short_name_mc.push_back("TTLL_CP5Up_BB");
 
-    // vec_short_name_mc.push_back("TTLL_mtop171p5");
-    vec_short_name_mc.push_back("TTLL_mtop171p5_CC");
-    vec_short_name_mc.push_back("TTLL_mtop171p5_BB");
+  //   // vec_short_name_mc.push_back("TTLL_mtop171p5");
+  //   vec_short_name_mc.push_back("TTLL_mtop171p5_CC");
+  //   vec_short_name_mc.push_back("TTLL_mtop171p5_BB");
 
-    // vec_short_name_mc.push_back("TTLL_mtop173p5");
-    vec_short_name_mc.push_back("TTLL_mtop173p5_CC");
-    vec_short_name_mc.push_back("TTLL_mtop173p5_BB");
+  //   // vec_short_name_mc.push_back("TTLL_mtop173p5");
+  //   vec_short_name_mc.push_back("TTLL_mtop173p5_CC");
+  //   vec_short_name_mc.push_back("TTLL_mtop173p5_BB");
 
-    // TTLJ_WtoCB
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampDown"));
-    vec_short_name_mc.push_back("TTLJ_hdampDown_45");
-    vec_short_name_mc.push_back("TTLJ_hdampDown_CC_45");
-    vec_short_name_mc.push_back("TTLJ_hdampDown_BB_45");
+  //   // TTLJ_WtoCB
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampDown"));
+  //   vec_short_name_mc.push_back("TTLJ_hdampDown_45");
+  //   vec_short_name_mc.push_back("TTLJ_hdampDown_CC_45");
+  //   vec_short_name_mc.push_back("TTLJ_hdampDown_BB_45");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampUp"));
-    vec_short_name_mc.push_back("TTLJ_hdampUp_45");
-    vec_short_name_mc.push_back("TTLJ_hdampUp_CC_45");
-    vec_short_name_mc.push_back("TTLJ_hdampUp_BB_45");
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampUp"));
+  //   vec_short_name_mc.push_back("TTLJ_hdampUp_45");
+  //   vec_short_name_mc.push_back("TTLJ_hdampUp_CC_45");
+  //   vec_short_name_mc.push_back("TTLJ_hdampUp_BB_45");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Down"));
-    vec_short_name_mc.push_back("TTLJ_CP5Down_45");
-    vec_short_name_mc.push_back("TTLJ_CP5Down_CC_45");
-    vec_short_name_mc.push_back("TTLJ_CP5Down_BB_45");
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Down"));
+  //   vec_short_name_mc.push_back("TTLJ_CP5Down_45");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Down_CC_45");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Down_BB_45");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Up"));
-    vec_short_name_mc.push_back("TTLJ_CP5Up_45");
-    vec_short_name_mc.push_back("TTLJ_CP5Up_CC_45");
-    vec_short_name_mc.push_back("TTLJ_CP5Up_BB_45");
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Up"));
+  //   vec_short_name_mc.push_back("TTLJ_CP5Up_45");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Up_CC_45");
+  //   vec_short_name_mc.push_back("TTLJ_CP5Up_BB_45");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop171p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_45");
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_CC_45");
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_BB_45");
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop171p5"));
+  //   vec_short_name_mc.push_back("TTLJ_mtop171p5_45");
+  //   vec_short_name_mc.push_back("TTLJ_mtop171p5_CC_45");
+  //   vec_short_name_mc.push_back("TTLJ_mtop171p5_BB_45");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop173p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_45");
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_CC_45");
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_BB_45");
-  }
-  else
-  {
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
-    vec_short_name_mc.push_back("TTLJ_2"); // TTLJ, w->ud or w->us
-    vec_short_name_mc.push_back("TTLJ_4"); // TTLJ, w->cd or w->cs
+  //   vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop173p5"));
+  //   vec_short_name_mc.push_back("TTLJ_mtop173p5_45");
+  //   vec_short_name_mc.push_back("TTLJ_mtop173p5_CC_45");
+  //   vec_short_name_mc.push_back("TTLJ_mtop173p5_BB_45");
+  // }
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
-    vec_short_name_mc.push_back("TTLJ_45"); // TTLJ, w->cb
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ"));
+  vec_short_name_mc.push_back("TTLJ_2"); // TTLJ, w->ud or w->us
+  vec_short_name_mc.push_back("TTLJ_4"); // TTLJ, w->cd or w->cs
 
-    // TT systematic
-    // TTLJ
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampDown"));
-    vec_short_name_mc.push_back("TTLJ_hdampDown_2");
-    vec_short_name_mc.push_back("TTLJ_hdampDown_4");
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
+  vec_short_name_mc.push_back("TTLJ_45"); // TTLJ, w->cb
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampUp"));
-    vec_short_name_mc.push_back("TTLJ_hdampUp_2");
-    vec_short_name_mc.push_back("TTLJ_hdampUp_4");
+  // TT systematic
+  // TTLJ
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampDown"));
+  vec_short_name_mc.push_back("TTLJ_hdampDown_2");
+  vec_short_name_mc.push_back("TTLJ_hdampDown_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Down"));
-    vec_short_name_mc.push_back("TTLJ_CP5Down_2");
-    vec_short_name_mc.push_back("TTLJ_CP5Down_4");
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampUp"));
+  vec_short_name_mc.push_back("TTLJ_hdampUp_2");
+  vec_short_name_mc.push_back("TTLJ_hdampUp_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Up"));
-    vec_short_name_mc.push_back("TTLJ_CP5Up_2");
-    vec_short_name_mc.push_back("TTLJ_CP5Up_4");
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Down"));
+  vec_short_name_mc.push_back("TTLJ_CP5Down_2");
+  vec_short_name_mc.push_back("TTLJ_CP5Down_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop171p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_2");
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_4");
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Up"));
+  vec_short_name_mc.push_back("TTLJ_CP5Up_2");
+  vec_short_name_mc.push_back("TTLJ_CP5Up_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop173p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_2");
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_4");
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop171p5"));
+  vec_short_name_mc.push_back("TTLJ_mtop171p5_2");
+  vec_short_name_mc.push_back("TTLJ_mtop171p5_4");
 
-    // TTLJ_WtoCB
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampDown"));
-    vec_short_name_mc.push_back("TTLJ_hdampDown_45");
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop173p5"));
+  vec_short_name_mc.push_back("TTLJ_mtop173p5_2");
+  vec_short_name_mc.push_back("TTLJ_mtop173p5_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampUp"));
-    vec_short_name_mc.push_back("TTLJ_hdampUp_45");
+  // TTLJ_WtoCB
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampDown"));
+  vec_short_name_mc.push_back("TTLJ_hdampDown_45");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Down"));
-    vec_short_name_mc.push_back("TTLJ_CP5Down_45");
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampUp"));
+  vec_short_name_mc.push_back("TTLJ_hdampUp_45");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Up"));
-    vec_short_name_mc.push_back("TTLJ_CP5Up_45");
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Down"));
+  vec_short_name_mc.push_back("TTLJ_CP5Down_45");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop171p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_45");
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Up"));
+  vec_short_name_mc.push_back("TTLJ_CP5Up_45");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop173p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_45");
-  }
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop171p5"));
+  vec_short_name_mc.push_back("TTLJ_mtop171p5_45");
+
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop173p5"));
+  vec_short_name_mc.push_back("TTLJ_mtop173p5_45");
 
   n_sample_merge_mc = vec_short_name_mc.size();
   cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
@@ -384,7 +384,6 @@ Tagging_RF_Flavor::~Tagging_RF_Flavor()
           {
             // existence check
             TString ratio_name = ratio_c[i][j][k][l]->GetName();
-            cout << ratio_name << endl;
 
             if (dir_sample->Get(ratio_name))
               dir_sample->Delete(ratio_name);
@@ -621,7 +620,23 @@ void Tagging_RF_Flavor::Draw_Result()
   // draw results
   vector<TString> region_to_draw = {"D"};
 
-  vector<TString> sample_to_draw = {"TTLJ_2", "TTLJ_4", "TTLJ_45"};
+  vector<TString> sample_to_draw;
+  if (chk_w_decay_breakdown && !chk_tthf_breakdown)
+  {
+    sample_to_draw = {
+        "TTLJ_2", "TTLJ_4", "TTLJ_45",
+        "TTLJ_hdampDown_2", "TTLJ_hdampUp_2",
+        "TTLJ_CP5Down_2", "TTLJ_CP5Up_2",
+        "TTLJ_mtop171p5_2", "TTLJ_mtop173p5_2"};
+  } // if (chk_w_decay_breakdown && !chk_tthf_breakdown)
+  else if (!chk_w_decay_breakdown && !chk_tthf_breakdown)
+  {
+    sample_to_draw = {
+        "TTLJ",
+        "TTLJ_hdampDown", "TTLJ_hdampUp",
+        "TTLJ_CP5Down", "TTLJ_CP5Up",
+        "TTLJ_mtop171p5", "TTLJ_mtop173p5"};
+  } // if (!chk_w_decay_breakdown && !chk_tthf_breakdown)
 
   // vector<TString> sample_to_draw = {"TTLJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
   //                                   "TTLJ_4", "TTLJ_CC_4", "TTLJ_BB_4",
@@ -629,10 +644,19 @@ void Tagging_RF_Flavor::Draw_Result()
   //                                   "TTLL", "TTLL_CC", "TTLL_BB"};
 
   vector<TString> syst_to_draw = {"C_Tag_Nominal",
-                                  "C_Tag_PU_Up", "C_Tag_PU_Down",
+                                  "C_Tag_Extrap_Down", "C_Tag_Extrap_Up",
+                                  "C_Tag_Interp_Down", "C_Tag_Interp_Up",
+                                  "C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up",
+                                  "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up",
+                                  "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up",
+                                  "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up",
+                                  "C_Tag_PU_Down", "C_Tag_PU_Up",
+                                  "C_Tag_Stat_Down", "C_Tag_Stat_Up",
                                   "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up",
                                   "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up",
-                                  "C_Tag_XSec_Br_Unc_WJets_C_Up", "C_Tag_XSec_Br_Unc_WJets_C_Down"};
+                                  "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
+                                  "C_Tag_JER_Down", "C_Tag_JER_Up",
+                                  "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up"};
 
   vector<TString> flavor_to_draw = {"L", "C", "B"};
 
@@ -642,6 +666,9 @@ void Tagging_RF_Flavor::Draw_Result()
     {
       for (unsigned int k = 0; k < syst_to_draw.size(); k++)
       {
+        if ((sample_to_draw[j].Contains("CP5") || sample_to_draw[j].Contains("mtop") || sample_to_draw[j].Contains("hdamp")) && syst_to_draw[k] != "C_Tag_Nominal")
+          continue;
+
         for (unsigned int l = 0; l < flavor_to_draw.size(); l++)
         {
           TH2D *histo = (TH2D *)fout->Get(Form("%s/%s/Ratio_%s_%s_%s_%s", region_to_draw[i].Data(), sample_to_draw[j].Data(), region_to_draw[i].Data(), sample_to_draw[j].Data(), syst_to_draw[k].Data(), flavor_to_draw[l].Data()));
@@ -683,21 +710,32 @@ void Tagging_RF_Flavor::Draw_Validation()
   gStyle->SetOptStat(0);
 
   vector<TString> vec_sample_to_draw = {
-      //"TTLJ_CP5Down_2", "TTLJ_CP5Down_CC_2", "TTLJ_CP5Down_BB_2",
-      //"TTLJ_CP5Up_2", "TTLJ_CP5Up_CC_2", "TTLJ_CP5Up_BB_2",
-      //"TTLJ_mtop171p5_2", "TTLJ_mtop171p5_CC_2", "TTLJ_mtop171p5_BB_2",
-      //"TTLJ_mtop173p5_2", "TTLJ_mtop173p5_CC_2", "TTLJ_mtop173p5_BB_2",
-      "TTLJ_2",  //"TTLJ_CC_2", "TTLJ_BB_2",
-      "TTLJ_4",  //"TTLJ_CC_4", "TTLJ_BB_4",
-      "TTLJ_45", // "TTLJ_CC_45", "TTLJ_BB_45",
-                 //"TTLL", "TTLL_CC", "TTLL_BB"
+      "TTLJ_CP5Down_2",   // "TTLJ_CP5Down_CC_2", "TTLJ_CP5Down_BB_2",
+      "TTLJ_CP5Up_2",     //"TTLJ_CP5Up_CC_2", "TTLJ_CP5Up_BB_2",
+      "TTLJ_mtop171p5_2", // "TTLJ_mtop171p5_CC_2", "TTLJ_mtop171p5_BB_2",
+      "TTLJ_mtop173p5_2", // "TTLJ_mtop173p5_CC_2", "TTLJ_mtop173p5_BB_2",
+      "TTLJ_hdampDown_2", // "TTLJ_mtop171p5_CC_2", "TTLJ_mtop171p5_BB_2",
+      "TTLJ_hdampUp_2",   // "TTLJ_mtop173p5_CC_2", "TTLJ_mtop173p5_BB_2",
+      "TTLJ_2",           //"TTLJ_CC_2", "TTLJ_BB_2",
+      "TTLJ_4",           //"TTLJ_CC_4", "TTLJ_BB_4",
+      "TTLJ_45",          // "TTLJ_CC_45", "TTLJ_BB_45",
+                          //"TTLL", "TTLL_CC", "TTLL_BB"
   };
 
   vector<TString> vec_syst_to_draw = {"C_Tag_Nominal",
-                                      "C_Tag_PU_Up", "C_Tag_PU_Down",
+                                      "C_Tag_Extrap_Down", "C_Tag_Extrap_Up",
+                                      "C_Tag_Interp_Down", "C_Tag_Interp_Up",
+                                      "C_Tag_LHE_Scale_MuF_Down", "C_Tag_LHE_Scale_MuF_Up",
+                                      "C_Tag_LHE_Scale_MuR_Down", "C_Tag_LHE_Scale_MuR_Up",
+                                      "C_Tag_PS_FSR_Fixed_Down", "C_Tag_PS_FSR_Fixed_Up",
+                                      "C_Tag_PS_ISR_Fixed_Down", "C_Tag_PS_ISR_Fixed_Up",
+                                      "C_Tag_PU_Down", "C_Tag_PU_Up",
+                                      "C_Tag_Stat_Down", "C_Tag_Stat_Up",
                                       "C_Tag_XSec_Br_Unc_DYJets_B_Down", "C_Tag_XSec_Br_Unc_DYJets_B_Up",
                                       "C_Tag_XSec_Br_Unc_DYJets_C_Down", "C_Tag_XSec_Br_Unc_DYJets_C_Up",
-                                      "C_Tag_XSec_Br_Unc_WJets_C_Up", "C_Tag_XSec_Br_Unc_WJets_C_Down"};
+                                      "C_Tag_XSec_Br_Unc_WJets_C_Down", "C_Tag_XSec_Br_Unc_WJets_C_Up",
+                                      "C_Tag_JER_Down", "C_Tag_JER_Up",
+                                      "C_Tag_JES_Total_Down", "C_Tag_JES_Total_Up"};
 
   TLatex *latex = new TLatex();
   latex->SetTextSize(0.03);
@@ -716,6 +754,9 @@ void Tagging_RF_Flavor::Draw_Validation()
     for (int j = 0; j < vec_syst_to_draw.size(); j++)
     {
       TString syst_name = vec_syst_to_draw[j];
+
+      if ((sample_to_draw.Contains("CP5") || sample_to_draw.Contains("mtop") || sample_to_draw.Contains("hdamp")) && syst_name != "C_Tag_Nominal")
+        continue;
 
       TString can_name = "Validation_" + channel + "_" + syst_name + "_" + sample_to_draw + "_" + era;
       cout << can_name << endl;
@@ -1306,6 +1347,7 @@ void Tagging_RF_Flavor::Fill_Histo_Validation_MC_C_Tagger(const int &region_inde
 
     float weight_sf = weight_raw * weight_c_sf;
 
+    c_tag_type = "C_Tag_Nominal";
     float c_rf = Get_Tagging_RF_C_Tag(region_name[region_index], histo_name_rf, c_tag_type, vec_jet_pt, vec_jet_eta, vec_jet_flavor);
 
     if (rf_distribution_index > -1)
@@ -1394,12 +1436,15 @@ int Tagging_RF_Flavor::Histo_Index(const TString &sample_name)
         histo_name += "_CC";
     } // if(chk_tthf_breakdown)
 
-    if (decay_mode == 21 || decay_mode == 23)
-      histo_name += "_2";
-    else if (decay_mode == 41 || decay_mode == 43)
-      histo_name += "_4";
-    else if (decay_mode == 45)
-      histo_name += "_45";
+    if (chk_w_decay_breakdown)
+    {
+      if (decay_mode == 21 || decay_mode == 23)
+        histo_name += "_2";
+      else if (decay_mode == 41 || decay_mode == 43)
+        histo_name += "_4";
+      else if (decay_mode == 45)
+        histo_name += "_45";
+    }
 
     index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), histo_name) - vec_short_name_mc.begin();
   } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
@@ -1465,12 +1510,31 @@ TString Tagging_RF_Flavor::Histo_Name_RF(const TString &sample_name)
         histo_name_rf += "_CC";
     } // if(chk_tthf_breakdown)
 
-    if (decay_mode == 21 || decay_mode == 23)
-      histo_name_rf += "_2";
-    else if (decay_mode == 41 || decay_mode == 43)
-      histo_name_rf += "_4";
-    else if (decay_mode == 45)
-      histo_name_rf += "_45";
+    if (chk_w_decay_breakdown)
+    {
+      if (decay_mode == 21 || decay_mode == 23)
+        histo_name_rf += "_2";
+      else if (decay_mode == 41 || decay_mode == 43)
+        histo_name_rf += "_4";
+      else if (decay_mode == 45)
+        histo_name_rf += "_45";
+    } // if(chk_w_decay_breakdown)
+
+    // if (histo_name_rf.Contains("CP5Down"))
+    //   histo_name_rf.ReplaceAll("_CP5Down", "");
+    // else if (histo_name_rf.Contains("CP5Up"))
+    //   histo_name_rf.ReplaceAll("_CP5Up", "");
+    // else if (histo_name_rf.Contains("hdampDown"))
+    //   histo_name_rf.ReplaceAll("_hdampDown", "");
+    // else if (histo_name_rf.Contains("hdampUp"))
+    //   histo_name_rf.ReplaceAll("_hdampUp", "");
+    // else if (histo_name_rf.Contains("mtop171p5"))
+    //   histo_name_rf.ReplaceAll("_mtop171p5", "");
+    // else if (histo_name_rf.Contains("mtop173p5"))
+    //   histo_name_rf.ReplaceAll("_mtop173p5", "");
+
+    // cout << "test " << histo_name_rf << endl;
+
   } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   else
     histo_name_rf = samples.map_short_name_mc[sample_name];
@@ -1611,13 +1675,16 @@ void Tagging_RF_Flavor::Read_Tree()
         // if (n_bjets < 3)
         //   continue;
 
-        bool chk_b = false;
-        if (51 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 55)
-          chk_b = true;
+        // if (n_jets == 3)
+        //   continue;
 
-        bool chk_c = false;
-        if (41 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 45)
-          chk_c = true;
+        // bool chk_b = false;
+        // if (51 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 55)
+        //   chk_b = true;
+
+        // bool chk_c = false;
+        // if (41 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 45)
+        //   chk_c = true;
 
         // if (!chk_b)
         //   continue;
@@ -1813,79 +1880,123 @@ void Tagging_RF_Flavor::Setup_Application()
   fin = new TFile(path_base + "/Corrections/Vcb_Tagging_RF_Flavor_" + era + ".root");
 
   // set this manually
-  if (chk_tthf_breakdown)
-  {
-    vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
-                             "ST_sch", "ST_tch", "ST_tw",
-                             "WJets", "DYJets",
-                             "QCD_bEn",
-                             "ttHTobb", "ttHToNonbb",
-                             "ttWToLNu", "ttWToQQ",
-                             "ttZToLLNuNu", "ttZToQQ_ll", "ttZToQQ",
-                             "WW", "WZ", "ZZ",
-                             "TTLJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
-                             "TTLJ_4", "TTLJ_CC_4", "TTLJ_BB_4",
-                             "TTLJ_45", "TTLJ_CC_45", "TTLJ_BB_45",
-                             /* CP5 */
-                             "TTLJ_CP5Down_2", "TTLJ_CP5Down_CC_2", "TTLJ_CP5Down_BB_2",
-                             "TTLJ_CP5Down_4", "TTLJ_CP5Down_CC_4", "TTLJ_CP5Down_BB_4",
-                             //"TTLJ_CP5Down_45", "TTLJ_CP5Down_CC_45", "TTLJ_CP5Down_BB_45",
-                             "TTLJ_CP5Up_2", "TTLJ_CP5Up_CC_2", "TTLJ_CP5Up_BB_2",
-                             "TTLJ_CP5Up_4", "TTLJ_CP5Up_CC_4", "TTLJ_CP5Up_BB_4",
-                             //"TTLJ_CP5Up_45", "TTLJ_CP5Up_CC_45", "TTLJ_CP5Up_BB_45",
-                             /* mtop */
-                             "TTLJ_mtop171p5_2", "TTLJ_mtop171p5_CC_2", "TTLJ_mtop171p5_BB_2",
-                             "TTLJ_mtop171p5_4", "TTLJ_mtop171p5_CC_4", "TTLJ_mtop171p5_BB_4",
-                             //"TTLJ_mtop171p5_45", "TTLJ_mtop171p5_CC_45", "TTLJ_mtop171p5_BB_45",
-                             "TTLJ_mtop173p5_2", "TTLJ_mtop173p5_CC_2", "TTLJ_mtop173p5_BB_2",
-                             "TTLJ_mtop173p5_4", "TTLJ_mtop173p5_CC_4", "TTLJ_mtop173p5_BB_4",
-                             //"TTLJ_mtop173p5_45", "TTLJ_mtop173p5_CC_45", "TTLJ_mtop173p5_BB_45",
-                             /* hdamp */
-                             "TTLJ_hdampDown_2", "TTLJ_hdampDown_CC_2", "TTLJ_hdampDown_BB_2",
-                             "TTLJ_hdampDown_4", "TTLJ_hdampDown_CC_4", "TTLJ_hdampDown_BB_4",
-                             //"TTLJ_hdampDown_45", "TTLJ_hdampDown_CC_45", "TTLJ_hdampDown_BB_45",
-                             "TTLJ_hdampUp_2", "TTLJ_hdampUp_CC_2", "TTLJ_hdampUp_BB_2",
-                             "TTLJ_hdampUp_4", "TTLJ_hdampUp_CC_4", "TTLJ_hdampUp_BB_4",
-                             //"TTLJ_hdampUp_45", "TTLJ_hdampUp_CC_45", "TTLJ_hdampUp_BB_45",
-                             "TTLL", "TTLL_CC", "TTLL_BB",
-                             /* CP5 */
-                             "TTLL_CP5Down", "TTLL_CP5Down_CC", "TTLL_CP5Down_BB",
-                             "TTLL_CP5Up", "TTLL_CP5Up_CC", "TTLL_CP5Up_BB",
-                             /* mtop */
-                             "TTLL_mtop171p5", "TTLL_mtop171p5_CC", "TTLL_mtop171p5_BB",
-                             "TTLL_mtop173p5", "TTLL_mtop173p5_CC", "TTLL_mtop173p5_BB",
-                             /* hdamp */
-                             "TTLL_hdampDown", "TTLL_hdampDown_CC", "TTLL_hdampDown_BB",
-                             "TTLL_hdampUp", "TTLL_hdampUp_CC", "TTLL_hdampUp_BB"};
-  }
-  else
-  {
-    vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
-                             "ST_sch", "ST_tch", "ST_tw",
-                             "WJets", "DYJets",
-                             "QCD_bEn",
-                             "ttHTobb", "ttHToNonbb",
-                             "ttWToLNu", "ttWToQQ",
-                             "ttZToLLNuNu", "ttZToQQ_ll", "ttZToQQ",
-                             "WW", "WZ", "ZZ",
-                             "TTLJ_2", "TTLJ_4", "TTLJ_45",
-                             /* CP5 */
-                             "TTLJ_CP5Down_2", "TTLJ_CP5Down_4", "TTLJ_CP5Down_45",
-                             "TTLJ_CP5Up_2", "TTLJ_CP5Up_4", "TTLJ_CP5Up_45",
-                             /* mtop */
-                             "TTLJ_mtop171p5_2", "TTLJ_mtop171p5_4", "TTLJ_mtop171p5_45",
-                             "TTLJ_mtop173p5_2", "TTLJ_mtop173p5_4", "TTLJ_mtop173p5_45",
-                             /* hdamp */
-                             "TTLJ_hdampDown_2", "TTLJ_hdampDown_4", "TTLJ_hdampDown_45",
-                             "TTLJ_hdampUp_2", "TTLJ_hdampUp_4", "TTLJ_hdampUp_45",
-                             "TTLL",
-                             /* CP5 */
-                             "TTLL_CP5Down", "TTLL_CP5Up",
-                             /* mtop */
-                             "TTLL_mtop171p5", "TTLL_mtop173p5",
-                             /* hdamp */
-                             "TTLL_hdampDown", "TTLL_hdampUp"};
-  }
+  // if (chk_tthf_breakdown && chk_w_decay_breakdown && chk_top_syst_breakdown)
+  // {
+  //   vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
+  //                            "ST_sch", "ST_tch", "ST_tw",
+  //                            "WJets", "DYJets",
+  //                            "QCD_bEn",
+  //                            "ttHTobb", "ttHToNonbb",
+  //                            "ttWToLNu", "ttWToQQ",
+  //                            "ttZToLLNuNu", "ttZToQQ_ll", "ttZToQQ",
+  //                            "WW", "WZ", "ZZ",
+  //                            "TTLJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
+  //                            "TTLJ_4", "TTLJ_CC_4", "TTLJ_BB_4",
+  //                            "TTLJ_45", "TTLJ_CC_45", "TTLJ_BB_45",
+  //                            /* CP5 */
+  //                            "TTLJ_CP5Down_2", "TTLJ_CP5Down_CC_2", "TTLJ_CP5Down_BB_2",
+  //                            "TTLJ_CP5Down_4", "TTLJ_CP5Down_CC_4", "TTLJ_CP5Down_BB_4",
+  //                            //"TTLJ_CP5Down_45", "TTLJ_CP5Down_CC_45", "TTLJ_CP5Down_BB_45",
+  //                            "TTLJ_CP5Up_2", "TTLJ_CP5Up_CC_2", "TTLJ_CP5Up_BB_2",
+  //                            "TTLJ_CP5Up_4", "TTLJ_CP5Up_CC_4", "TTLJ_CP5Up_BB_4",
+  //                            //"TTLJ_CP5Up_45", "TTLJ_CP5Up_CC_45", "TTLJ_CP5Up_BB_45",
+  //                            /* mtop */
+  //                            "TTLJ_mtop171p5_2", "TTLJ_mtop171p5_CC_2", "TTLJ_mtop171p5_BB_2",
+  //                            "TTLJ_mtop171p5_4", "TTLJ_mtop171p5_CC_4", "TTLJ_mtop171p5_BB_4",
+  //                            //"TTLJ_mtop171p5_45", "TTLJ_mtop171p5_CC_45", "TTLJ_mtop171p5_BB_45",
+  //                            "TTLJ_mtop173p5_2", "TTLJ_mtop173p5_CC_2", "TTLJ_mtop173p5_BB_2",
+  //                            "TTLJ_mtop173p5_4", "TTLJ_mtop173p5_CC_4", "TTLJ_mtop173p5_BB_4",
+  //                            //"TTLJ_mtop173p5_45", "TTLJ_mtop173p5_CC_45", "TTLJ_mtop173p5_BB_45",
+  //                            /* hdamp */
+  //                            "TTLJ_hdampDown_2", "TTLJ_hdampDown_CC_2", "TTLJ_hdampDown_BB_2",
+  //                            "TTLJ_hdampDown_4", "TTLJ_hdampDown_CC_4", "TTLJ_hdampDown_BB_4",
+  //                            //"TTLJ_hdampDown_45", "TTLJ_hdampDown_CC_45", "TTLJ_hdampDown_BB_45",
+  //                            "TTLJ_hdampUp_2", "TTLJ_hdampUp_CC_2", "TTLJ_hdampUp_BB_2",
+  //                            "TTLJ_hdampUp_4", "TTLJ_hdampUp_CC_4", "TTLJ_hdampUp_BB_4",
+  //                            //"TTLJ_hdampUp_45", "TTLJ_hdampUp_CC_45", "TTLJ_hdampUp_BB_45",
+  //                            "TTLL", "TTLL_CC", "TTLL_BB",
+  //                            /* CP5 */
+  //                            "TTLL_CP5Down", "TTLL_CP5Down_CC", "TTLL_CP5Down_BB",
+  //                            "TTLL_CP5Up", "TTLL_CP5Up_CC", "TTLL_CP5Up_BB",
+  //                            /* mtop */
+  //                            "TTLL_mtop171p5", "TTLL_mtop171p5_CC", "TTLL_mtop171p5_BB",
+  //                            "TTLL_mtop173p5", "TTLL_mtop173p5_CC", "TTLL_mtop173p5_BB",
+  //                            /* hdamp */
+  //                            "TTLL_hdampDown", "TTLL_hdampDown_CC", "TTLL_hdampDown_BB",
+  //                            "TTLL_hdampUp", "TTLL_hdampUp_CC", "TTLL_hdampUp_BB"};
+  // }
+  // else if (!chk_tthf_breakdown && chk_w_decay_breakdown && chk_top_syst_breakdown)
+  // {
+  vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
+                           "ST_sch", "ST_tch", "ST_tw",
+                           "WJets", "DYJets",
+                           "QCD_bEn", "QCD",
+                           "ttHTobb", "ttHToNonbb",
+                           "ttWToLNu", "ttWToQQ",
+                           "ttZToLLNuNu", "ttZToQQ_ll", "ttZToQQ",
+                           "WW", "WZ", "ZZ",
+                           "TTLJ_2", "TTLJ_4", "TTLJ_45",
+                           /* CP5 */
+                           "TTLJ_CP5Down_2", "TTLJ_CP5Down_4", "TTLJ_CP5Down_45",
+                           "TTLJ_CP5Up_2", "TTLJ_CP5Up_4", "TTLJ_CP5Up_45",
+                           /* mtop */
+                           "TTLJ_mtop171p5_2", "TTLJ_mtop171p5_4", "TTLJ_mtop171p5_45",
+                           "TTLJ_mtop173p5_2", "TTLJ_mtop173p5_4", "TTLJ_mtop173p5_45",
+                           /* hdamp */
+                           "TTLJ_hdampDown_2", "TTLJ_hdampDown_4", "TTLJ_hdampDown_45",
+                           "TTLJ_hdampUp_2", "TTLJ_hdampUp_4", "TTLJ_hdampUp_45",
+                           "TTLL",
+                           /* CP5 */
+                           "TTLL_CP5Down", "TTLL_CP5Up",
+                           /* mtop */
+                           "TTLL_mtop171p5", "TTLL_mtop173p5",
+                           /* hdamp */
+                           "TTLL_hdampDown", "TTLL_hdampUp",
+                           "TTJJ"};
+  // }
+  // else if (!chk_tthf_breakdown && !chk_w_decay_breakdown && chk_top_syst_breakdown)
+  // {
+  //   vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
+  //                            "ST_sch", "ST_tch", "ST_tw",
+  //                            "WJets", "DYJets",
+  //                            "QCD_bEn", "QCD",
+  //                            "ttHTobb", "ttHToNonbb",
+  //                            "ttWToLNu", "ttWToQQ",
+  //                            "ttZToLLNuNu", "ttZToQQ_ll", "ttZToQQ",
+  //                            "WW", "WZ", "ZZ",
+  //                            "TTLJ",
+  //                            /* CP5 */
+  //                            "TTLJ_CP5Down", "TTLJ_CP5Up",
+  //                            /* mtop */
+  //                            "TTLJ_mtop171p5", "TTLJ_mtop173p5",
+  //                            /* hdamp */
+  //                            "TTLJ_hdampDown", "TTLJ_hdampUp",
+  //                            "TTLL",
+  //                            /* CP5 */
+  //                            "TTLL_CP5Down", "TTLL_CP5Up",
+  //                            /* mtop */
+  //                            "TTLL_mtop171p5", "TTLL_mtop173p5",
+  //                            /* hdamp */
+  //                            "TTLL_hdampDown", "TTLL_hdampUp",
+  //                            "TTJJ"};
+  // }
+
+  // vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
+  //                          "ST_sch", "ST_tch", "ST_tw",
+  //                          "WJets", "DYJets",
+  //                          "QCD_bEn", "QCD",
+  //                          "ttHTobb", "ttHToNonbb",
+  //                          "ttWToLNu", "ttWToQQ",
+  //                          "ttZToLLNuNu", "ttZToQQ_ll", "ttZToQQ",
+  //                          "WW", "WZ", "ZZ",
+  //                          "TTLJ", "TTLL",
+  //                          "TTLJ_CP5Down", "TTLJ_CP5Up",
+  //                          "TTLJ_mtop171p5", "TTLJ_mtop173p5",
+  //                          "TTLJ_hdampDown", "TTLJ_hdampUp",
+  //                          "TTLL_CP5Down", "TTLL_CP5Up",
+  //                          "TTLL_mtop171p5", "TTLL_mtop173p5",
+  //                          "TTLL_hdampDown", "TTLL_hdampUp",
+  //                          "TTJJ"};
 
   n_sample_tagging_rf = vec_sample_tagging_rf.size();
 
@@ -2182,6 +2293,8 @@ void Tagging_RF_Flavor::Setup_Tree(TTree *tree, const TString &syst)
   tree->SetBranchAddress("lepton_rel_iso", &lepton_rel_iso);
   tree->SetBranchAddress("lepton_pt_uncorr", &lepton_pt_uncorr);
 
+  tree->SetBranchAddress("electron_id_bit", &electron_id_bit);
+
   tree->SetBranchAddress("leading_jet_bvsc", &leading_jet_bvsc);
   tree->SetBranchAddress("leading_jet_cvsb", &leading_jet_cvsb);
   tree->SetBranchAddress("leading_jet_cvsl", &leading_jet_cvsl);
@@ -2229,39 +2342,78 @@ int Tagging_RF_Flavor::Set_ABCD_Region()
   }
   else if (channel == "El")
   {
-    float rel_iso_electron_a;
-    float rel_iso_electron_b;
-    if (TMath::Abs(lepton_eta) <= 1.479)
-    {
-      rel_iso_electron_a = REL_ISO_ELECTRON_BARREL_A;
-      rel_iso_electron_b = REL_ISO_ELECTRON_BARREL_B;
-    }
-    else
-    {
-      rel_iso_electron_a = REL_ISO_ELECTRON_ENDCAP_A;
-      rel_iso_electron_b = REL_ISO_ELECTRON_ENDCAP_B;
-    }
+    // float rel_iso_electron_a;
+    // float rel_iso_electron_b;
+    // if (TMath::Abs(lepton_eta) <= 1.479)
+    // {
+    //   rel_iso_electron_a = REL_ISO_ELECTRON_BARREL_A;
+    //   rel_iso_electron_b = REL_ISO_ELECTRON_BARREL_B;
+    // }
+    // else
+    // {
+    //   rel_iso_electron_a = REL_ISO_ELECTRON_ENDCAP_A;
+    //   rel_iso_electron_b = REL_ISO_ELECTRON_ENDCAP_B;
+    // }
 
-    if (lepton_rel_iso < rel_iso_electron_a + rel_iso_electron_b / lepton_pt_uncorr)
+    // if (lepton_rel_iso < rel_iso_electron_a + rel_iso_electron_b / lepton_pt_uncorr)
+    //   chk_pass_iso = true;
+    // else
+    //   chk_pass_iso = false;
+
+    /* Tight Loose */
+    unsigned int mva_iso_wp80_bit_mask = 1 << 4;
+    unsigned int mva_iso_wp90_bit_mask = 1 << 5;
+
+    if ((electron_id_bit & mva_iso_wp80_bit_mask) == mva_iso_wp80_bit_mask)
       chk_pass_iso = true;
     else
       chk_pass_iso = false;
   }
 
-  if (MET_PT < met_pt)
+  if (4 <= n_jets)
   {
     if (chk_pass_iso)
       return 3; //"D"
     else
-      return 1; //"B"
+      return 2; //"C"
   }
   else
   {
     if (chk_pass_iso)
-      return 2; //"C"
+      return 1; //"B"
     else
       return 0; //"A"
   }
+
+  // if (MET_PT < met_pt)
+  // {
+  //   if (chk_pass_iso)
+  //     return 3; //"D"
+  //   else
+  //     return 1; //"B"
+  // }
+  // else
+  // {
+  //   if (chk_pass_iso)
+  //     return 2; //"C"
+  //   else
+  //     return 0; //"A"
+  // }
+
+  // if (MET_PT < met_pt)
+  // {
+  //   if (chk_pass_iso)
+  //     return 3; //"D"
+  //   else
+  //     return 2; //"C"
+  // }
+  // else
+  // {
+  //   if (chk_pass_iso)
+  //     return 1; //"B"
+  //   else
+  //     return 0; //"A"
+  // }
 
   return -1;
 } // int Tagging_RF_Flavor::Set_ABCD_Region()
@@ -2277,7 +2429,7 @@ int Tagging_RF_Flavor::TTHF_Breakdown_Index(const TString &sample_name)
     bool chk_b = false;
     bool chk_c = false;
 
-    cout << gen_ttbar_id << endl;
+    // cout << gen_ttbar_id << endl;
 
     if (51 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 55)
       chk_b = true;

@@ -97,7 +97,8 @@ const float REL_ISO_ELECTRON_BARREL_B = 0.506;
 const float REL_ISO_ELECTRON_ENDCAP_A = 0.0658;
 const float REL_ISO_ELECTRON_ENDCAP_B = 0.963;
 
-const float MET_PT = 20;
+const float MET_PT = 25;
+const float MT_CUT = 25;
 
 const float TTBB_Scale = 1.36;
 const float TTCC_Scale = 1.11;

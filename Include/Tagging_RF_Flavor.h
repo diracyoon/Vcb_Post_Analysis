@@ -56,7 +56,9 @@ private:
   TString year;
 
   bool chk_tthf_breakdown = false;
+  bool chk_w_decay_breakdown = false;
   bool chk_jes_breakdown = false;
+  bool chk_top_syst_breakdown = false;
 
   int index_tree_type;
   int last_index_tree_type;
@@ -114,6 +116,8 @@ private:
   float lepton_eta;
   float lepton_pt_uncorr;
   float lepton_rel_iso;
+
+  unsigned int electron_id_bit;
 
   float ht;
 

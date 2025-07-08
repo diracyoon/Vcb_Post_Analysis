@@ -9,6 +9,8 @@
 #include <TString.h>
 #include <TTree.h>
 #include <TH1D.h>
+#include <TH2D.h>
+#include <TH3D.h>
 #include <TDirectory.h>
 #include <TObjArray.h>
 #include <TObjString.h>
@@ -89,6 +91,8 @@ protected:
 
   bool chk_bin_optimizer = false;
 
+  bool chk_qcd_ben = true;
+
   int index_tree_type;
   int last_index_tree_type;
   vector<TString> vec_tree_type;
@@ -158,7 +162,8 @@ protected:
   vector<Histo_Conf> variable_conf;
 
   vector<vector<float>> bin_template_mva_score;
-  vector<float> bin_tf;
+  vector<float> bin_eta_tf;
+  vector<float> bin_pt_tf;
 
   float b_tag_rf;
   float c_tag_rf;
@@ -169,20 +174,23 @@ protected:
   TH1 ******histo_mc; // n_abcd_region, n_region, n_syst, n_sample, n_variable
   TH1 ****histo_data; // n_abcd_region, n_region, n_variable
 
-  TH2D ******histo_mc_dd; // n_abcd_region-2, n_region, n_syst, n_sample, n_variable
-  TH2D ****histo_data_dd; // n_abcd_region-2, n_region, n_variable
+  TH3D ******histo_mc_dd; // n_abcd_region-2, n_region, n_syst, n_sample, n_variable
+  TH3D ****histo_data_dd; // n_abcd_region-2, n_region, n_variable
 
   TH1D *****histo_mc_merge; // n_region, n_syst, n_sample, n_variable
 
-  TH1D ***histo_subtracted_tf;           // n_abcd_region-2, n_region
-  TH2D ****histo_subtracted_data_driven; // n_region, n_syst, n_variable
-  TH2D ****histo_tf_corrected;           // n_region, n_syst, n_variable
-  TH2D ***histo_tf_corrected_up;         // n_region, n_variable
-  TH2D ***histo_tf_corrected_down;       // n_region, n_variable
+  TH1 ***histo_subtracted_tf;           // n_abcd_region-2, n_region
+  TH3D ****histo_subtracted_data_driven; // n_region, n_syst, n_variable
+  TH3D ****histo_tf_corrected;           // n_region, n_syst, n_variable
+  TH3D *****histo_tf_corrected_up;         // n_region, n_variable, tf n_bin_eta, tf n_bin_pt 
+  TH3D *****histo_tf_corrected_down;       // n_region, n_variable, tf n_bin_eta, tf n_bin_pt
+  
+  TH1D ***histo_envelop_up; //n_region, n_variable
+  TH1D ***histo_envelop_down; //n_region, n_variable
 
-  TH1D **histo_tf; // n_region
-  TH1D *histo_tf_combine;
-  TH1D **histo_tf_qcd_mc; // n_region
+  TH2D **histo_tf; // n_region
+  TH2D *histo_tf_combine;
+  TH2D **histo_tf_qcd_mc; // n_region
 
   float bvsc_wp_m;
   float cvsb_wp_m;

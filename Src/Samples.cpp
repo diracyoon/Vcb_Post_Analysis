@@ -13,14 +13,22 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_mc["TTLJ_WtoCB"] = "Vcb_TTLJ_WtoCB_powheg.root";
   map_mc["TTLJ"] = "Vcb_TTLJ_powheg.root";
   map_mc["TTLL"] = "Vcb_TTLL_powheg.root";
+  map_mc["TTJJ"] = "Vcb_TTJJ_powheg.root";
   map_mc["SingleTop_sch_Lep"] = "Vcb_SingleTop_sch_Lep.root";
   map_mc["SingleTop_tch_top_Incl"] = "Vcb_SingleTop_tch_top_Incl.root";
   map_mc["SingleTop_tch_antitop_Incl"] = "Vcb_SingleTop_tch_antitop_Incl.root";
   map_mc["SingleTop_tW_top"] = "Vcb_SingleTop_tW_top_NoFullyHad.root";
   map_mc["SingleTop_tW_antitop"] = "Vcb_SingleTop_tW_antitop_NoFullyHad.root";
-  map_mc["WJets"] = "Vcb_WJets_MG.root";
-  map_mc["DYJets"] = "Vcb_DYJets_MG.root";
+  // map_mc["WJets"] = "Vcb_WJets_MG.root";
+  map_mc["WJets_HT100to200"] = "Vcb_WJets_HT100to200.root";
+  map_mc["WJets_HT200to400"] = "Vcb_WJets_HT200to400.root";
+  map_mc["WJets_HT400to600"] = "Vcb_WJets_HT400to600.root";
+  map_mc["WJets_HT600to800"] = "Vcb_WJets_HT600to800.root";
+  map_mc["WJets_HT800to1200"] = "Vcb_WJets_HT800to1200.root";
+  map_mc["WJets_HT1200to2500"] = "Vcb_WJets_HT1200to2500.root";
+  map_mc["WJets_HT2500toInf"] = "Vcb_WJets_HT2500toInf.root";
   // map_mc["WJets"] = "Vcb_WJets_Sherpa.root";
+  map_mc["DYJets"] = "Vcb_DYJets_MG.root";
   // map_mc["DYJets"] = "Vcb_DYJets.root";
   map_mc["QCD_bEn_HT100to200"] = "Vcb_QCD_bEnriched_HT100to200.root";
   map_mc["QCD_bEn_HT200to300"] = "Vcb_QCD_bEnriched_HT200to300.root";
@@ -30,6 +38,21 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_mc["QCD_bEn_HT1000to1500"] = "Vcb_QCD_bEnriched_HT1000to1500.root";
   map_mc["QCD_bEn_HT1500to2000"] = "Vcb_QCD_bEnriched_HT1500to2000.root";
   map_mc["QCD_bEn_HT2000toInf"] = "Vcb_QCD_bEnriched_HT2000toInf.root";
+  // map_mc["QCD_Pt_15to30"] = "Vcb_QCD_Pt_15to30.root";
+  // map_mc["QCD_Pt_30to50"] = "Vcb_QCD_Pt_30to50.root";
+  // map_mc["QCD_Pt_50to80"] = "Vcb_QCD_Pt_50to80.root";
+  // map_mc["QCD_Pt_80to120"] = "Vcb_QCD_Pt_80to120.root";
+  // map_mc["QCD_Pt_120to170"] = "Vcb_QCD_Pt_120to170.root";
+  // map_mc["QCD_Pt_170to300"] = "Vcb_QCD_Pt_170to300.root";
+  // map_mc["QCD_Pt_300to470"] = "Vcb_QCD_Pt_300to470.root";
+  // map_mc["QCD_Pt_470to600"] = "Vcb_QCD_Pt_470to600.root";
+  // map_mc["QCD_Pt_600to800"] = "Vcb_QCD_Pt_600to800.root";
+  // map_mc["QCD_Pt_800to1000"] = "Vcb_QCD_Pt_800to1000.root";
+  // map_mc["QCD_Pt_1000to1400"] = "Vcb_QCD_Pt_1000to1400.root";
+  // map_mc["QCD_Pt_1400to1800"] = "Vcb_QCD_Pt_1400to1800.root";
+  // map_mc["QCD_Pt_1800to2400"] = "Vcb_QCD_Pt_1800to2400.root";
+  // map_mc["QCD_Pt_2400to3200"] = "Vcb_QCD_Pt_2400to3200.root";
+  // map_mc["QCD_Pt_3200toInf"] = "Vcb_QCD_Pt_3200toInf.root";
   map_mc["ttHTobb"] = "Vcb_ttHTobb.root";
   map_mc["ttHToNonbb"] = "Vcb_ttHToNonbb.root";
   map_mc["ttWToLNu"] = "Vcb_ttWToLNu.root";
@@ -44,12 +67,20 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_short_name_mc["TTLJ_WtoCB"] = "TTLJ_WtoCB";
   map_short_name_mc["TTLJ"] = "TTLJ";
   map_short_name_mc["TTLL"] = "TTLL";
+  map_short_name_mc["TTJJ"] = "TTJJ";
   map_short_name_mc["SingleTop_sch_Lep"] = "ST_sch";
   map_short_name_mc["SingleTop_tch_top_Incl"] = "ST_tch";
   map_short_name_mc["SingleTop_tch_antitop_Incl"] = "ST_tch";
   map_short_name_mc["SingleTop_tW_top"] = "ST_tw";
   map_short_name_mc["SingleTop_tW_antitop"] = "ST_tw";
-  map_short_name_mc["WJets"] = "WJets";
+  // map_short_name_mc["WJets"] = "WJets";
+  map_short_name_mc["WJets_HT100to200"] = "WJets";
+  map_short_name_mc["WJets_HT200to400"] = "WJets";
+  map_short_name_mc["WJets_HT400to600"] = "WJets";
+  map_short_name_mc["WJets_HT600to800"] = "WJets";
+  map_short_name_mc["WJets_HT800to1200"] = "WJets";
+  map_short_name_mc["WJets_HT1200to2500"] = "WJets";
+  map_short_name_mc["WJets_HT2500toInf"] = "WJets";
   map_short_name_mc["DYJets"] = "DYJets";
   map_short_name_mc["QCD_bEn_HT100to200"] = "QCD_bEn";
   map_short_name_mc["QCD_bEn_HT200to300"] = "QCD_bEn";
@@ -59,6 +90,21 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_short_name_mc["QCD_bEn_HT1000to1500"] = "QCD_bEn";
   map_short_name_mc["QCD_bEn_HT1500to2000"] = "QCD_bEn";
   map_short_name_mc["QCD_bEn_HT2000toInf"] = "QCD_bEn";
+  // map_short_name_mc["QCD_Pt_15to30"] = "QCD";
+  // map_short_name_mc["QCD_Pt_30to50"] = "QCD";
+  // map_short_name_mc["QCD_Pt_50to80"] = "QCD";
+  // map_short_name_mc["QCD_Pt_80to120"] = "QCD";
+  // map_short_name_mc["QCD_Pt_120to170"] = "QCD";
+  // map_short_name_mc["QCD_Pt_170to300"] = "QCD";
+  // map_short_name_mc["QCD_Pt_300to470"] = "QCD";
+  // map_short_name_mc["QCD_Pt_470to600"] = "QCD";
+  // map_short_name_mc["QCD_Pt_600to800"] = "QCD";
+  // map_short_name_mc["QCD_Pt_800to1000"] = "QCD";
+  // map_short_name_mc["QCD_Pt_1000to1400"] = "QCD";
+  // map_short_name_mc["QCD_Pt_1400to1800"] = "QCD";
+  // map_short_name_mc["QCD_Pt_1800to2400"] = "QCD";
+  // map_short_name_mc["QCD_Pt_2400to3200"] = "QCD";
+  // map_short_name_mc["QCD_Pt_3200toInf"] = "QCD";
   map_short_name_mc["ttHTobb"] = "ttHTobb";
   map_short_name_mc["ttHToNonbb"] = "ttHToNonbb";
   map_short_name_mc["ttWToLNu"] = "ttWToLNu";
@@ -73,12 +119,14 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_short_short_name["TTLJ_WtoCB"] = "TTLJ_WtoCB";
   map_short_short_name["TTLJ"] = "TTLJ";
   map_short_short_name["TTLL"] = "TTLL";
+  map_short_short_name["TTJJ"] = "TTJJ";
   map_short_short_name["ST_sch"] = "ST";
   map_short_short_name["ST_tch"] = "ST";
   map_short_short_name["ST_tw"] = "ST";
   map_short_short_name["WJets"] = "VJets";
   map_short_short_name["DYJets"] = "VJets";
   map_short_short_name["QCD_bEn"] = "QCD_bEn";
+  // map_short_short_name["QCD"] = "QCD";
   map_short_short_name["ttHTobb"] = "ttV";
   map_short_short_name["ttHToNonbb"] = "ttV";
   map_short_short_name["ttWToLNu"] = "ttV";
@@ -176,7 +224,15 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     }
   }
 
-  if (analyser == "Vcb_Tagging_RF")
+  if (analyser == "Vcb_Cal_TF")
+  {
+    for (auto it = map_mc.begin(); it != map_mc.end(); it++)
+      it->second.ReplaceAll("Vcb", "Vcb_Cal_TF");
+
+    for (auto it = map_data.begin(); it != map_data.end(); it++)
+      it->second.ReplaceAll("Vcb", "Vcb_Cal_TF");
+  }
+  else if (analyser == "Vcb_Tagging_RF")
   {
     map_mc["TTLJ_hdampDown"] = "Vcb_TTLJ_powheg_hdampDown.root";
     map_mc["TTLJ_hdampUp"] = "Vcb_TTLJ_powheg_hdampUp.root";

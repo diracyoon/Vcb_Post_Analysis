@@ -10,6 +10,7 @@
 //#pragma link C++ class Reco_Eval_Event+;
 #pragma link C++ class Permutation_TMVA+;
 #pragma link C++ class Data_MC_Comparison+;
+#pragma link C++ class Data_MC_Comparison_Cal_TF+;
 #pragma link C++ class Histo_Syst+;
 #pragma link C++ class Reco_Eval+;
 #pragma link C++ class Template+;

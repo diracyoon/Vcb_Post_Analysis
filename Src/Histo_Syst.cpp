@@ -5,7 +5,7 @@ ClassImp(Histo_Syst);
 //////////
 
 Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TString &a_mode, const int &a_index_tree_type, const int &a_last_index_tree_type, const TString &a_tagger, const TString &a_swap_mode)
-    : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
+    : samples(a_era, a_channel, (a_mode == "Cal_TF") ? "Vcb_Cal_TF" : "Vcb"), event(a_era, a_channel, (a_mode == "Cal_TF") ? "Vcb_Cal_TF" : "Vcb", a_swap_mode), tagging_rf(a_era)
 {
   TH1::AddDirectory(kFALSE);
 
@@ -110,15 +110,20 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
   abcd_region_name = {"A", "B", "C", "D"};
 
   // Signal should be last
-  if (chk_bin_optimizer)
-    region_name = {"TwoB", "ThreeB_CR"};
+  if (mode == "Cal_TF")
+    region_name = {"TwoB"};
   else
-    region_name = {"TwoB", "ThreeB_CR", "Signal"};
+  {
+    if (chk_bin_optimizer)
+      region_name = {"TwoB", "ThreeB_CR"};
+    else
+      region_name = {"TwoB", "ThreeB_CR", "Signal"};
+  }
   n_region = region_name.size();
 
   if (mode == "Cal_TF")
   {
-    ROOT::EnableImplicitMT(5);
+    ROOT::EnableImplicitMT(2);
 
     Config_Sample();
     Config_Syst();
@@ -131,7 +136,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
   }
   else if (mode == "2D")
   {
-    ROOT::EnableImplicitMT(5);
+    ROOT::EnableImplicitMT(4);
 
     Config_Sample();
     Config_Syst();
@@ -178,7 +183,7 @@ Histo_Syst::~Histo_Syst()
     {
       TDirectory *dir_region = fout->mkdir(region_name[i]);
 
-      for (int j = 0; j < n_abcd_region - 2; j++)
+      for (int j = 0; j < n_abcd_region; j++)
       {
         TDirectory *dir_abcd_region = dir_region->mkdir(abcd_region_name[j]);
 
@@ -202,7 +207,7 @@ Histo_Syst::~Histo_Syst()
         histo_subtracted_tf[j][i]->SetTitle("Subtracted");
         histo_subtracted_tf[j][i]->SetName("Subtracted");
         histo_subtracted_tf[j][i]->Write();
-      } // loop over n_abcd_region -2
+      } // loop over n_abcd_region
 
       dir_region->cd();
       histo_tf[i]->SetTitle("TF");
@@ -318,10 +323,12 @@ Histo_Syst::~Histo_Syst()
     cout << "[Histo_Syst::~Histo_Syst]: Closing root file" << endl;
     fout->Close();
   } // else if (mode == "2D")
-
   else if (mode == "Data_Driven")
   {
     cout << "[Histo_Syst::~Histo_Syst]: Writing fout." << endl;
+
+    auto it = std::find(syst_name.begin(), syst_name.end(), "Nominal");
+    int nominal_index = std::distance(syst_name.begin(), it);
 
     TString fout_name = "Vcb_Histos_" + era + "_" + channel + ".root";
     fout = new TFile(fout_name, "RECREATE");
@@ -338,12 +345,15 @@ Histo_Syst::~Histo_Syst()
         // cout << "\t" << syst_name[j] << endl;
 
         TDirectory *dir_syst = dir_region->mkdir(syst_name[j]);
+
         for (int k = 0; k < n_sample_merge_mc; k++)
         {
+          // cout << "\t\t" << vec_short_name_mc[k] << endl;
+
           TDirectory *dir_sample = dir_syst->mkdir(vec_short_name_mc[k]);
           for (int l = 0; l < n_variable; l++)
           {
-            TH1D *histo_proj = (TH1D *)(dynamic_cast<TH2D *>(histo_mc_dd[1][i][j][k][l])->ProjectionX()->Clone());
+            TH1D *histo_proj = (TH1D *)(dynamic_cast<TH3D *>(histo_mc_dd[1][i][j][k][l])->ProjectionX()->Clone());
 
             dir_sample->cd();
             histo_proj->SetTitle(variable_conf[l].variable_title);
@@ -356,21 +366,85 @@ Histo_Syst::~Histo_Syst()
         dir_qcd_data_driven->cd();
         for (int k = 0; k < n_variable; k++)
         {
-          TH1D *histo_proj = (TH1D *)histo_tf_corrected[i][j][k]->ProjectionX()->Clone();
+          TH1D *histo_proj = (TH1D *)histo_tf_corrected[i][nominal_index][k]->ProjectionX()->Clone();
+
           histo_proj->SetTitle(variable_conf[k].variable_title);
           histo_proj->SetName(variable_conf[k].variable_title);
           histo_proj->Write();
         } // loop over n_variable
       } // loop over n_syst
 
-      // QCD TF Up
-      TDirectory *dir_qcd_tf_up = dir_region->mkdir("QCD_TF_Up");
+      for (int j = 0; j < bin_eta_tf.size() - 1; j++)
+      {
+        for (int k = 0; k < bin_pt_tf.size() - 1; k++)
+        {
+          /* QCD TF Down */
+          TString dir_name_down = "QCD_TF_Eta_Bin" + to_string(j) + "_Pt_Bin" + to_string(k) + "_Down";
+          TDirectory *dir_qcd_tf_down = dir_region->mkdir(dir_name_down);
+          for (int l = 0; l < n_sample_merge_mc; l++)
+          {
+            TDirectory *dir_sample = dir_qcd_tf_down->mkdir(vec_short_name_mc[l]);
+            for (int m = 0; m < n_variable; m++)
+            {
+              TH1D *histo_proj = (TH1D *)(dynamic_cast<TH3D *>(histo_mc_dd[1][i][0][l][m])->ProjectionX()->Clone());
+
+              dir_sample->cd();
+              histo_proj->SetTitle(variable_conf[m].variable_title);
+              histo_proj->SetName(variable_conf[m].variable_title);
+              histo_proj->Write();
+            } // loop over n_variable
+          } // loop over n_sample
+
+          TDirectory *dir_qcd_data_driven_tf_down = dir_qcd_tf_down->mkdir("QCD_Data_Driven");
+          dir_qcd_data_driven_tf_down->cd();
+          for (int l = 0; l < n_variable; l++)
+          {
+            TH1D *histo_proj = (TH1D *)histo_tf_corrected_down[i][l][j][k]->ProjectionX()->Clone();
+
+            histo_proj->SetTitle(variable_conf[l].variable_title);
+            histo_proj->SetName(variable_conf[l].variable_title);
+            histo_proj->Write();
+          } // loop over n_variable
+
+          /* QCD TF Up */
+          TString dir_name_up = "QCD_TF_Eta_Bin" + to_string(j) + "_Pt_Bin" + to_string(k) + "_Up";
+          TDirectory *dir_qcd_tf_up = dir_region->mkdir(dir_name_up);
+          for (int l = 0; l < n_sample_merge_mc; l++)
+          {
+            TDirectory *dir_sample = dir_qcd_tf_up->mkdir(vec_short_name_mc[l]);
+            for (int m = 0; m < n_variable; m++)
+            {
+              TH1D *histo_proj = (TH1D *)(dynamic_cast<TH3D *>(histo_mc_dd[1][i][0][l][m])->ProjectionX()->Clone());
+
+              dir_sample->cd();
+              histo_proj->SetTitle(variable_conf[m].variable_title);
+              histo_proj->SetName(variable_conf[m].variable_title);
+              histo_proj->Write();
+            } // loop over n_variable
+          } // loop over n_sample
+
+          TDirectory *dir_qcd_data_driven_tf_up = dir_qcd_tf_up->mkdir("QCD_Data_Driven");
+          dir_qcd_data_driven_tf_up->cd();
+          for (int l = 0; l < n_variable; l++)
+          {
+            TH1D *histo_proj = (TH1D *)histo_tf_corrected_up[i][l][j][k]->ProjectionX()->Clone();
+
+            histo_proj->SetTitle(variable_conf[l].variable_title);
+            histo_proj->SetName(variable_conf[l].variable_title);
+            histo_proj->Write();
+          } // loop over n_variable
+
+        } // loop over bin_pt_tf
+      } // loop over bin_eta_tf
+
+      /* QCD Envelop Down */
+      TDirectory *dir_qcd_envelop_down = dir_region->mkdir("QCD_Envelop_Down");
       for (int j = 0; j < n_sample_merge_mc; j++)
       {
-        TDirectory *dir_sample = dir_qcd_tf_up->mkdir(vec_short_name_mc[j]);
+        TDirectory *dir_sample = dir_qcd_envelop_down->mkdir(vec_short_name_mc[j]);
         for (int k = 0; k < n_variable; k++)
         {
-          TH1D *histo_proj = (TH1D *)(dynamic_cast<TH2D *>(histo_mc_dd[1][i][0][j][k])->ProjectionX()->Clone());
+          TH1D *histo_proj = (TH1D *)(dynamic_cast<TH3D *>(histo_mc_dd[1][i][0][j][k])->ProjectionX()->Clone());
 
           dir_sample->cd();
           histo_proj->SetTitle(variable_conf[k].variable_title);
@@ -379,24 +453,23 @@ Histo_Syst::~Histo_Syst()
         } // loop over n_variable
       } // loop over n_sample
 
-      TDirectory *dir_qcd_data_driven_tf_up = dir_qcd_tf_up->mkdir("QCD_Data_Driven");
-      dir_qcd_data_driven_tf_up->cd();
+      TDirectory *dir_qcd_data_driven_envelop_down = dir_qcd_envelop_down->mkdir("QCD_Data_Driven");
+      dir_qcd_data_driven_envelop_down->cd();
       for (int j = 0; j < n_variable; j++)
       {
-        TH1D *histo_proj = (TH1D *)histo_tf_corrected_up[i][j]->ProjectionX()->Clone();
-        histo_proj->SetTitle(variable_conf[j].variable_title);
-        histo_proj->SetName(variable_conf[j].variable_title);
-        histo_proj->Write();
+        histo_envelop_down[i][j]->SetTitle(variable_conf[j].variable_title);
+        histo_envelop_down[i][j]->SetName(variable_conf[j].variable_title);
+        histo_envelop_down[i][j]->Write();
       } // loop over n_variable
 
-      // QCD TF Down
-      TDirectory *dir_qcd_tf_down = dir_region->mkdir("QCD_TF_Down");
+      /* QCD Envelop Up */
+      TDirectory *dir_qcd_envelop_up = dir_region->mkdir("QCD_Envelop_Up");
       for (int j = 0; j < n_sample_merge_mc; j++)
       {
-        TDirectory *dir_sample = dir_qcd_tf_down->mkdir(vec_short_name_mc[j]);
+        TDirectory *dir_sample = dir_qcd_envelop_up->mkdir(vec_short_name_mc[j]);
         for (int k = 0; k < n_variable; k++)
         {
-          TH1D *histo_proj = (TH1D *)(dynamic_cast<TH2D *>(histo_mc_dd[1][i][0][j][k])->ProjectionX()->Clone());
+          TH1D *histo_proj = (TH1D *)(dynamic_cast<TH3D *>(histo_mc_dd[1][i][0][j][k])->ProjectionX()->Clone());
 
           dir_sample->cd();
           histo_proj->SetTitle(variable_conf[k].variable_title);
@@ -405,14 +478,13 @@ Histo_Syst::~Histo_Syst()
         } // loop over n_variable
       } // loop over n_sample
 
-      TDirectory *dir_qcd_data_driven_tf_down = dir_qcd_tf_down->mkdir("QCD_Data_Driven");
-      dir_qcd_data_driven_tf_down->cd();
+      TDirectory *dir_qcd_data_driven_envelop_up = dir_qcd_envelop_up->mkdir("QCD_Data_Driven");
+      dir_qcd_data_driven_envelop_up->cd();
       for (int j = 0; j < n_variable; j++)
       {
-        TH1D *histo_proj = (TH1D *)histo_tf_corrected_down[i][j]->ProjectionX()->Clone();
-        histo_proj->SetTitle(variable_conf[j].variable_title);
-        histo_proj->SetName(variable_conf[j].variable_title);
-        histo_proj->Write();
+        histo_envelop_up[i][j]->SetTitle(variable_conf[j].variable_title);
+        histo_envelop_up[i][j]->SetName(variable_conf[j].variable_title);
+        histo_envelop_up[i][j]->Write();
       } // loop over n_variable
 
       // Data
@@ -422,7 +494,8 @@ Histo_Syst::~Histo_Syst()
       dir_data->cd();
       for (int j = 0; j < n_variable; j++)
       {
-        TH1D *histo_proj = (TH1D *)(dynamic_cast<TH2D *>(histo_data_dd[1][i][j])->ProjectionX()->Clone());
+        TH1D *histo_proj = (TH1D *)(dynamic_cast<TH3D *>(histo_data_dd[1][i][j])->ProjectionX()->Clone());
+
         histo_proj->SetTitle(variable_conf[j].variable_title);
         histo_proj->SetName(variable_conf[j].variable_title);
         histo_proj->Write();
@@ -485,7 +558,7 @@ void Histo_Syst::Calculate_TF()
 {
   cout << "[Histo_Syst::Calculate_TF]: Init" << endl;
 
-  for (int i = 0; i < n_abcd_region - 2; i++)
+  for (int i = 0; i < n_abcd_region; i++)
   {
     for (int j = 0; j < n_region; j++)
     {
@@ -495,7 +568,7 @@ void Histo_Syst::Calculate_TF()
       // subtract mc
       for (int k = 0; k < n_sample_merge_mc; k++)
       {
-        if (vec_short_name_mc[k] == "QCD_bEn")
+        if (vec_short_name_mc[k] == "QCD_bEn" || vec_short_name_mc[k] == "QCD")
           continue;
 
         histo_subtracted_tf[i][j]->Add(histo_mc[i][j][0][k][0], -1);
@@ -505,23 +578,36 @@ void Histo_Syst::Calculate_TF()
 
   // TF from QCD sample
   int index_syst_nominal = find(syst_name.begin(), syst_name.end(), "Nominal") - syst_name.begin();
-  int index_qcd = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), "QCD_bEn") - vec_short_name_mc.begin();
+  int index_qcd;
+  if (chk_qcd_ben)
+    index_qcd = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), "QCD_bEn") - vec_short_name_mc.begin();
+  else
+    index_qcd = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), "QCD") - vec_short_name_mc.begin();
 
-  for (int i = 0; i < 2; i++)
+  for (int i = 0; i < n_region; i++)
   {
     histo_tf[i]->Divide(histo_subtracted_tf[1][i], histo_subtracted_tf[0][i]);
 
-    histo_mc[1][i][index_syst_nominal][index_qcd][0]->Rebin(2);
-    histo_mc[0][i][index_syst_nominal][index_qcd][0]->Rebin(2);
-    histo_tf_qcd_mc[i]->Rebin(2);
+    TH2D *histo_qcd_mc_b = (TH2D *)histo_mc[1][i][index_syst_nominal][index_qcd][0]->Clone();
 
-    histo_tf_qcd_mc[i]->Divide(histo_mc[1][i][index_syst_nominal][index_qcd][0], histo_mc[0][i][index_syst_nominal][index_qcd][0]);
+    TH2D *histo_qcd_mc_a = (TH2D *)histo_mc[0][i][index_syst_nominal][index_qcd][0]->Clone();
+
+    histo_qcd_mc_b->RebinX(3);
+    // histo_qcd_mc_b->RebinY(2);
+
+    histo_qcd_mc_a->RebinX(3);
+    // histo_qcd_mc_a->RebinY(2);
+
+    histo_tf_qcd_mc[i]->RebinX(3);
+    // histo_tf_qcd_mc[i]->RebinY(2);
+
+    histo_tf_qcd_mc[i]->Divide(histo_qcd_mc_b, histo_qcd_mc_a);
   }
 
   cout << "[Histo_Syst::Calculate_TF]: Done" << endl;
 
   return;
-} // void Histo_Syst::Calculate_TF(
+} // void Histo_Syst::Calculate_TF()
 
 //////////
 
@@ -698,13 +784,58 @@ void Histo_Syst::Config_Syst()
 void Histo_Syst::Config_Variable()
 {
   if (channel == "Mu")
-    bin_tf = {-1 * MUON_ETA, -1.479, 0, 1.479, MUON_ETA};
-  // bin_tf = {-1 * MUON_ETA, MUON_ETA};
-  else if (channel == "El")
-    bin_tf = {-1 * ELECTRON_ETA, -1.479, 0, 1.479, ELECTRON_ETA};
-  // bin_tf = {-1 * ELECTRON_ETA, ELECTRON_ETA};
+  {
+    // bin_eta_tf = {0, 1.479, MUON_ETA};
+    // bin_eta_tf = {-1 * MUON_ETA, -1.479, 0, 1.479, MUON_ETA};
+    bin_eta_tf = {-1 * MUON_ETA, -1.479, 1.479, MUON_ETA};
+    // bin_eta_tf = {-1 * MUON_ETA, MUON_ETA};
 
-  if (!chk_bin_optimizer)
+    // if (era == "2016preVFP")
+    //    bin_pt_tf = {26.0, 30.0, 34.0, 38, 42, 46, 50, 1000};
+    //  else if (era == "2016postVFP")
+    //   bin_pt_tf = {26.0, 30.0, 34.0, 38, 42, 46, 50, 1000};
+    // else if (era == "2017")
+    //   bin_pt_tf = {30.0, 34.0, 38.0, 42.0, 46.0, 50, 1000};
+    // else if (era == "2018")
+    //   bin_pt_tf = {26.0, 30.0, 34.0, 38, 42, 46, 50, 1000};
+
+    if (era == "2016preVFP")
+      bin_pt_tf = {26.0, 30, 35.0, 50, 100, 2000};
+    else if (era == "2016postVFP")
+      bin_pt_tf = {26.0, 30, 35.0, 50, 100, 2000};
+    else if (era == "2017")
+      bin_pt_tf = {30, 35.0, 50, 100, 2000};
+    else if (era == "2018")
+      bin_pt_tf = {26.0, 30, 35.0, 50, 100, 2000};
+  }
+
+  else if (channel == "El")
+  {
+    // bin_eta_tf = {0, 1.479, ELECTRON_ETA};
+    // bin_eta_tf = {-1 * ELECTRON_ETA, -1.479, 0, 1.479, ELECTRON_ETA};
+    bin_eta_tf = {-1 * ELECTRON_ETA, -1.479, 1.479, ELECTRON_ETA};
+    // bin_eta_tf = {-1 * ELECTRON_ETA, ELECTRON_ETA};
+
+    // if (era == "2016preVFP")
+    //   bin_pt_tf = {30.0, 35.0, 40.0, 45.0, 50.0, 1000};
+    // else if (era == "2016postVFP")
+    //   bin_pt_tf = {30.0, 35.0, 40.0, 45.0, 50.0, 1000};
+    // else if (era == "2017")
+    //   bin_pt_tf = {35.0, 40.0, 45.0, 50.0, 1000};
+    // else if (era == "2018")
+    //   bin_pt_tf = {35.0, 40.0, 45.0, 50.0, 100};
+
+    if (era == "2016preVFP")
+      bin_pt_tf = {30, 35, 40, 50.0, 200, 2000};
+    else if (era == "2016postVFP")
+      bin_pt_tf = {30, 35, 40, 50.0, 200, 2000};
+    else if (era == "2017")
+      bin_pt_tf = {35, 40, 50.0, 200, 2000};
+    else if (era == "2018")
+      bin_pt_tf = {35, 40, 50.0, 200, 2000};
+  }
+
+  if (mode != "Cal_TF" && !chk_bin_optimizer)
   {
     bin_template_mva_score.resize(n_region);
 
@@ -713,14 +844,18 @@ void Histo_Syst::Config_Variable()
     {
       if (channel == "Mu")
       {
-        bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.26, 0.3, 0.36, 0.44, 0.57, 1};
-        bin_template_mva_score[1] = {0, 0.04, 0.09, 0.16, 0.23, 0.31, 0.41, 0.54, 0.72, 0.95};
+        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.26, 0.3, 0.36, 0.44, 0.57, 1};
+        bin_template_mva_score[0] = {0.1, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.26, 0.3, 0.36, 0.44, 0.57, 1};
+        // bin_template_mva_score[1] = {0, 0.04, 0.09, 0.16, 0.23, 0.31, 0.41, 0.54, 0.72, 0.95};
+        bin_template_mva_score[1] = {0.1, 0.16, 0.23, 0.31, 0.41, 0.54, 0.72, 0.95};
         bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
       }
       else if (channel == "El")
       {
-        bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.09, 0.11, 0.14, 0.17, 0.21, 0.26, 0.34, 0.48, 1};
-        bin_template_mva_score[1] = {0, 0.1, 0.22, 0.37, 0.59, 0.95};
+        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.09, 0.11, 0.14, 0.17, 0.21, 0.26, 0.34, 0.48, 1};
+        bin_template_mva_score[0] = {0.1, 0.14, 0.17, 0.21, 0.26, 0.34, 0.48, 1};
+        // bin_template_mva_score[1] = {0, 0.1, 0.22, 0.37, 0.59, 0.95};
+        bin_template_mva_score[1] = {0.1, 0.22, 0.37, 0.59, 0.95};
         bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
       }
     }
@@ -728,14 +863,18 @@ void Histo_Syst::Config_Variable()
     {
       if (channel == "Mu")
       {
-        bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.13, 0.15, 0.17, 0.2, 0.23, 0.27, 0.32, 0.4, 0.54, 1};
-        bin_template_mva_score[1] = {0, 0.04, 0.1, 0.18, 0.26, 0.36, 0.49, 0.67, 0.95};
+        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.13, 0.15, 0.17, 0.2, 0.23, 0.27, 0.32, 0.4, 0.54, 1};
+        bin_template_mva_score[0] = {0.1, 0.11, 0.13, 0.15, 0.17, 0.2, 0.23, 0.27, 0.32, 0.4, 0.54, 1};
+        // bin_template_mva_score[1] = {0, 0.04, 0.1, 0.18, 0.26, 0.36, 0.49, 0.67, 0.95};
+        bin_template_mva_score[1] = {0.1, 0.18, 0.26, 0.36, 0.49, 0.67, 0.95};
         bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
       }
       else if (channel == "El")
       {
-        bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.09, 0.11, 0.14, 0.18, 0.23, 0.3, 0.44, 1};
-        bin_template_mva_score[1] = {0.0, 0.05, 0.17, 0.32, 0.54, 0.95};
+        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.09, 0.11, 0.14, 0.18, 0.23, 0.3, 0.44, 1};
+        bin_template_mva_score[0] = {0.10, 0.14, 0.18, 0.23, 0.3, 0.44, 1};
+        // bin_template_mva_score[1] = {0.0, 0.05, 0.17, 0.32, 0.54, 0.95};
+        bin_template_mva_score[1] = {0.1, 0.17, 0.32, 0.54, 0.95};
         bin_template_mva_score[2] = {0.95, 0.97, 1};
       }
     }
@@ -743,14 +882,18 @@ void Histo_Syst::Config_Variable()
     {
       if (channel == "Mu")
       {
-        bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.21, 0.23, 0.25, 0.27, 0.29, 0.32, 0.35, 0.39, 0.44, 0.5, 0.58, 0.7, 1};
-        bin_template_mva_score[1] = {0.0, 0.01, 0.02, 0.04, 0.07, 0.11, 0.15, 0.19, 0.23, 0.28, 0.33, 0.39, 0.46, 0.54, 0.63, 0.73, 0.84, 0.95};
+        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.21, 0.23, 0.25, 0.27, 0.29, 0.32, 0.35, 0.39, 0.44, 0.5, 0.58, 0.7, 1};
+        bin_template_mva_score[0] = {0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.21, 0.23, 0.25, 0.27, 0.29, 0.32, 0.35, 0.39, 0.44, 0.5, 0.58, 0.7, 1};
+        // bin_template_mva_score[1] = {0.0, 0.01, 0.02, 0.04, 0.07, 0.11, 0.15, 0.19, 0.23, 0.28, 0.33, 0.39, 0.46, 0.54, 0.63, 0.73, 0.84, 0.95};
+        bin_template_mva_score[1] = {0.10, 0.15, 0.19, 0.23, 0.28, 0.33, 0.39, 0.46, 0.54, 0.63, 0.73, 0.84, 0.95};
         bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 0.99, 1};
       }
       else if (channel == "El")
       {
-        bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.25, 0.29, 0.34, 0.4, 0.48, 0.62, 1};
-        bin_template_mva_score[1] = {0, 0.03, 0.08, 0.14, 0.21, 0.28, 0.37, 0.47, 0.61, 0.77, 0.95};
+        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.25, 0.29, 0.34, 0.4, 0.48, 0.62, 1};
+        bin_template_mva_score[0] = {0.1, 0.11, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.25, 0.29, 0.34, 0.4, 0.48, 0.62, 1};
+        // bin_template_mva_score[1] = {0, 0.03, 0.08, 0.14, 0.21, 0.28, 0.37, 0.47, 0.61, 0.77, 0.95};
+        bin_template_mva_score[1] = {0.1, 0.14, 0.21, 0.28, 0.37, 0.47, 0.61, 0.77, 0.95};
         bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
       }
     }
@@ -758,14 +901,18 @@ void Histo_Syst::Config_Variable()
     {
       if (channel == "Mu")
       {
-        bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.37, 0.4, 0.43, 0.47, 0.52, 0.58, 0.65, 0.75, 1};
-        bin_template_mva_score[1] = {0.0, 0.01, 0.02, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.25, 0.28, 0.31, 0.34, 0.38, 0.42, 0.46, 0.51, 0.56, 0.61, 0.67, 0.74, 0.81, 0.88, 0.95};
+        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.37, 0.4, 0.43, 0.47, 0.52, 0.58, 0.65, 0.75, 1};
+        bin_template_mva_score[0] = {0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.37, 0.4, 0.43, 0.47, 0.52, 0.58, 0.65, 0.75, 1};
+        // bin_template_mva_score[1] = {0.0, 0.01, 0.02, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.25, 0.28, 0.31, 0.34, 0.38, 0.42, 0.46, 0.51, 0.56, 0.61, 0.67, 0.74, 0.81, 0.88, 0.95};
+        bin_template_mva_score[1] = {0.10, 0.13, 0.15, 0.17, 0.19, 0.22, 0.25, 0.28, 0.31, 0.34, 0.38, 0.42, 0.46, 0.51, 0.56, 0.61, 0.67, 0.74, 0.81, 0.88, 0.95};
         bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 0.99, 1};
       }
       else if (channel == "El")
       {
-        bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.29, 0.32, 0.36, 0.41, 0.47, 0.55, 0.67, 1};
-        bin_template_mva_score[1] = {0.0, 0.01, 0.02, 0.03, 0.06, 0.09, 0.13, 0.17, 0.21, 0.25, 0.3, 0.36, 0.43, 0.51, 0.6, 0.7, 0.82, 0.95};
+        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.29, 0.32, 0.36, 0.41, 0.47, 0.55, 0.67, 1};
+        bin_template_mva_score[0] = {0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.29, 0.32, 0.36, 0.41, 0.47, 0.55, 0.67, 1};
+        // bin_template_mva_score[1] = {0.0, 0.01, 0.02, 0.03, 0.06, 0.09, 0.13, 0.17, 0.21, 0.25, 0.3, 0.36, 0.43, 0.51, 0.6, 0.7, 0.82, 0.95};
+        bin_template_mva_score[1] = {0.10, 0.17, 0.21, 0.25, 0.3, 0.36, 0.43, 0.51, 0.6, 0.7, 0.82, 0.95};
         bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 0.99, 1};
       }
     }
@@ -900,9 +1047,6 @@ void Histo_Syst::Data_Driven()
 {
   cout << "[Histo_Syst::Data_Driven]: Init" << endl;
 
-  auto it = std::find(syst_name.begin(), syst_name.end(), "Nominal");
-  int nominal_index = std::distance(syst_name.begin(), it);
-
   // subtraction
   for (int i = 0; i < n_region; i++)
   {
@@ -916,18 +1060,17 @@ void Histo_Syst::Data_Driven()
         // subtract mc
         for (int l = 0; l < n_sample_merge_mc; l++)
         {
-          if (vec_short_name_mc[l].Contains("QCD_bEn"))
+          if (vec_short_name_mc[l] == "QCD_bEn" || vec_short_name_mc[l] == "QCD")
             continue;
 
-          // // mc variations are propagated to QCD data driven
-          // histo_subtracted_data_driven[i][j][k]->Add(histo_mc_dd[0][i][j][l][k], -1);
-
-          // mc variations are not propagated to QCD data driven
-          histo_subtracted_data_driven[i][j][k]->Add(histo_mc_dd[0][i][nominal_index][l][k], -1);
+          histo_subtracted_data_driven[i][j][k]->Add(histo_mc_dd[0][i][j][l][k], -1);
         } // loop over n_sample
       } // loop over n_variable
     } // loop over n_syst
   } // loop over n_region
+
+  auto it = std::find(syst_name.begin(), syst_name.end(), "Nominal");
+  int nominal_index = std::distance(syst_name.begin(), it);
 
   // apply TF
   for (int i = 0; i < n_region; i++)
@@ -950,38 +1093,140 @@ void Histo_Syst::Data_Driven()
         {
           // cout << "l = " << l << endl;
 
-          for (int m = 0; m < bin_tf.size() - 1; m++)
+          for (int m = 0; m < bin_eta_tf.size() - 1; m++)
           {
-            // cout << "m = " << m << endl;
-
-            float content = histo_subtracted_data_driven[i][j][k]->GetBinContent(l + 1, m + 1);
-            float error = histo_subtracted_data_driven[i][j][k]->GetBinError(l + 1, m + 1);
-
-            // float tf = histo_tf[i]->GetBinContent(m + 1);
-            // float tf_error = histo_tf[i]->GetBinError(m + 1);
-            float tf = histo_tf_combine->GetBinContent(m + 1);
-            float tf_error = histo_tf_combine->GetBinError(m + 1);
-
-            float tf_up = tf + tf_error;
-            float tf_down = tf - tf_error;
-
-            if (content < 0)
-              content = 0;
-
-            histo_tf_corrected[i][j][k]->SetBinContent(l + 1, m + 1, content * tf);
-            histo_tf_corrected[i][j][k]->SetBinError(l + 1, m + 1, error * tf);
-
-            // cout << l << " " << m << " " << content << " " << tf << endl;
-
-            if (j == 0)
+            for (int n = 0; n < bin_pt_tf.size() - 1; n++)
             {
-              histo_tf_corrected_up[i][k]->SetBinContent(l + 1, m + 1, content * tf_up);
-              histo_tf_corrected_up[i][k]->SetBinError(l + 1, m + 1, error * tf_up);
+              // cout << "m = " << m << ", n = " << n << endl;
 
-              histo_tf_corrected_down[i][k]->SetBinContent(l + 1, m + 1, content * tf_down);
-              histo_tf_corrected_down[i][k]->SetBinError(l + 1, m + 1, error * tf_down);
-            } // nominal
-          } // loop over tf_n_bin
+              // mc variations are not propagated to QCD data driven
+              float content = histo_subtracted_data_driven[i][nominal_index][k]->GetBinContent(l + 1, m + 1, n + 1);
+              float error = histo_subtracted_data_driven[i][nominal_index][k]->GetBinError(l + 1, m + 1, n + 1);
+
+              float tf = histo_tf_combine->GetBinContent(m + 1, n + 1);
+              float tf_error = histo_tf_combine->GetBinError(m + 1, n + 1);
+
+              if (tf < 0 || 0.2 < tf_error)
+                continue;
+
+              // if (content < 0)
+              //   content = 0;
+
+              histo_tf_corrected[i][j][k]->SetBinContent(l + 1, m + 1, n + 1, content * tf);
+              histo_tf_corrected[i][j][k]->SetBinError(l + 1, m + 1, n + 1, error * tf);
+
+            } // loop over bin_eta_tf
+          } // loop over bin_pt_tf
+        } // loop over n_bin
+      } // loop over n_variable
+    } // loop over n_syst
+  } // loop over n_region
+
+  // TF up/down
+  for (int i = 0; i < n_region; i++)
+  {
+    cout << region_name[i] << endl;
+
+    for (int j = 0; j < n_variable; j++)
+    {
+      cout << variable_conf[j].variable_title << endl;
+
+      int n_bin;
+      if (variable_conf[j].chk_equal_interval == false)
+        n_bin = bin_template_mva_score[i].size() - 1;
+      else
+        n_bin = variable_conf[j].n_bin;
+
+      for (int k = 0; k < bin_eta_tf.size() - 1; k++)
+      {
+        for (int l = 0; l < bin_pt_tf.size() - 1; l++)
+        {
+          histo_tf_corrected_up[i][j][k][l] = (TH3D *)histo_tf_corrected[i][nominal_index][j]->Clone();
+          histo_tf_corrected_down[i][j][k][l] = (TH3D *)histo_tf_corrected[i][nominal_index][j]->Clone();
+        } // loop over bin_pt_tf
+      } // loop over tf_eta_bin
+
+      for (int k = 0; k < n_bin; k++)
+      {
+        cout << "k = " << k << endl;
+
+        for (int l = 0; l < bin_eta_tf.size() - 1; l++)
+        {
+          for (int m = 0; m < bin_pt_tf.size() - 1; m++)
+          {
+            cout << "l = " << l << ", m = " << m << endl;
+
+            float content = histo_subtracted_data_driven[i][nominal_index][j]->GetBinContent(k + 1, l + 1, m + 1);
+            float error = histo_subtracted_data_driven[i][nominal_index][j]->GetBinError(k + 1, l + 1, m + 1);
+
+            float tf = histo_tf_combine->GetBinContent(l + 1, m + 1);
+            float tf_error = histo_tf_combine->GetBinError(l + 1, m + 1);
+
+            // tf bin by bin up/down
+            float tf_up = tf + tf_error;
+            histo_tf_corrected_up[i][j][l][m]->SetBinContent(k + 1, l + 1, m + 1, content * tf_up);
+            histo_tf_corrected_up[i][j][l][m]->SetBinError(k + 1, l + 1, m + 1, error * tf_up);
+
+            float tf_down = tf - tf_error;
+            histo_tf_corrected_down[i][j][l][m]->SetBinContent(k + 1, l + 1, m + 1, content * tf_down);
+            histo_tf_corrected_down[i][j][l][m]->SetBinError(k + 1, l + 1, m + 1, error * tf_down);
+          } // loop over bin_pt_tf
+        } // loop over tf_eta_bin
+      } // loop over n_bin
+    } // loop over n_variable
+  } // loop over n_region
+
+  /* Envelop */
+  for (int i = 0; i < n_region; i++)
+  {
+    // cout << region_name[i] << endl;
+    for (int j = 0; j < n_syst; j++)
+    {
+      // cout << syst_name[j] << endl;
+
+      // It's confusing to include "PDF_Error_Set" in the envelope
+      // Howeever, pratically, it is not a problem since PDF_Error_Set is way too small
+      if (syst_name[j].Contains("PDF_Error_Set"))
+        continue;
+
+      for (int k = 0; k < n_variable; k++)
+      {
+        int n_bin;
+        if (variable_conf[k].chk_equal_interval == false)
+          n_bin = bin_template_mva_score[i].size() - 1;
+        else
+          n_bin = variable_conf[k].n_bin;
+
+        for (int l = 0; l < n_bin; l++)
+        {
+          if (j == nominal_index)
+          {
+            float error = histo_tf_corrected[i][nominal_index][k]->ProjectionX()->GetBinError(l + 1);
+
+            histo_envelop_up[i][k]->SetBinError(l + 1, error);
+            histo_envelop_down[i][k]->SetBinError(l + 1, error);
+          }
+
+          float content = histo_tf_corrected[i][j][k]->ProjectionX()->GetBinContent(l + 1);
+          float content_up = histo_envelop_up[i][k]->GetBinContent(l + 1);
+          float content_down = histo_envelop_down[i][k]->GetBinContent(l + 1);
+
+          // if (i == 0 && variable_conf[k].variable_title == "Template_MVA_Score" && l == 0)
+          //   cout << syst_name[j] << " " << content << " " << content_up << " " << content_down << endl;
+
+          if (content_up < content)
+          {
+            // if (i == 0 && variable_conf[k].variable_title == "Template_MVA_Score" && l == 0)
+            //   cout << "Updating Up..." << syst_name[j] << " " << content << " " << content_up << endl;
+            histo_envelop_up[i][k]->SetBinContent(l + 1, content);
+          }
+
+          if (content < content_down)
+          {
+            // if (i == 0 && variable_conf[k].variable_title == "Template_MVA_Score" && l == 0)
+            //   cout << "Updating Down..." << syst_name[j] << " " << content << " " << content_down << endl;
+            histo_envelop_down[i][k]->SetBinContent(l + 1, content);
+          }
         } // loop over n_bin
       } // loop over n_variable
     } // loop over n_syst
@@ -998,11 +1243,16 @@ void Histo_Syst::Draw_TF()
 {
   cout << "[Histo_Syst::Draw_TF]: Init" << endl;
 
+  gROOT->SetBatch(kTRUE);
+  gStyle->SetPaintTextFormat(".2f");
+  gStyle->SetOptStat(0);
+
   TCanvas **canvas = new TCanvas *[n_region];
   TLegend **tl = new TLegend *[n_region];
   for (int i = 0; i < n_region; i++)
   {
     canvas[i] = new TCanvas("", "", 800, 500);
+    canvas[i]->Divide(2, 1);
     canvas[i]->Draw();
 
     double max = histo_tf[i]->GetMaximum();
@@ -1013,20 +1263,35 @@ void Histo_Syst::Draw_TF()
     min = min < histo_tf_qcd_mc[i]->GetMinimum() ? min : histo_tf_qcd_mc[i]->GetMinimum();
     min *= 0.9;
 
+    canvas[i]->cd(1);
+    canvas[i]->cd(1)->SetLogy();
+    histo_tf[i]->SetTitle("TF Data Driven");
     histo_tf[i]->GetXaxis()->SetTitle("Lepton #eta");
-    histo_tf[i]->GetYaxis()->SetRangeUser(min, max);
-    histo_tf[i]->SetLineColor(4);
-    histo_tf[i]->SetMarkerColor(4);
-    histo_tf[i]->Draw();
+    histo_tf[i]->GetYaxis()->SetTitle("Lepton P_{T}");
+    histo_tf[i]->Draw("colz texte");
 
-    histo_tf_qcd_mc[i]->SetLineColor(2);
-    histo_tf_qcd_mc[i]->SetMarkerColor(2);
-    histo_tf_qcd_mc[i]->Draw("SAME");
+    canvas[i]->cd(2);
+    canvas[i]->cd(2)->SetLogy();
+    TString qcd_mc_name;
+    if (chk_qcd_ben)
+      qcd_mc_name = "TF QCD bEn MC Sample";
+    else
+      qcd_mc_name = "TF QCD MC Sample";
+    histo_tf_qcd_mc[i]->SetTitle(qcd_mc_name);
+    histo_tf_qcd_mc[i]->GetXaxis()->SetTitle("Lepton #eta");
+    histo_tf_qcd_mc[i]->GetYaxis()->SetTitle("Lepton P_{T}");
+    histo_tf_qcd_mc[i]->Draw("colz texte");
 
-    tl[i] = new TLegend(0.7, 0.7, 0.9, 0.9);
-    tl[i]->AddEntry(histo_tf[i], "TF", "lep");
-    tl[i]->AddEntry(histo_tf_qcd_mc[i], "TF QCD bEn MC Sample", "lep");
-    tl[i]->Draw("SAME");
+    // tl[i] = new TLegend(0.7, 0.7, 0.9, 0.9);
+    // tl[i]->AddEntry(histo_tf[i], "TF", "lep");
+
+    // TString qcd_mc_name;
+    // if (chk_qcd_ben)
+    //   qcd_mc_name = "TF QCD bEn MC Sample";
+    // else
+    //   qcd_mc_name = "TF QCD MC Sample";
+    // tl[i]->AddEntry(histo_tf_qcd_mc[i], qcd_mc_name, "lep");
+    // tl[i]->Draw("SAME");
 
     TString canvas_name = "Transfer_Function_" + region_name[i] + "_" + era + "_" + channel + ".png";
     canvas[i]->Print(canvas_name, "png");
@@ -1051,56 +1316,56 @@ void Histo_Syst::Fill_Histo_Data()
   // this part is not satisfactory, but don't waste time
   if (mode == "Cal_TF")
   {
-    dynamic_cast<TH1D *>(histo_data[abcd_region_index][region_index][0])->Fill(event.lepton_eta, 1.);
+    dynamic_cast<TH2D *>(histo_data[abcd_region_index][region_index][0])->Fill(event.lepton_eta, event.lepton_pt, 1.);
   }
   else
   {
     if (debug)
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][0])->Fill(event.n_pv, event.lepton_eta, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][0])->Fill(event.n_pv, event.lepton_eta, event.lepton_pt, 1.);
     else
     {
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][0])->Fill(event.n_pv, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][1])->Fill(event.lepton_pt, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][2])->Fill(event.lepton_eta, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][3])->Fill(event.n_jets, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][4])->Fill(event.n_bjets, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][5])->Fill(event.n_cjets, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][6])->Fill(event.pt_leading_jet, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][7])->Fill(event.pt_subleading_jet, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][8])->Fill(event.eta_leading_jet, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][9])->Fill(event.eta_subleading_jet, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][10])->Fill(event.bvsc_leading_jet, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][11])->Fill(event.cvsb_leading_jet, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][12])->Fill(event.cvsl_leading_jet, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][13])->Fill(event.bvsc_subleading_jet, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][14])->Fill(event.cvsb_subleading_jet, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][15])->Fill(event.cvsl_subleading_jet, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][16])->Fill(event.met_pt, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][17])->Fill(event.met_phi, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][18])->Fill(event.best_mva_score_pre, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][19])->Fill(event.best_mva_score, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][20])->Fill(event.m_had_t, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][21])->Fill(event.m_had_w, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][22])->Fill(event.m_lep_t, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][23])->Fill(event.m_lep_w, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][24])->Fill(event.bvsc_w_u, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][25])->Fill(event.cvsb_w_u, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][26])->Fill(event.cvsl_w_u, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][27])->Fill(event.bvsc_w_d, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][28])->Fill(event.cvsb_w_d, event.lepton_eta, 1.);
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][29])->Fill(event.cvsl_w_d, event.lepton_eta, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][0])->Fill(event.n_pv, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][1])->Fill(event.lepton_pt, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][2])->Fill(event.lepton_eta, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][3])->Fill(event.n_jets, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][4])->Fill(event.n_bjets, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][5])->Fill(event.n_cjets, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][6])->Fill(event.pt_leading_jet, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][7])->Fill(event.pt_subleading_jet, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][8])->Fill(event.eta_leading_jet, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][9])->Fill(event.eta_subleading_jet, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][10])->Fill(event.bvsc_leading_jet, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][11])->Fill(event.cvsb_leading_jet, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][12])->Fill(event.cvsl_leading_jet, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][13])->Fill(event.bvsc_subleading_jet, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][14])->Fill(event.cvsb_subleading_jet, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][15])->Fill(event.cvsl_subleading_jet, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][16])->Fill(event.met_pt, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][17])->Fill(event.met_phi, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][18])->Fill(event.best_mva_score_pre, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][19])->Fill(event.best_mva_score, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][20])->Fill(event.m_had_t, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][21])->Fill(event.m_had_w, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][22])->Fill(event.m_lep_t, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][23])->Fill(event.m_lep_w, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][24])->Fill(event.bvsc_w_u, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][25])->Fill(event.cvsb_w_u, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][26])->Fill(event.cvsl_w_u, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][27])->Fill(event.bvsc_w_d, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][28])->Fill(event.cvsb_w_d, event.lepton_eta, event.lepton_pt, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][29])->Fill(event.cvsl_w_d, event.lepton_eta, event.lepton_pt, 1.);
 
       // for blind
       if (abcd_region_name[abcd_region_index] == "D")
       {
         if (region_name[region_index] != "Signal")
-          dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][30])->Fill(event.template_score, event.lepton_eta, 1);
+          dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][30])->Fill(event.template_score, event.lepton_eta, event.lepton_pt, 1);
       }
       else
-        dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][30])->Fill(event.template_score, event.lepton_eta, 1);
+        dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][30])->Fill(event.template_score, event.lepton_eta, event.lepton_pt, 1);
 
       // for C-tag SF debug
-      dynamic_cast<TH2D *>(histo_data[abcd_region_index - 2][region_index][31])->Fill(0.5, event.lepton_eta, 1.);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][31])->Fill(0.5, event.lepton_eta, event.lepton_pt, 1.);
 
     } // else
   } // else
@@ -1585,54 +1850,55 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &sample
       }
 
       // c-tag renormalization factor
+      // c_tagging_rf_type = "C_Tag_Nominal";
       event.weight *= tagging_rf.Get_Tagging_RF_C_Tag(abcd_region_name[abcd_region_index], histo_name_rf, c_tagging_rf_type, event.vec_jet_pt, event.vec_jet_eta, event.vec_jet_flavor);
     } // else if (tagger == "C")
 
     // this part is not satisfactory, but don't waste time
     if (mode == "Cal_TF")
     {
-      dynamic_cast<TH1D *>(histo_mc[abcd_region_index][region_index][i][histo_index][0])->Fill(event.lepton_eta, event.weight);
+      dynamic_cast<TH2D *>(histo_mc[abcd_region_index][region_index][i][histo_index][0])->Fill(event.lepton_eta, event.lepton_pt, event.weight);
     }
     else
     {
       if (debug)
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][0])->Fill(event.n_pv, event.lepton_eta, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][0])->Fill(event.n_pv, event.lepton_eta, event.lepton_pt, event.weight);
       else
       {
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][0])->Fill(event.n_pv, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][1])->Fill(event.lepton_pt, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][2])->Fill(event.lepton_eta, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][3])->Fill(event.n_jets, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][4])->Fill(event.n_bjets, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][5])->Fill(event.n_cjets, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][6])->Fill(event.pt_leading_jet, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][7])->Fill(event.pt_subleading_jet, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][8])->Fill(event.eta_leading_jet, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][9])->Fill(event.eta_subleading_jet, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][10])->Fill(event.bvsc_leading_jet, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][11])->Fill(event.cvsb_leading_jet, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][12])->Fill(event.cvsl_leading_jet, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][13])->Fill(event.bvsc_subleading_jet, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][14])->Fill(event.cvsb_subleading_jet, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][15])->Fill(event.cvsl_subleading_jet, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][16])->Fill(event.met_pt, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][17])->Fill(event.met_phi, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][18])->Fill(event.best_mva_score_pre, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][19])->Fill(event.best_mva_score, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][20])->Fill(event.m_had_t, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][21])->Fill(event.m_had_w, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][22])->Fill(event.m_lep_t, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][23])->Fill(event.m_lep_w, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][24])->Fill(event.bvsc_w_u, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][25])->Fill(event.cvsb_w_u, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][26])->Fill(event.cvsl_w_u, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][27])->Fill(event.bvsc_w_d, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][28])->Fill(event.cvsb_w_d, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][29])->Fill(event.cvsl_w_d, event.lepton_eta, event.weight);
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][30])->Fill(event.template_score, event.lepton_eta, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][0])->Fill(event.n_pv, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][1])->Fill(event.lepton_pt, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][2])->Fill(event.lepton_eta, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][3])->Fill(event.n_jets, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][4])->Fill(event.n_bjets, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][5])->Fill(event.n_cjets, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][6])->Fill(event.pt_leading_jet, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][7])->Fill(event.pt_subleading_jet, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][8])->Fill(event.eta_leading_jet, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][9])->Fill(event.eta_subleading_jet, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][10])->Fill(event.bvsc_leading_jet, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][11])->Fill(event.cvsb_leading_jet, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][12])->Fill(event.cvsl_leading_jet, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][13])->Fill(event.bvsc_subleading_jet, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][14])->Fill(event.cvsb_subleading_jet, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][15])->Fill(event.cvsl_subleading_jet, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][16])->Fill(event.met_pt, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][17])->Fill(event.met_phi, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][18])->Fill(event.best_mva_score_pre, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][19])->Fill(event.best_mva_score, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][20])->Fill(event.m_had_t, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][21])->Fill(event.m_had_w, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][22])->Fill(event.m_lep_t, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][23])->Fill(event.m_lep_w, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][24])->Fill(event.bvsc_w_u, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][25])->Fill(event.cvsb_w_u, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][26])->Fill(event.cvsl_w_u, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][27])->Fill(event.bvsc_w_d, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][28])->Fill(event.cvsb_w_d, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][29])->Fill(event.cvsl_w_d, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][30])->Fill(event.template_score, event.lepton_eta, event.lepton_pt, event.weight);
 
         // for C-tag SF debug
-        dynamic_cast<TH2D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][31])->Fill(0.5, event.lepton_eta, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][31])->Fill(0.5, event.lepton_eta, event.lepton_pt, event.weight);
       } // else
     } // else
   } // loop over n_syst
@@ -1818,9 +2084,9 @@ void Histo_Syst::Init_Histo()
             TString histo_name = abcd_region_name[i + 2] + "_" + region_name[j] + "_" + syst_name[k] + "_" + vec_short_name_mc[l] + "_" + variable_conf[m].variable_title;
 
             if (variable_conf[m].chk_equal_interval == false)
-              histo_mc[i][j][k][l][m] = new TH2D(histo_name, variable_conf[m].variable_title, bin_template_mva_score[j].size() - 1, bin_template_mva_score[j].data(), bin_tf.size() - 1, bin_tf.data());
+              histo_mc[i][j][k][l][m] = new TH3D(histo_name, variable_conf[m].variable_title, bin_template_mva_score[j].size() - 1, bin_template_mva_score[j].data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
             else
-              histo_mc[i][j][k][l][m] = new TH2D(histo_name, variable_conf[m].variable_title, variable_conf[m].vec_bin.size() - 1, variable_conf[m].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
+              histo_mc[i][j][k][l][m] = new TH3D(histo_name, variable_conf[m].variable_title, variable_conf[m].vec_bin.size() - 1, variable_conf[m].vec_bin.data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
           } // loop over n_variable
         } // loop over n_sample_merge_mc
       } // loop over n_syst
@@ -1839,23 +2105,13 @@ void Histo_Syst::Init_Histo()
       {
         TString histo_name = abcd_region_name[i + 2] + "_" + region_name[j] + "_" + variable_conf[k].variable_title;
 
-        cout << "test " << bin_tf.size() << endl;
         if (variable_conf[k].chk_equal_interval == false)
-          histo_data[i][j][k] = new TH2D(histo_name, variable_conf[k].variable_title, bin_template_mva_score[j].size() - 1, bin_template_mva_score[j].data(), bin_tf.size() - 1, bin_tf.data());
+          histo_data[i][j][k] = new TH3D(histo_name, variable_conf[k].variable_title, bin_template_mva_score[j].size() - 1, bin_template_mva_score[j].data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
         else
-          histo_data[i][j][k] = new TH2D(histo_name, variable_conf[k].variable_title, variable_conf[k].vec_bin.size() - 1, variable_conf[k].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
+          histo_data[i][j][k] = new TH3D(histo_name, variable_conf[k].variable_title, variable_conf[k].vec_bin.size() - 1, variable_conf[k].vec_bin.data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
       } // loop over n_variable
     } // loop over n_region
   } // loop over n_abcd_region
-
-  // // output file
-  // TString fout_name = "Vcb_2D_" + era + "_" + channel + "_";
-  // if (run_flag == "Central")
-  //   fout_name += run_flag + to_string(index_split) + to_string(n_split);
-  // else
-  //   fout_name += run_flag;
-  // fout_name += ".root";
-  // fout = new TFile(fout_name, "RECREATE");
 
   return;
 } // void Histo_Syst::Init_Histo()
@@ -1870,23 +2126,25 @@ void Histo_Syst::Init_Histo_Data_Driven()
   fin_2d = new TFile(fin_2d_name);
 
   // for mc
-  histo_mc_dd = new TH2D *****[n_abcd_region - 2];
+  cout << "[Histo_Syst::Init_Histo_Data_Driven]: MC" << endl;
+
+  histo_mc_dd = new TH3D *****[n_abcd_region - 2];
   for (int i = 0; i < n_abcd_region - 2; i++)
   {
-    histo_mc_dd[i] = new TH2D ****[n_region];
+    histo_mc_dd[i] = new TH3D ****[n_region];
     for (int j = 0; j < n_region; j++)
     {
-      histo_mc_dd[i][j] = new TH2D ***[n_syst];
+      histo_mc_dd[i][j] = new TH3D ***[n_syst];
       for (int k = 0; k < n_syst; k++)
       {
-        histo_mc_dd[i][j][k] = new TH2D **[n_sample_merge_mc];
+        histo_mc_dd[i][j][k] = new TH3D **[n_sample_merge_mc];
         for (int l = 0; l < n_sample_merge_mc; l++)
         {
-          histo_mc_dd[i][j][k][l] = new TH2D *[n_variable];
+          histo_mc_dd[i][j][k][l] = new TH3D *[n_variable];
           for (int m = 0; m < n_variable; m++)
           {
             TString histo_name = abcd_region_name[i + 2] + "/" + region_name[j] + "/" + syst_name[k] + "/" + vec_short_name_mc[l] + "/" + variable_conf[m].variable_title;
-            histo_mc_dd[i][j][k][l][m] = (TH2D *)fin_2d->Get(histo_name);
+            histo_mc_dd[i][j][k][l][m] = (TH3D *)fin_2d->Get(histo_name);
 
             // cout << histo_name << " " << histo_mc_dd[i][j][k][l][m] << endl;
 
@@ -1897,34 +2155,38 @@ void Histo_Syst::Init_Histo_Data_Driven()
   } // loop over n_abcd_region -2
 
   // for data
-  histo_data_dd = new TH2D ***[n_abcd_region - 2];
+  cout << "[Histo_Syst::Init_Histo_Data_Driven]: Data" << endl;
+
+  histo_data_dd = new TH3D ***[n_abcd_region - 2];
   for (int i = 0; i < n_abcd_region - 2; i++)
   {
-    histo_data_dd[i] = new TH2D **[n_region];
+    histo_data_dd[i] = new TH3D **[n_region];
     for (int j = 0; j < n_region; j++)
     {
-      histo_data_dd[i][j] = new TH2D *[n_variable];
+      histo_data_dd[i][j] = new TH3D *[n_variable];
       for (int k = 0; k < n_variable; k++)
       {
         TString histo_name = abcd_region_name[i + 2] + "/" + region_name[j] + "/Data/" + variable_conf[k].variable_title;
-        histo_data_dd[i][j][k] = (TH2D *)fin_2d->Get(histo_name);
+        histo_data_dd[i][j][k] = (TH3D *)fin_2d->Get(histo_name);
 
         // cout << histo_name << " " << histo_data_dd[i][j][k] << endl;
       } // loop over n_variable
     } // loop over n_region
-  } // loop over n_abcd_region -2
+  } // loop over n_abcd_region
 
   // for histo_subtracted_data_driven
-  histo_subtracted_data_driven = new TH2D ***[n_region];
-  histo_tf_corrected = new TH2D ***[n_region];
+  cout << "[Histo_Syst::Init_Histo_Data_Driven]: Subtracted" << endl;
+
+  histo_subtracted_data_driven = new TH3D ***[n_region];
+  histo_tf_corrected = new TH3D ***[n_region];
   for (int i = 0; i < n_region; i++)
   {
-    histo_subtracted_data_driven[i] = new TH2D **[n_syst];
-    histo_tf_corrected[i] = new TH2D **[n_syst];
+    histo_subtracted_data_driven[i] = new TH3D **[n_syst];
+    histo_tf_corrected[i] = new TH3D **[n_syst];
     for (int j = 0; j < n_syst; j++)
     {
-      histo_subtracted_data_driven[i][j] = new TH2D *[n_variable];
-      histo_tf_corrected[i][j] = new TH2D *[n_variable];
+      histo_subtracted_data_driven[i][j] = new TH3D *[n_variable];
+      histo_tf_corrected[i][j] = new TH3D *[n_variable];
       for (int k = 0; k < n_variable; k++)
       {
         TString histo_name_subtracted = "Subtracted_Data_Driven_" + region_name[i] + "_" + syst_name[j] + "_" + variable_conf[k].variable_title;
@@ -1933,60 +2195,115 @@ void Histo_Syst::Init_Histo_Data_Driven()
         // only for template_mva_score
         if (variable_conf[k].chk_equal_interval == false)
         {
-          histo_subtracted_data_driven[i][j][k] = new TH2D(histo_name_subtracted, histo_name_subtracted, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_tf.size() - 1, bin_tf.data());
-          histo_tf_corrected[i][j][k] = new TH2D(histo_name_tf_corr, histo_name_tf_corr, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_tf.size() - 1, bin_tf.data());
+          histo_subtracted_data_driven[i][j][k] = new TH3D(histo_name_subtracted, histo_name_subtracted, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
+          histo_tf_corrected[i][j][k] = new TH3D(histo_name_tf_corr, histo_name_tf_corr, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
         }
         // others
         else
         {
-          histo_subtracted_data_driven[i][j][k] = new TH2D(histo_name_subtracted, histo_name_subtracted, variable_conf[k].vec_bin.size() - 1, variable_conf[k].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
-          histo_tf_corrected[i][j][k] = new TH2D(histo_name_tf_corr, histo_name_tf_corr, variable_conf[k].vec_bin.size() - 1, variable_conf[k].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
+          histo_subtracted_data_driven[i][j][k] = new TH3D(histo_name_subtracted, histo_name_subtracted, variable_conf[k].vec_bin.size() - 1, variable_conf[k].vec_bin.data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
+          histo_tf_corrected[i][j][k] = new TH3D(histo_name_tf_corr, histo_name_tf_corr, variable_conf[k].vec_bin.size() - 1, variable_conf[k].vec_bin.data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
         }
       } // loop over n_variable
     } // loop over n_syst
   } // loop over n_region
 
-  histo_tf_corrected_up = new TH2D **[n_region];
-  histo_tf_corrected_down = new TH2D **[n_region];
+  histo_tf_corrected_up = new TH3D ****[n_region];
+  histo_tf_corrected_down = new TH3D ****[n_region];
+
   for (int i = 0; i < n_region; i++)
   {
-    histo_tf_corrected_up[i] = new TH2D *[n_variable];
-    histo_tf_corrected_down[i] = new TH2D *[n_variable];
+    histo_tf_corrected_up[i] = new TH3D ***[n_variable];
+    histo_tf_corrected_down[i] = new TH3D ***[n_variable];
+
     for (int j = 0; j < n_variable; j++)
     {
-      TString histo_name_up = "TF_Corrected_Up_" + region_name[i] + "_" + variable_conf[j].variable_title;
-      TString histo_name_down = "TF_Corrected_Down_" + region_name[i] + "_" + variable_conf[j].variable_title;
+      histo_tf_corrected_up[i][j] = new TH3D **[bin_eta_tf.size() - 1];
+      histo_tf_corrected_down[i][j] = new TH3D **[bin_eta_tf.size() - 1];
 
-      if (variable_conf[j].chk_equal_interval == false)
+      for (int k = 0; k < bin_eta_tf.size() - 1; k++)
       {
-        histo_tf_corrected_up[i][j] = new TH2D(histo_name_up, histo_name_up, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_tf.size() - 1, bin_tf.data());
-        histo_tf_corrected_down[i][j] = new TH2D(histo_name_down, histo_name_down, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_tf.size() - 1, bin_tf.data());
-      }
-      else
-      {
-        histo_tf_corrected_up[i][j] = new TH2D(histo_name_up, histo_name_up, variable_conf[j].vec_bin.size() - 1, variable_conf[j].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
-        histo_tf_corrected_down[i][j] = new TH2D(histo_name_down, histo_name_down, variable_conf[j].vec_bin.size() - 1, variable_conf[j].vec_bin.data(), bin_tf.size() - 1, bin_tf.data());
-      }
+        histo_tf_corrected_up[i][j][k] = new TH3D *[bin_pt_tf.size() - 1];
+        histo_tf_corrected_down[i][j][k] = new TH3D *[bin_pt_tf.size() - 1];
+
+        for (int l = 0; l < bin_pt_tf.size() - 1; l++)
+        {
+          TString histo_name_up = "TF_Corrected_Up_" + region_name[i] + "_" + variable_conf[j].variable_title + "_Eta_Bin" + to_string(k) + "_Pt_Bin" + to_string(l);
+          TString histo_name_down = "TF_Corrected_Down_" + region_name[i] + "_" + variable_conf[j].variable_title + "_Eta_Bin" + to_string(k) + "_Pt_Bin" + to_string(l);
+
+          if (variable_conf[j].chk_equal_interval == false)
+          {
+            histo_tf_corrected_up[i][j][k][l] = new TH3D(histo_name_up, histo_name_up, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
+            histo_tf_corrected_down[i][j][k][l] = new TH3D(histo_name_down, histo_name_down, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
+          }
+          else
+          {
+            histo_tf_corrected_up[i][j][k][l] = new TH3D(histo_name_up, histo_name_up, variable_conf[j].vec_bin.size() - 1, variable_conf[j].vec_bin.data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
+            histo_tf_corrected_down[i][j][k][l] = new TH3D(histo_name_down, histo_name_down, variable_conf[j].vec_bin.size() - 1, variable_conf[j].vec_bin.data(), bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
+          }
+        } // loop over n_bin_pt_tf
+      } // loop over n_bin_eta_tf
     } // loop over n_variable
   } // loop over n_region
 
+  histo_envelop_up = new TH1D **[n_region];
+  histo_envelop_down = new TH1D **[n_region];
+
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_envelop_up[i] = new TH1D *[n_variable];
+    histo_envelop_down[i] = new TH1D *[n_variable];
+
+    for (int j = 0; j < n_variable; j++)
+    {
+      TString histo_name_envelop_up = "TF_Corrected_Envelop_Up_" + region_name[i] + "_" + variable_conf[j].variable_title;
+      TString histo_name_envelop_down = "TF_Corrected_Envelop_Down_" + region_name[i] + "_" + variable_conf[j].variable_title;
+
+      if (variable_conf[j].chk_equal_interval == false)
+      {
+        histo_envelop_up[i][j] = new TH1D(histo_name_envelop_up, histo_name_envelop_up, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data());
+        histo_envelop_down[i][j] = new TH1D(histo_name_envelop_down, histo_name_envelop_down, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data());
+      }
+      else
+      {
+        histo_envelop_up[i][j] = new TH1D(histo_name_envelop_up, histo_name_envelop_up, variable_conf[j].vec_bin.size() - 1, variable_conf[j].vec_bin.data());
+        histo_envelop_down[i][j] = new TH1D(histo_name_envelop_down, histo_name_envelop_down, variable_conf[j].vec_bin.size() - 1, variable_conf[j].vec_bin.data());
+      }
+
+      // initialization of histo_envelop_up and histo_envelop_down
+      for (int k = 0; k < variable_conf[j].vec_bin.size() - 1; k++)
+      {
+        histo_envelop_up[i][j]->SetBinContent(k + 1, -9999999999);
+        histo_envelop_down[i][j]->SetBinContent(k + 1, 9999999999);
+      } // loop over n_bin
+    } // loop over n_variable
+  } // loop over n_region
+
+  cout << "[Histo_Syst::Init_Histo_Data_Driven]: Reading TF..." << endl;
   TString fin_tf_name = path_base + "/Workplace/Histo_Syst/Vcb_TF_" + era + "_" + channel + ".root";
   fin_tf = new TFile(fin_tf_name);
 
-  histo_tf = new TH1D *[n_region];
+  histo_tf = new TH2D *[n_region];
   for (int i = 0; i < n_region; i++)
   {
-    // TString histo_name = region_name[0] + "/TF"; // let's use TF from 2b region for all
-    TString histo_name = region_name[i] + "/TF";
-    histo_tf[i] = (TH1D *)fin_tf->Get(histo_name);
+    // let's use TF from 2b region for all
+    TString histo_name = region_name[0] + "/TF";
+    histo_tf[i] = (TH2D *)fin_tf->Get(histo_name);
+
+    // histo_tf[i]->SetBit(TH1::kIsAverage);
+
+    // // combine transfer function
+    // if (i == 0)
+    //   histo_tf_combine = (TH1D *)histo_tf[0]->Clone();
+    // else
+    //   histo_tf_combine->Add(histo_tf[i]);
+
+    // // cout << histo_name << " " << histo_tf[i] << endl;
+
+    // let's use TF from 2b region for all
+    if (i == 0)
+      histo_tf_combine = (TH2D *)histo_tf[i]->Clone();
   }
-
-  // combine transfer function
-  histo_tf[0]->SetBit(TH1::kIsAverage);
-  histo_tf[1]->SetBit(TH1::kIsAverage);
-
-  histo_tf_combine = (TH1D *)histo_tf[0]->Clone();
-  histo_tf_combine->Add(histo_tf[1]);
 
   cout << "[Histo_Syst::Init_Histo_Data_Driven]: Done" << endl;
 
@@ -2015,7 +2332,7 @@ void Histo_Syst::Init_Histo_TF()
           {
             TString histo_name = abcd_region_name[i] + "_" + region_name[j] + "_" + syst_name[k] + "_" + vec_short_name_mc[l] + "_" + variable_conf[m].variable_title;
 
-            histo_mc[i][j][k][l][m] = new TH1D(histo_name, variable_conf[m].variable_title, bin_tf.size() - 1, bin_tf.data());
+            histo_mc[i][j][k][l][m] = new TH2D(histo_name, variable_conf[m].variable_title, bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
           } // loop over n_variable
         } // loop over n_sample_merge_mc
       } // loop over n_syst
@@ -2033,32 +2350,32 @@ void Histo_Syst::Init_Histo_TF()
       for (int k = 0; k < n_variable; k++)
       {
         TString histo_name = abcd_region_name[i] + "_" + region_name[j] + "_" + variable_conf[k].variable_title;
-        histo_data[i][j][k] = new TH1D(histo_name, variable_conf[k].variable_title, bin_tf.size() - 1, bin_tf.data());
+        histo_data[i][j][k] = new TH2D(histo_name, variable_conf[k].variable_title, bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
       } // loop over n_variable
     } // loop over n_region
   } // loop over n_abcd_region
 
-  histo_subtracted_tf = new TH1D **[n_abcd_region - 2];
-  for (int i = 0; i < n_abcd_region - 2; i++)
+  histo_subtracted_tf = new TH1 **[n_abcd_region];
+  for (int i = 0; i < n_abcd_region; i++)
   {
-    histo_subtracted_tf[i] = new TH1D *[n_region];
+    histo_subtracted_tf[i] = new TH1 *[n_region];
     for (int j = 0; j < n_region; j++)
     {
       TString histo_name = "Subtrated_" + abcd_region_name[i] + "_" + region_name[j];
 
-      histo_subtracted_tf[i][j] = new TH1D(histo_name, histo_name, bin_tf.size() - 1, bin_tf.data());
+      histo_subtracted_tf[i][j] = new TH2D(histo_name, histo_name, bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
     } // loop over n_region
-  } // loop over n_abcd_region - 2
+  } // loop over n_abcd_region
 
-  histo_tf = new TH1D *[n_region];
-  histo_tf_qcd_mc = new TH1D *[n_region];
+  histo_tf = new TH2D *[n_region];
+  histo_tf_qcd_mc = new TH2D *[n_region];
   for (int i = 0; i < n_region; i++)
   {
     TString histo_name = "TF_" + region_name[i];
-    histo_tf[i] = new TH1D(histo_name, histo_name, bin_tf.size() - 1, bin_tf.data());
+    histo_tf[i] = new TH2D(histo_name, histo_name, bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
 
     histo_name = "TF_QCD_MC_" + region_name[i];
-    histo_tf_qcd_mc[i] = new TH1D(histo_name, histo_name, bin_tf.size() - 1, bin_tf.data());
+    histo_tf_qcd_mc[i] = new TH2D(histo_name, histo_name, bin_eta_tf.size() - 1, bin_eta_tf.data(), bin_pt_tf.size() - 1, bin_pt_tf.data());
   } // loop over n_region
 
   return;
@@ -2269,7 +2586,16 @@ void Histo_Syst::Read_Tree()
           continue;
         }
 
+        // if (event.n_jets == 3)
+        //   continue;
+
+        // if (event.met_pt < 20)
+        //   continue;
+
         // event.Swap();
+
+        // if (!chk_bin_optimizer && mode == "2D" && event.template_score < 0.1)
+        //   continue;
 
         Fill_Histo_MC(sample_name, sample_name_short, tree_type);
         // if (syst_fix == "None") Fill_Histo_Weight(region_index, sample_index);
@@ -2299,10 +2625,19 @@ void Histo_Syst::Read_Tree()
         continue;
 
       // cut on template_score
-      if (chk_cut_template_score && event.template_score < cut_template_score)
-        continue;
+      // if (chk_cut_template_score && event.template_score < cut_template_score)
+      //   continue;
+
+      // if (event.n_jets == 3)
+      //   continue;
+
+      // if (event.met_pt < 20)
+      //   continue;
 
       // event.Swap();
+
+      // if (!chk_bin_optimizer && mode == "2D" && event.template_score < 0.1)
+      //   continue;
 
       Fill_Histo_Data();
     } // loop over n_entries
@@ -2528,7 +2863,7 @@ void Histo_Syst::Register_Sample_TF()
   cout << "[Histo_Syst::Register_Sample_TF]: Init" << endl;
 
   TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
-  TString result_path = path_sample_base + era + "/Vcb/";
+  TString result_path = path_sample_base + era + "/Vcb_Cal_TF/";
 
   index_split = 0;
   n_split = 1;
@@ -2539,7 +2874,7 @@ void Histo_Syst::Register_Sample_TF()
 
     map_fin_mc[it->first] = new TFile(result_path + "Central_Syst/" + it->second);
     map_tree_mc_central[it->first] = (TTree *)map_fin_mc[it->first]->Get(channel + "/Central/Result_Tree");
-    event.Setup_Tree(map_tree_mc_central[it->first], Syst::Central, true);
+    event.Setup_Tree_Cal_TF(map_tree_mc_central[it->first], Syst::Central, false);
   }
   map_map_tree_mc["Central"] = &map_tree_mc_central;
 
@@ -2552,7 +2887,7 @@ void Histo_Syst::Register_Sample_TF()
 
     map_fin_data[it->first] = new TFile(result_path + it->second);
     map_tree_data[it->first] = (TTree *)map_fin_data[it->first]->Get(channel + "/Central/Result_Tree");
-    event.Setup_Tree(map_tree_data[it->first], Syst::Central, false);
+    event.Setup_Tree_Cal_TF(map_tree_data[it->first], Syst::Central, false);
   }
 
   cout << "[Histo_Syst::Register_Sample_TF]: Done" << endl;
@@ -2710,51 +3045,74 @@ void Histo_Syst::Setup_Template_Reader()
 
 int Histo_Syst::Set_ABCD_Region()
 {
-  bool chk_pass; // For muon, iso. For electron, mva
+  bool chk_pass_iso; // For muon, iso. For electron, mva
   if (channel == "Mu")
   {
     if (event.lepton_rel_iso < REL_ISO_MUON)
-      chk_pass = true;
+      chk_pass_iso = true;
     else
-      chk_pass = false;
+      chk_pass_iso = false;
   }
   else if (channel == "El")
   {
-    float rel_iso_electron_a;
-    float rel_iso_electron_b;
-    if (TMath::Abs(event.lepton_eta) <= 1.479)
-    {
-      rel_iso_electron_a = REL_ISO_ELECTRON_BARREL_A;
-      rel_iso_electron_b = REL_ISO_ELECTRON_BARREL_B;
-    }
-    else
-    {
-      rel_iso_electron_a = REL_ISO_ELECTRON_ENDCAP_A;
-      rel_iso_electron_b = REL_ISO_ELECTRON_ENDCAP_B;
-    }
-
-    if (event.lepton_rel_iso < rel_iso_electron_a + rel_iso_electron_b / event.lepton_pt_uncorr)
-      chk_pass = true;
-    else
-      chk_pass = false;
-
-    // if (event.lepton_mva)
+    /* Isolation */
+    // float rel_iso_electron_a;
+    // float rel_iso_electron_b;
+    // if (TMath::Abs(event.lepton_eta) <= 1.479)
     // {
-    //   cout << "test developing" << endl;
+    //   rel_iso_electron_a = REL_ISO_ELECTRON_BARREL_A;
+    //   rel_iso_electron_b = REL_ISO_ELECTRON_BARREL_B;
     // }
+    // else
+    // {
+    //   rel_iso_electron_a = REL_ISO_ELECTRON_ENDCAP_A;
+    //   rel_iso_electron_b = REL_ISO_ELECTRON_ENDCAP_B;
+    // }
+
+    // if (event.lepton_rel_iso < rel_iso_electron_a + rel_iso_electron_b / event.lepton_pt_uncorr)
+    //   chk_pass_iso = true;
+    // else
+    //   chk_pass_iso = false;
+
+    /* Tight Loose */
+    unsigned int mva_iso_wp80_bit_mask = 1 << 4;
+    unsigned int mva_iso_wp90_bit_mask = 1 << 5;
+
+    if ((event.electron_id_bit & mva_iso_wp80_bit_mask) == mva_iso_wp80_bit_mask)
+      chk_pass_iso = true;
+    else
+      chk_pass_iso = false;
+
+    // cout << "Electron ID Bit: " << event.electron_id_bit << ", MVA ISO WP80: " << ((event.electron_id_bit & mva_iso_wp80_bit_mask) == mva_iso_wp80_bit_mask) << ", MVA ISO WP90: " << ((event.electron_id_bit & mva_iso_wp90_bit_mask) == mva_iso_wp90_bit_mask) << endl;
   }
 
-  if (MET_PT < event.met_pt)
+  // //if (MET_PT < event.met_pt)
+  // if (MT_CUT < event.mt)
+  // {
+  //   if (chk_pass_iso)
+  //     return 3; //"D"
+  //   else
+  //     return 1; //"B"
+  // }
+  // else
+  // {
+  //   if (chk_pass_iso)
+  //     return 2; //"C"
+  //   else
+  //     return 0; //"A"
+  // }
+
+  if (4 <= event.n_jets)
   {
-    if (chk_pass)
+    if (chk_pass_iso)
       return 3; //"D"
     else
-      return 1; //"B"
+      return 2; //"C"
   }
   else
   {
-    if (chk_pass)
-      return 2; //"C"
+    if (chk_pass_iso)
+      return 1; //"B"
     else
       return 0; //"A"
   }
@@ -2774,23 +3132,28 @@ int Histo_Syst::Set_Region()
   // bool chk_c_tagged_w_u = (cvsb_wp_m < event.cvsb_w_u && cvsl_wp_m < event.cvsl_w_u) ? true : false;
   // bool chk_b_tagged_w_d = bvsc_wp_m < event.bvsc_w_d ? true : false;
 
-  if (chk_bin_optimizer)
-  {
-    if (event.n_bjets == 2)
-      return 0;
-    else
-      return 1;
-  }
+  if (mode == "Cal_TF")
+    return 0;
   else
   {
-    if (event.n_bjets == 2)
-      return 0;
+    if (chk_bin_optimizer)
+    {
+      if (event.n_bjets == 2)
+        return 0;
+      else
+        return 1;
+    }
     else
     {
-      if (event.template_score < threeb_cr_cut)
-        return 1;
+      if (event.n_bjets == 2)
+        return 0;
       else
-        return 2;
+      {
+        if (event.template_score < threeb_cr_cut)
+          return 1;
+        else
+          return 2;
+      }
     }
   }
 

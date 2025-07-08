@@ -276,13 +276,13 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   TList *list_sample = ((TDirectory *)fin->Get(region_name[0] + "/" + syst_name[0]))->GetListOfKeys();
   Setup_Name(list_sample, sample_name);
 
-  // if (analyser == "Vcb")
-  // {
-  //   if (chk_qcd_data_driven)
-  //     sample_name.erase(find(sample_name.begin(), sample_name.end(), "QCD_bEn"));
-  //   else
-  //     sample_name.erase(find(sample_name.begin(), sample_name.end(), "QCD_Data_Driven"));
-  // }
+  if (analyser == "Vcb")
+  {
+    if (chk_qcd_data_driven)
+      sample_name.erase(find(sample_name.begin(), sample_name.end(), "QCD_bEn"));
+    else
+      sample_name.erase(find(sample_name.begin(), sample_name.end(), "QCD_Data_Driven"));
+  }
 
   for (int i = 0; i < sample_name.size(); i++)
     cout << sample_name[i] << endl;
@@ -336,9 +336,12 @@ void Data_MC_Comparison::Run()
     if (analyser == "Vcb")
     {
       // Draw_Each(syst_name_short[i], "Best_MVA_Score");
-      Draw_Each(syst_name_short[i], "Template_MVA_Score");
-      Draw_Each(syst_name_short[i], "N_BJets");
+      // Draw_Each(syst_name_short[i], "Template_MVA_Score");
+      // Draw_Each(syst_name_short[i], "N_BJets");
       Draw_Each(syst_name_short[i], "Total");
+      Draw_Each(syst_name_short[i], "BvsC_Leading_Jet");
+      Draw_Each(syst_name_short[i], "CvsB_Leading_Jet");
+      Draw_Each(syst_name_short[i], "CvsL_Leading_Jet");
       // Draw_Each(syst_name_short[i], "N_BJets");
     }
     else if (analyser == "Vcb_DL")
@@ -418,7 +421,7 @@ void Data_MC_Comparison::Compare_QCD()
       canvas[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
       canvas[i][j]->Draw();
 
-      int index_qcd_ben = find(sample_name.begin(), sample_name.end(), "QCD_bEn") - sample_name.begin();
+      int index_qcd_ben = find(sample_name.begin(), sample_name.end(), "QCD") - sample_name.begin();
       int index_qcd_dd = find(sample_name.begin(), sample_name.end(), "QCD_Data_Driven") - sample_name.begin();
 
       float max = histo_mc[i][index_mc_nominal][index_qcd_ben][j]->GetMaximum();
@@ -641,6 +644,8 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
 
       // systs
       int n_syst_target = 0; // only to tweak line color
+      float range_ratio_max = 0;
+      float range_ratio_min = 10;
       for (int k = 0; k < n_syst; k++)
       {
         TString syst_name_temp = a_syst_name;
@@ -693,9 +698,23 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
 
           vec_histo_ratio_signal.push_back(histo_ratio_signal);
 
+          // min max for ratio
+          if (histo_ratio->GetMinimum() < range_ratio_min)
+            range_ratio_min = histo_ratio->GetMinimum();
+          if (histo_ratio->GetMaximum() > range_ratio_max)
+            range_ratio_max = histo_ratio->GetMaximum();
+
+          if (histo_ratio_signal->GetMinimum() < range_ratio_min)
+            range_ratio_min = histo_ratio_signal->GetMinimum();
+          if (histo_ratio_signal->GetMaximum() > range_ratio_max)
+            range_ratio_max = histo_ratio_signal->GetMaximum();
+
           n_syst_target++;
         }
-      }
+      } // loop over syst
+
+      range_ratio_min *= 0.99;
+      range_ratio_max *= 1.01;
 
       tl->Draw();
 
@@ -720,7 +739,7 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
         if (k == 0)
         {
           histo_ratio->GetYaxis()->SetTitle("Divided by MC Nominal");
-          histo_ratio->GetYaxis()->SetRangeUser(0.9, 1.1);
+          histo_ratio->GetYaxis()->SetRangeUser(range_ratio_min, range_ratio_max);
           histo_ratio->SetMarkerStyle(8);
           histo_ratio->Draw();
         }

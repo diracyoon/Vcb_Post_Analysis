@@ -18,12 +18,15 @@ class Result_Event : public W_Event
   friend class QCD_Data_Driven;
 
 public:
-  Result_Event(const TString &a_era = "2017", const TString &a_channel = "Mu", const TString &a_swap_mode = "Permutation_MVA");
+  Result_Event(const TString &a_era = "2017", const TString &a_channel = "Mu", const TString &a_analyser = "Vcb", const TString &a_swap_mode = "Permutation_MVA");
   virtual ~Result_Event();
 
   void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all = false, const bool chk_data = false);
+  void Setup_Tree_Cal_TF(TTree *tree, const Syst syst, const bool chk_all = false, const bool chk_data = false);
 
 protected:
+  TString analyser;
+
   float weight_mu_id;
   float weight_mu_id_down;
   float weight_mu_id_up;
@@ -133,7 +136,8 @@ protected:
   float lepton_pt_uncorr;
   float lepton_eta;
   float lepton_rel_iso;
-  float lepton_mva;
+
+  unsigned int electron_id_bit;
 
   int n_jets;
   int n_bjets;
