@@ -30,7 +30,7 @@ public:
   Tagging_RF_Flavor(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString &a_tagger = "C", const int &a_index_tree_type = -1, const int &a_last_index_tree_type = -1, const TString &a_extension = "png");
   ~Tagging_RF_Flavor();
 
-  float Get_Tagging_RF_B_Tag(const TString &region, const TString &sample, const TString &syst, const vector<float> *vec_jet_pt, const vector<float> *vec_jet_eta, const vector<int> *vec_jet_flavor) { return float(0); }
+  float Get_Tagging_RF_B_Tag(const TString &region, const TString &sample, const TString &syst, const vector<float> *vec_jet_pt, const vector<float> *vec_jet_eta, const vector<int> *vec_jet_flavor);
   float Get_Tagging_RF_C_Tag(const TString &region, const TString &sample, const TString &syst, const vector<float> *vec_jet_pt, const vector<float> *vec_jet_eta, const vector<int> *vec_jet_flavor);
 
   inline static bool Comparing_TString(const TString &str1, const TString &str2)
@@ -93,9 +93,12 @@ private:
   vector<TString> flavor_name = {"L", "C", "B"};
   const int n_flavor = flavor_name.size();
 
+  TH2D *****histo_mc_before_b; // n_region, n_sample, n_syst_b, n_flavor
+  TH2D *****histo_mc_after_b;  // n_region, n_sample, n_syst_b, n_flavor
   TH2D *****histo_mc_before_c; // n_region, n_sample, n_syst_c, n_flavor
   TH2D *****histo_mc_after_c;  // n_region, n_sample, n_syst_c, n_flavor
 
+  TH2D *****ratio_b; // n_region, n_sample, n_syst_b, n_flavor
   TH2D *****ratio_c; // n_region, n_sample, n_syst_c, n_flavor
 
   TH1D ******histo_closure_bvsc; // n_region, n_sample, n_syst, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
@@ -106,6 +109,7 @@ private:
 
   TH1D ****histo_rf; // n_region, 2 (ttbb, ttcc), n_syst
 
+  Correction::Ref correction_ref_btag;
   Correction::Ref correction_ref_ctag;
 
   int n_jets;
@@ -239,6 +243,7 @@ private:
   void Draw_Result();
   void Draw_Validation();
   void Fill_Histo_MC(const int &region_index, const TString &sample_name, const TString &tree_type);
+  void Fill_Histo_Validation_MC_B_Tagger(const int &region_index, const TString &sample_name, const TString &tree_type);
   void Fill_Histo_Validation_MC_C_Tagger(const int &region_index, const TString &sample_name, const TString &tree_type);
   int Flavor_Index(const int &flavor);
   int Histo_Index(const TString &sample_name);
