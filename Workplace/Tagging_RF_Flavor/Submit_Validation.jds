@@ -1,19 +1,19 @@
 executable = Run_Job.sh
 jobbatchname = Tagging_RF_Flavor_Validation
 universe   = vanilla
-arguments  = Tagging_RF_Flavor.py -e $(Era) -ch $(Channel) -index_tree_type $(Index_Tree_Type) -last_index_tree_type $(Last_Index_Tree_Type) -validation -tagger C
+arguments  = Tagging_RF_Flavor.py -e $(Era) -ch $(Channel) -index_tree_type $(Index_Tree_Type) -last_index_tree_type $(Last_Index_Tree_Type) -validation -tagger $(Tagger)
 log = condor_validation.log
 getenv     = True
 transfer_input_files = Tagging_RF_Flavor.py
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
-request_cpus = 5
+request_cpus = 4
 output = job_Tagging_RF_Validation_$(Era)_$(Channel)_$(Index_Tree_Type).log
 error = job_Tagging_RF_Validation_$(Era)_$(Channel)_$(Index_Tree_Type).err
 request_memory = 10*1024
 concurrency_limits = n1000.isyoon
 
-queue Era, Channel, Index_Tree_Type, Last_Index_Tree_Type from external_analysis.dat
+queue Era, Channel, Index_Tree_Type, Last_Index_Tree_Type, Tagger from external_analysis.dat
 
 #Era = 2018
 #Channel = El
