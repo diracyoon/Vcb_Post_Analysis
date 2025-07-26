@@ -1,7 +1,7 @@
 executable = Run_Job.sh 
 jobbatchname = Vcb_Tagging_RF_DL_Hadd_Validation
 universe   = vanilla
-arguments  = Hadd_Tagging_RF_DL.py -e $(Era) -ch $(Channel) -a Tagging_RF_Flavor_DL -validation
+arguments  = Hadd_Tagging_RF_DL.py -e $(Era) -ch $(Channel) -a Tagging_RF_Flavor_DL -validation -tagger B
 log = condor.log
 getenv     = True
 transfer_input_files = Hadd_Tagging_RF_DL.py

@@ -2,8 +2,8 @@
 
 chk_jes_breakdown = False
 
-#Era = ['2016preVFP', '2016postVFP', '2017', '2018']
-Era = ['2018']
+Era = ['2016preVFP', '2016postVFP', '2017', '2018']
+#Era = ['2018']
 
 Channel = ['MM', 'ME', 'EE']
 

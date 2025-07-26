@@ -13,9 +13,4 @@ output = job_Tagging_RF_DL_$(Era)_$(Channel)_$(Index_Tree_Type).log
 error = job_Tagging_RF_DL_$(Era)_$(Channel)_$(Index_Tree_Type).err
 concurrency_limits = n1100.isyoon
 
-queue Era,Channel,Index_Tree_Type from external_analysis.dat
-
-Era = 2018
-Channel = EE
-#queue Index_Tree_Type from seq 0 26 |
-#queue Index_Tree_Type from seq 0 4 |
+queue Era,Channel,Index_Tree_Type Tagger from external_analysis.dat

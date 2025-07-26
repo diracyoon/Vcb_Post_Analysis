@@ -1,7 +1,7 @@
 executable = Run_Job.sh
 jobbatchname = Tagging_RF_Flavor_DL_Draw_Validation
 universe   = vanilla
-arguments  = Tagging_RF_Flavor_DL.py -e $(Era) -ch $(Channel) -draw_validation -tagger C
+arguments  = Tagging_RF_Flavor_DL.py -e $(Era) -ch $(Channel) -draw_validation -tagger B
 log = condor.log
 getenv     = True
 transfer_input_files = Tagging_RF_Flavor_DL.py

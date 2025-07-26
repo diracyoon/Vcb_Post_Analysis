@@ -12,4 +12,4 @@ output = job_Hadd_Analysis_$(Era)_$(Channel).log
 error = job_Hadd_Analysis_$(Era)_$(Channel).err
 concurrency_limits = n1100.isyoon
 
-queue Era, Channel from external_hadd.dat
+queue Era, Channel, Tagger from external_hadd.dat

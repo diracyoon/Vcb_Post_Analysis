@@ -1,7 +1,7 @@
 executable = Run_Job.sh
 jobbatchname = Tagging_RF_Flavor_DL
 universe   = vanilla
-arguments  = Tagging_RF_Flavor_DL.py -e $(Era) -combine -tagger C
+arguments  = Tagging_RF_Flavor_DL.py -e $(Era) -combine
 log = condor.log
 getenv     = True
 transfer_input_files = Tagging_RF_Flavor_DL.py
@@ -13,4 +13,4 @@ error = job_Tagging_RF_DL_Combine_$(Era).err
 #request_memory = 10*1024
 concurrency_limits = n1100.isyoon
 
-queue Era from external_combine.dat
+queue Era, Tagger from external_combine.dat
