@@ -13,4 +13,4 @@ error = job_Tagging_RF_Flavor_Combine_$(Era).err
 #request_memory = 10*1024
 concurrency_limits = n1000.isyoon
 
-queue Era from external_combine.dat
+queue Era,Tagger from external_combine.dat

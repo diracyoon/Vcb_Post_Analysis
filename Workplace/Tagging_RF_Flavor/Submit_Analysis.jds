@@ -13,7 +13,7 @@ error = job_Tagging_RF_$(Era)_$(Channel)_$(Index_Tree_Type).err
 request_memory = 10*1024
 concurrency_limits = n1100.isyoon
 
-queue Era,Channel,Index_Tree_Type,Last_Index_Tree_Type from external_analysis.dat
+queue Era,Channel,Index_Tree_Type,Last_Index_Tree_Type,Tagger from external_analysis.dat
 
 #Era = 2018
 #Channel = Mu

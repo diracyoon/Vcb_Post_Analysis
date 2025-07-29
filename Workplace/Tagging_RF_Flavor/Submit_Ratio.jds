@@ -13,7 +13,7 @@ error = job_Tagging_RF_Ratio_$(Era)_$(Channel).err
 request_memory = 10*1024
 concurrency_limits = n1500.isyoon
 
-queue Era,Channel from external_hadd.dat
+queue Era,Channel,Tagger from external_hadd.dat
 
 #Era = 2018
 #Channel = Mu
