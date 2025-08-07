@@ -4,8 +4,8 @@ import argparse
 parser = argparse.ArgumentParser(description='Vcb_Post_Analysis Command')
 parser.add_argument('-a', dest='Analyzer', default="Vcb_DL")
 parser.add_argument('-e', dest='Era', default="2017")
-parser.add_argument('-Data', action='store_true')
-parser.add_argument('-MC', action='store_true')
+parser.add_argument('-data', action='store_true')
+parser.add_argument('-mc', action='store_true')
 parser.add_argument('-flag', dest='Flag', default="All")
 args = parser.parse_args()
 
@@ -19,7 +19,7 @@ import os
 args.Analyzer = "Vcb_DL"
 
 ## data
-if args.Data == True:
+if args.data == True:
     
     if args.Era == "2016preVFP" or args.Era == "2016postVFP" or args.Era == "2017":
         ch_list = ['SingleElectron', 'SingleMuon',]
@@ -51,24 +51,34 @@ if args.Data == True:
                 os.remove(dst)
                 
             #shutil.copy2(src, dst)
-            subprocess.run(["rsync", "-a", "-t", "--info=progress2", src, dst], check=True)
+            subprocess.run(["rsync", "-avW", "--info=progress2", src, dst], check=True)
     
     
-if args.MC == True:
+if args.mc == True:
     if args.Flag == "Syst" or args.Flag == "All":
         mc_list = ["TTLJ_WtoCB_powheg",
                    "TTLJ_powheg",
                    "TTLL_powheg",
-                   "TTJJ_powheg",
-                   #"TTBB",
+                   #"TTJJ_powheg",
+                   "TTbb_4f_TTLJ",
+                   "TTLJ_bbDPS",
+                   "TTbb_4f_TTLL",
+                   "TTLL_bbDPS",
                    "SingleTop_sch_Lep",
                    "SingleTop_tW_antitop_NoFullyHad",
                    "SingleTop_tW_top_NoFullyHad",
                    "SingleTop_tch_antitop_Incl",
                    "SingleTop_tch_top_Incl",
                    "DYJets_MG",
-                   "WJets_MG",
                    #"DYJets",
+                   "WJets_MG",
+                   "WJets_HT100to200",
+                   "WJets_HT200to400",
+                   "WJets_HT400to600",
+                   "WJets_HT600to800",
+                   "WJets_HT800to1200",
+                   "WJets_HT1200to2500",
+                   "WJets_HT2500toInf",
                    #"WJets_Sherpa",
                    "QCD_bEnriched_HT100to200",
                    "QCD_bEnriched_HT200to300",
@@ -78,21 +88,21 @@ if args.MC == True:
                    "QCD_bEnriched_HT1000to1500",
                    "QCD_bEnriched_HT1500to2000",
                    "QCD_bEnriched_HT2000toInf",
-                   "QCD_Pt_15to30",
-                   "QCD_Pt_30to50",
-                   "QCD_Pt_50to80",
-                   "QCD_Pt_80to120",
-                   "QCD_Pt_120to170",
-                   "QCD_Pt_170to300",
-                   "QCD_Pt_300to470",
-                   "QCD_Pt_470to600",
-                   "QCD_Pt_600to800",
-                   "QCD_Pt_800to1000",
-                   "QCD_Pt_1000to1400",
-                   "QCD_Pt_1400to1800",
-                   "QCD_Pt_1800to2400",
-                   "QCD_Pt_2400to3200",
-                   "QCD_Pt_3200toInf",
+                   #"QCD_Pt_15to30",
+                   #"QCD_Pt_30to50",
+                   #"QCD_Pt_50to80",
+                   #"QCD_Pt_80to120",
+                   #"QCD_Pt_120to170",
+                   #"QCD_Pt_170to300",
+                   #"QCD_Pt_300to470",
+                   #"QCD_Pt_470to600",
+                   #"QCD_Pt_600to800",
+                   #"QCD_Pt_800to1000",
+                   #"QCD_Pt_1000to1400",
+                   #"QCD_Pt_1400to1800",
+                   #"QCD_Pt_1800to2400",
+                   #"QCD_Pt_2400to3200",
+                   #"QCD_Pt_3200toInf",
                    "ttWToLNu",
                    "ttWToQQ",
                    "ttZToLLNuNu",
@@ -103,10 +113,10 @@ if args.MC == True:
                    "WW_pythia",
                    "WZ_pythia",
                    "ZZ_pythia",
-        ]
+                   ]
         
         for mc in mc_list:
-            if "TTJJ" not in mc:
+            if "TTbb" not in mc and "bbDPS" not in mc:
                 continue
             
             if args.Analyzer == "Vcb":
@@ -122,11 +132,12 @@ if args.MC == True:
             dst_dir = os.path.dirname(dst)
             os.makedirs(dst_dir, exist_ok=True)
 
-            if os.path.exists(dst):
-                os.remove(dst)
+            #if os.path.exists(dst):
+            #    os.remove(dst)
             
-            subprocess.run(["rsync", "-a", "-t", "--info=progress2", src, dst], check=True)
-        
+            #subprocess.run(["rsync", "-a", "-t", "--info=progress2", src, dst], check=True)
+            subprocess.run(["xrdcp", "-fP", src, dst], check=True)
+            
     if args.Flag =="Syst_Top"  or args.Flag == "All":
         mc_list = ["TTLJ_powheg_CP5Down",
                    "TTLJ_powheg_CP5Up",
@@ -146,7 +157,7 @@ if args.MC == True:
                    "TTLJ_WtoCB_powheg_hdampUp",
                    "TTLJ_WtoCB_powheg_mtop171p5",
                    "TTLJ_WtoCB_powheg_mtop173p5",
-        ]
+                   ]
     
         for mc in mc_list:
             if args.Analyzer == "Vcb":
@@ -159,8 +170,9 @@ if args.MC == True:
             dst_dir = os.path.dirname(dst)
             os.makedirs(dst_dir, exist_ok=True)
 
-            if os.path.exists(dst):
-                os.remove(dst)
+            #if os.path.exists(dst):
+            #    os.remove(dst)
             
             #shutil.copy2(src, dst)
-            subprocess.run(["rsync", "-a", "-t", "--info=progress2", src, dst], check=True)
+            #subprocess.run(["rsync", "-avW", "--info=progress2", src, dst], check=True)
+            subprocess.run(["xrdcp", "-fP", src, dst], check=True)

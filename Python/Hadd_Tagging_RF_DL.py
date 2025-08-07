@@ -36,7 +36,7 @@ root_list = [root_file for root_file in root_list if root_file.endswith(".root")
 if args.analysis == True:
     root_list = [root_file for root_file in root_list if f"Vcb_{args.Analyzer}_{args.Era}_{args.Channel}" in root_file]  
 elif args.validation == True:
-    root_list = [root_file for root_file in root_list if f"Vcb_{args.Analyzer}_Validation_{args.Era}_{args.Channel}" in root_file]
+    root_list = [root_file for root_file in root_list if f"Vcb_{args.Analyzer}_Validation_{args.Era}_{args.Channel}_{args.Tagger}_Tagger" in root_file]
     
 hadd_cmd = f"hadd -d {path_base}/Tmp {target} "
 for root_file in root_list:
