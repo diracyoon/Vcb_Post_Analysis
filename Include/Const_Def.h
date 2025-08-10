@@ -8,6 +8,9 @@
 using namespace std;
 
 const bool chk_include_pseudo_additional = true;
+const bool chk_use_ttbb_4f = false;
+const bool chk_jes_breakdown = false;
+const bool chk_rf_tthf_breakdown = false;
 
 // 2016preVFP
 const float bvsc_wp_l_2016preVFP = 0.0508;

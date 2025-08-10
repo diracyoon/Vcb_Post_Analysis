@@ -16,6 +16,7 @@ class Result_Event : public W_Event
   friend class Histo_Syst;
   friend class Reco_Eval;
   friend class QCD_Data_Driven;
+  friend class Compare_TTbb;
 
 public:
   Result_Event(const TString &a_era = "2017", const TString &a_channel = "Mu", const TString &a_analyser = "Vcb", const TString &a_swap_mode = "Permutation_MVA");
@@ -26,6 +27,10 @@ public:
 
 protected:
   TString analyser;
+
+  float weight;
+  
+  float weight_baseline;
 
   float weight_mu_id;
   float weight_mu_id_down;
@@ -46,8 +51,6 @@ protected:
   float weight_sl_trig;
   float weight_sl_trig_down;
   float weight_sl_trig_up;
-
-  float weight;
 
   float weight_b_tag;
   float weight_b_tag_hf_down;

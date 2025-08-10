@@ -16,7 +16,9 @@
 
 #include <correction.h>
 
+#include <Const_Def.h>
 #include <Samples.h>
+#include <Modelling_Patch.h>
 
 using namespace std;
 using correction::Correction;
@@ -28,7 +30,7 @@ public:
   Tagging_RF_Flavor_DL(const TString &a_era = "2018", const TString &a_mode = "Application", const TString &a_channel = "Mu", const TString &a_tagger = "C", const int &a_index_tree_type = -1, const TString &a_extension = "png");
   ~Tagging_RF_Flavor_DL();
 
-  float Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const vector<float> *vec_jet_pt, const vector<float> *vec_jet_eta, const vector<int> *vec_jet_flavor) { return float(0); }
+  float Get_Tagging_RF_DL_B_Tag(const TString &sample, const TString &syst, const vector<float> *vec_jet_pt, const vector<float> *vec_jet_eta, const vector<int> *vec_jet_flavor);
   float Get_Tagging_RF_DL_C_Tag(const TString &sample, const TString &syst, const vector<float> *vec_jet_pt, const vector<float> *vec_jet_eta, const vector<int> *vec_jet_flavor);
 
   inline static bool Comparing_TString(const TString &str1, const TString &str2)
@@ -69,15 +71,20 @@ private:
   vector<TString> vec_sample_tagging_rf;
   int n_sample_tagging_rf;
 
+  vector<TString> syst_name_b;
   vector<TString> syst_name_c;
+  int n_syst_b;
   int n_syst_c;
 
   vector<TString> flavor_name = {"L", "C", "B"};
   const int n_flavor = flavor_name.size();
 
+  TH2D ****histo_mc_before_b; // n_sample, n_syst_b, n_flavor
+  TH2D ****histo_mc_after_b;  // n_sample, n_syst_b, n_flavor
   TH2D ****histo_mc_before_c; // n_sample, n_syst_c, n_flavor
   TH2D ****histo_mc_after_c;  // n_sample, n_syst_c, n_flavor
 
+  TH2D ****ratio_b; // n_sample, n_syst_b, n_flavor
   TH2D ****ratio_c; // n_sample, n_syst_c, n_flavor
 
   TH1D *****histo_closure_bvsc; // n_sample, n_syst_c, n_flavor, 3 (no tagging SF, tagging SF, tagging SF+RF)
@@ -95,6 +102,7 @@ private:
 
   map<TString, map<TString, TTree *> *> map_map_tree_mc;
 
+  Correction::Ref correction_ref_btag;
   Correction::Ref correction_ref_ctag;
 
   int n_jets;
@@ -118,6 +126,10 @@ private:
 
   float subleading_jet_eta;
   float subleading_jet_pt;
+
+  float weight;
+
+  float weight_baseline;
 
   float weight_mu_id;
   float weight_mu_iso;
@@ -218,16 +230,21 @@ private:
   TFile *fin_ee;
   TFile *fout;
 
+  Modelling_Patch modelling_patch;
+
   void Combine_Lepton_Channel();
   void Draw_Result();
   void Draw_Validation();
   void Fill_Histo_MC(const TString &sample_name, const TString &tree_type);
+  void Fill_Histo_Validation_MC_B_Tagger(const TString &sample_name, const TString &tree_type);
   void Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &tree_type);
   int Flavor_Index(const int &flavor);
   int Histo_Index(const TString &sample_name);
   TString Histo_Name_RF(const TString &sample_name);
   void Ratio();
   void Read_Tree();
+  float Reweight_CKM(const TString &sample_name);
+  float Reweight_TTHF(const TString &sample_name);
   void Run_Analysis();
   void Run_Combine();
   void Run_Draw_Validation();

@@ -28,7 +28,7 @@ using namespace std;
 class Data_MC_Comparison : public TObject
 {
 public:
-  Data_MC_Comparison(const TString &a_era, const TString &a_channel, const TString &a_analyser = "Vcb", const TString &a_extension = "png");
+  Data_MC_Comparison(const TString &a_era, const TString &a_channel, const TString &a_analyser = "Vcb", const TString& a_tagger = "C", const TString &a_extension = "png");
   ~Data_MC_Comparison();
 
   void Run();
@@ -44,6 +44,7 @@ protected:
   TString era;
   TString channel;
   TString analyser;
+  TString tagger;
   TString extension;
 
   bool chk_simple = false;

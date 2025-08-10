@@ -21,6 +21,7 @@
 #include <Result_Event_CR_DL.h>
 #include <Tagging_RF_DL.h>
 #include <Tagging_RF_Flavor_DL.h>
+#include <Modelling_Patch.h>
 
 using namespace std;
 
@@ -67,8 +68,6 @@ protected:
 
   TString year;
 
-  bool chk_rf_tthf_breakdown = false;
-  bool chk_jes_breakdown = false;
   bool chk_print; // only for debug
 
   bool chk_bin_optimizer = false;
@@ -87,6 +86,7 @@ protected:
 
   // Tagging_RF_DL tagging_rf_dl;
   Tagging_RF_Flavor_DL tagging_rf_dl;
+  Modelling_Patch modelling_patch;
 
   map<TString, TFile *> map_fin_mc;
   map<TString, TFile *> map_fin_mc_cp5_down;
@@ -95,26 +95,17 @@ protected:
   map<TString, TFile *> map_fin_mc_hdamp_up;
   map<TString, TFile *> map_fin_mc_mtop_171p5;
   map<TString, TFile *> map_fin_mc_mtop_173p5;
+  map<TString, TFile *> map_fin_mc_tt_4f;
 
   vector<map<TString, TTree *>> vec_map_tree_mc;
   map<TString, TTree *> map_tree_mc_central;
-  // map<TString, TTree *> map_tree_mc;
-  // map<TString, TTree *> map_tree_mc_jec_down;
-  // map<TString, TTree *> map_tree_mc_jec_up;
-  // map<TString, TTree *> map_tree_mc_jer_down;
-  // map<TString, TTree *> map_tree_mc_jer_up;
-  // map<TString, TTree *> map_tree_mc_ue_down;
-  // map<TString, TTree *> map_tree_mc_ue_up;
-  // map<TString, TTree *> map_tree_mc_eec_down;
-  // map<TString, TTree *> map_tree_mc_eec_up;
-  // map<TString, TTree *> map_tree_mc_eer_down;
-  // map<TString, TTree *> map_tree_mc_eer_up;
   map<TString, TTree *> map_tree_mc_cp5_down;
   map<TString, TTree *> map_tree_mc_cp5_up;
   map<TString, TTree *> map_tree_mc_hdamp_down;
   map<TString, TTree *> map_tree_mc_hdamp_up;
   map<TString, TTree *> map_tree_mc_mtop_171p5;
   map<TString, TTree *> map_tree_mc_mtop_173p5;
+  map<TString, TTree *> map_tree_mc_tt_4f;
 
   // map<TString, map<TString, TFile *> *> map_map_fin_mc;
   map<TString, map<TString, TTree *> *> map_map_tree_mc;
@@ -154,7 +145,7 @@ protected:
 
   void Fill_Histo_Data();
   void Fill_Histo_MC(const TString &sample_name, const TString &sample_name_short, const TString &syst_fix);
-  int Histo_Index(const TString &sample_name);
+  int Histo_Index(const TString &sample_name, bool& chk_discarded);
   TString Histo_Name_RF(const TString &sample_name);
   void Merge_PDF_Error_Set();
   void Read_Tree();

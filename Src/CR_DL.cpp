@@ -5,7 +5,7 @@ ClassImp(CR_DL);
 //////////
 
 CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_tagger, const int &a_index_tree_type)
-    : samples(a_era, a_channel, "Vcb_DL"), tagging_rf_dl(a_era)
+    : samples(a_era, a_channel, "Vcb_DL"), tagging_rf_dl(a_era), modelling_patch("Application")
 {
   ROOT::EnableImplicitMT(2);
 
@@ -13,7 +13,7 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ta
 
   cout << "[CR_DL::CR_DL]: Init analysis" << endl;
 
-  reduction = 1;
+  reduction = 100;
 
   era = a_era;
   channel = a_channel;
@@ -25,11 +25,7 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ta
   else
     year = era;
 
-  chk_rf_tthf_breakdown = false;
-  chk_jes_breakdown = false;
-
   // chk_bin_optimizer = true;
-  chk_bin_optimizer = false;
 
   if (samples.map_mc.size() != samples.map_short_name_mc.size() || samples.map_data.size() != samples.map_short_name_data.size())
   {
@@ -38,8 +34,7 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ta
   }
 
   // syst_tree
-  vec_tree_type = {"Central",
-                   "UEDown", "UEUp",
+  vec_tree_type = {"UEDown", "UEUp",
                    "JetResDown", "JetResUp",
                    "JetEnDown", "JetEnUp"};
 
@@ -61,6 +56,9 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ta
 
     vec_tree_type.insert(vec_tree_type.end(), vec_tree_type_jes_breakdown.begin(), vec_tree_type_jes_breakdown.end());
   } //  if (chk_jes_breakdown == true)
+
+  // for CR_DL, no need to add "Central" lastly. But keep it last for consistency.
+  vec_tree_type.push_back("Central");
 
   // number of MC
   for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
@@ -91,7 +89,25 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ta
   vec_short_name_mc.push_back("TTLL_CC"); // TTLL+cc, w->ud or w->us
   vec_short_name_mc.push_back("TTLL_BB"); // TTLL+bb, w->cd or w->cs
 
+  // TTbb 4f
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_TTbb_4f"));
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_bbDPS"));
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL_TTbb_4f"));
+  vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLL_bbDPS"));
+
+  if (chk_use_ttbb_4f)
+  {
+    vec_short_name_mc.push_back("TTLJ_bbDPS_BB_2");
+    vec_short_name_mc.push_back("TTLJ_bbDPS_BB_4");
+    vec_short_name_mc.push_back("TTLL_bbDPS_BB");
+  }
+
   n_sample_merge_mc = vec_short_name_mc.size();
+  // for (auto &name : vec_short_name_mc)
+  // {
+  //   cout << "vec_short_name_mc: " << name << endl;
+  // }
+
   cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
 } // CR_DL(const TString &a_era = "2018", const TString &a_channel = "MM", const TString &a_run_flag = "All");
 
@@ -101,7 +117,7 @@ CR_DL::~CR_DL()
 {
   cout << "[CR_DL::~CR_DL]: Init" << endl;
 
-  TString fout_name = "Vcb_DL_Histos_" + era + "_" + channel + ".root";
+  TString fout_name = "Vcb_DL_Histos_" + era + "_" + channel + "_" + tagger + "_tagger.root";
   fout = new TFile(fout_name, "RECREATE");
 
   // Save histos
@@ -263,6 +279,19 @@ void CR_DL::Read_Tree()
         if (TMath::IsNaN(event.weight_scale_variation_6) || !TMath::Finite(event.weight_scale_variation_6))
           cout << "IsNaN scale variation 6 " << event.weight_scale_variation_6 << endl;
 
+        event.weight_baseline = modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline");
+        event.weight_top_pt *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
+        event.weight_scale_variation_1 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_1");
+        event.weight_scale_variation_2 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_2");
+        event.weight_scale_variation_3 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_3");
+        event.weight_scale_variation_4 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_4");
+        event.weight_scale_variation_6 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_6");
+        event.weight_scale_variation_8 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_8");
+        event.weight_ps[0] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_0");
+        event.weight_ps[1] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_1");
+        event.weight_ps[2] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_2");
+        event.weight_ps[3] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_3");
+
         Fill_Histo_MC(sample_name, sample_name_short, syst_fix);
       } // loop over entries
     } // for (auto it = map_tree->begin(); it != map_tree->end(); it++)
@@ -301,31 +330,51 @@ void CR_DL::Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TString, 
 {
   cout << "[CR_DL::Register_Top_Syst]:" << type << endl;
 
-  // map_fin_syst = map_fin_mc;
-  // map_fin_syst.erase("TTLJ");
-  // map_fin_syst.erase("TTLL");
-
-  map_tree_syst = map_tree_mc_central;
-  map_tree_syst.erase("TTLJ");
-  map_tree_syst.erase("TTLL");
-  map_tree_syst.erase("TTLJ_WtoCB");
-
   TString path_base = getenv("Vcb_Post_Analysis_Sample_Dir");
-  TString result_path = path_base + era + "/Vcb_DL/";
-  TString key_base = channel + "/";
-  TString tree_name = "/Result_Tree";
+  TString result_path = path_base + era + "/Vcb_DL/Top_Syst/";
 
-  map_fin_syst["TTLJ_" + type] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_" + type]);
-  map_tree_syst["TTLJ_" + type] = (TTree *)map_fin_syst["TTLJ_" + type]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_syst["TTLJ_" + type], Syst::Central);
+  if (type != "TTbb4f")
+  {
+    map_tree_syst = map_tree_mc_central;
 
-  map_fin_syst["TTLL_" + type] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLL_" + type]);
-  map_tree_syst["TTLL_" + type] = (TTree *)map_fin_syst["TTLL_" + type]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_syst["TTLL_" + type], Syst::Central);
+    map_tree_syst.erase("TTLJ");
+    map_tree_syst.erase("TTLL");
+    map_tree_syst.erase("TTLJ_WtoCB");
 
-  map_fin_syst["TTLJ_WtoCB_" + type] = new TFile(result_path + "Top_Syst/" + samples.map_top_syst["TTLJ_WtoCB_" + type]);
-  map_tree_syst["TTLJ_WtoCB_" + type] = (TTree *)map_fin_syst["TTLJ_WtoCB_" + type]->Get(key_base + "Central" + tree_name);
-  event.Setup_Tree(map_tree_syst["TTLJ_WtoCB_" + type], Syst::Central);
+    map_fin_syst["TTLJ_" + type] = new TFile(result_path + samples.map_top_syst["TTLJ_" + type]);
+    map_tree_syst["TTLJ_" + type] = (TTree *)map_fin_syst["TTLJ_" + type]->Get(channel + "/Central/Result_Tree");
+    event.Setup_Tree(map_tree_syst["TTLJ_" + type], Syst::Central);
+
+    map_fin_syst["TTLL_" + type] = new TFile(result_path + samples.map_top_syst["TTLL_" + type]);
+    map_tree_syst["TTLL_" + type] = (TTree *)map_fin_syst["TTLL_" + type]->Get(channel + "/Central/Result_Tree");
+    event.Setup_Tree(map_tree_syst["TTLL_" + type], Syst::Central);
+
+    map_fin_syst["TTLJ_WtoCB_" + type] = new TFile(result_path + samples.map_top_syst["TTLJ_WtoCB_" + type]);
+    map_tree_syst["TTLJ_WtoCB_" + type] = (TTree *)map_fin_syst["TTLJ_WtoCB_" + type]->Get(channel + "/Central/Result_Tree");
+    event.Setup_Tree(map_tree_syst["TTLJ_WtoCB_" + type], Syst::Central);
+  }
+  // else
+  // {
+  //   cout << "TTLJ_TTbb_4f" << endl;
+  //   map_fin_syst["TTLJ_TTbb_4f"] = new TFile(result_path + samples.map_top_syst["TTLJ_TTbb_4f"]);
+  //   map_tree_syst["TTLJ_TTbb_4f"] = (TTree *)map_fin_syst["TTLJ_TTbb_4f"]->Get(channel + "/Central/Result_Tree");
+  //   event.Setup_Tree(map_tree_syst["TTLJ_TTbb_4f"], Syst::Central);
+
+  //   cout << "TTLJ_bbDPS" << endl;
+  //   map_fin_syst["TTLJ_bbDPS"] = new TFile(result_path + samples.map_top_syst["TTLJ_bbDPS"]);
+  //   map_tree_syst["TTLJ_bbDPS"] = (TTree *)map_fin_syst["TTLJ_bbDPS"]->Get(channel + "/Central/Result_Tree");
+  //   event.Setup_Tree(map_tree_syst["TTLJ_bbDPS"], Syst::Central);
+
+  //   cout << "TTLL_TTbb_4f" << endl;
+  //   map_fin_syst["TTLL_TTbb_4f"] = new TFile(result_path + samples.map_top_syst["TTLL_TTbb_4f"]);
+  //   map_tree_syst["TTLL_TTbb_4f"] = (TTree *)map_fin_syst["TTLL_TTbb_4f"]->Get(channel + "/Central/Result_Tree");
+  //   event.Setup_Tree(map_tree_syst["TTLL_TTbb_4f"], Syst::Central);
+
+  //   cout << "TTLL_bbDPS" << endl;
+  //   map_fin_syst["TTLL_bbDPS"] = new TFile(result_path + samples.map_top_syst["TTLL_bbDPS"]);
+  //   map_tree_syst["TTLL_bbDPS"] = (TTree *)map_fin_syst["TTLL_bbDPS"]->Get(channel + "/Central/Result_Tree");
+  //   event.Setup_Tree(map_tree_syst["TTLL_bbDPS"], Syst::Central);
+  // }
 
   map_map_tree_mc[type] = &map_tree_syst;
 
@@ -361,7 +410,7 @@ float CR_DL::Reweight_TTHF(const TString &sample_name)
 {
   if ((sample_name.Contains("TTLL") || sample_name.Contains("TTLJ")))
   {
-    if (sample_name.Contains("WtoCB"))
+    if (sample_name.Contains("WtoCB") || sample_name.Contains("TTbb") || sample_name.Contains("bbDPS"))
       return 1.0;
 
     bool chk_b = false;
@@ -479,6 +528,9 @@ void CR_DL::Setup_Analysis()
   // mTop 173.5
   Register_Top_Syst(map_fin_mc_mtop_173p5, map_tree_mc_mtop_173p5, "mtop173p5");
 
+  // // TTbb4f
+  // Register_Top_Syst(map_fin_mc_tt_4f, map_tree_mc_tt_4f, "TTbb4f");
+
   // data
   for (auto it = samples.map_data.begin(); it != samples.map_data.end(); it++)
   {
@@ -574,6 +626,7 @@ void CR_DL::Setup_Syst()
                "CP5_Down", "CP5_Up",
                "hdamp_Down", "hdamp_Up",
                "mtop_171p5", "mtop_173p5"};
+  //"TTbb_4f"};
 
   if (chk_jes_breakdown == true)
   {
@@ -810,7 +863,7 @@ void CR_DL::Setup_Variable()
   int n_bin_bvsc = bin_bvsc.size() - 1;
 
   // set variables to be drawn
-  variable_conf = {{"BvsC_3rd_4th_Jets_Unrolled", TMath::Binomial(n_bin_bvsc, 2), 0., TMath::Binomial(n_bin_bvsc, 2)},
+  variable_conf = {{"BvsC_3rd_4th_Jets_Unrolled", (int)TMath::Binomial(n_bin_bvsc, 2), 0., (float)TMath::Binomial(n_bin_bvsc, 2)},
                    {"N_Vertex", 40, 0, 80},
                    {"Leading_Lepton_Eta", 30, -3, 3},
                    {"Leading_Lepton_Pt", 50, 0, 400},
@@ -892,14 +945,17 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
 {
   int unrolled_bin = Unroller(event.bvsc_third, event.bvsc_fourth);
 
-  int histo_index = Histo_Index(sample_name_short);
+  bool chk_discarded = false;
+  int histo_index = Histo_Index(sample_name_short, chk_discarded);
+  if (chk_discarded)
+    return;
+
   TString histo_name_rf = Histo_Name_RF(sample_name);
 
   float weight_ckm = Reweight_CKM(sample_name);
   float weight_tthf = Reweight_TTHF(sample_name_short);
 
   // cout << "test sample_name = " << sample_name << ", histo_index = " << histo_index << ", histo_index_rf = " << histo_name_rf << endl;
-
   for (int i = 0; i < n_syst; i++)
   {
     TString syst_type = syst_name[i];
@@ -913,6 +969,7 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
          syst_type == "CP5_Down" || syst_type == "CP5_Up" ||
          syst_type == "hdamp_Down" || syst_type == "hdamp_Up" ||
          syst_type == "mtop_171p5" || syst_type == "mtop_173p5" ||
+         // syst_type == "TTbb_4f" ||
          syst_type.Contains("Jet_En")))
       continue;
 
@@ -925,6 +982,7 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
     }
 
     event.weight = 1;
+    event.weight *= event.weight_baseline;
     event.weight *= event.weight_lumi;
     event.weight *= event.weight_mc;
     event.weight *= event.weight_hem_veto;
@@ -1076,8 +1134,27 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
     if (tagger == "B")
     {
       TString b_tagging_rf_type;
-
-      if (syst_type == "B_Tag_HF_Down")
+      if (syst_type == "B_Tag_CFErr1_Down")
+      {
+        event.weight *= event.weight_b_tag_cferr1_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_CFErr1_Up")
+      {
+        event.weight *= event.weight_b_tag_cferr1_up;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_CFErr2_Down")
+      {
+        event.weight *= event.weight_b_tag_cferr2_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_CFErr2_Up")
+      {
+        event.weight *= event.weight_b_tag_cferr2_up;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_HF_Down")
       {
         event.weight *= event.weight_b_tag_hf_down;
         b_tagging_rf_type = syst_type;
@@ -1085,6 +1162,26 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
       else if (syst_type == "B_Tag_HF_Up")
       {
         event.weight *= event.weight_b_tag_hf_up;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_HFStats1_Down")
+      {
+        event.weight *= event.weight_b_tag_hfstats1_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_HFStats1_Up")
+      {
+        event.weight *= event.weight_b_tag_hfstats1_up;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_HFStats2_Down")
+      {
+        event.weight *= event.weight_b_tag_hfstats2_down;
+        b_tagging_rf_type = syst_type;
+      }
+      else if (syst_type == "B_Tag_HFStats2_Up")
+      {
+        event.weight *= event.weight_b_tag_hfstats2_up;
         b_tagging_rf_type = syst_type;
       }
       else if (syst_type == "B_Tag_LF_Down")
@@ -1117,56 +1214,21 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
         event.weight *= event.weight_b_tag_lfstats2_up;
         b_tagging_rf_type = syst_type;
       }
-      else if (syst_type == "B_Tag_CFErr1_Down")
-      {
-        event.weight *= event.weight_b_tag_cferr1_down;
-        b_tagging_rf_type = syst_type;
-      }
-      else if (syst_type == "B_Tag_CFErr1_Up")
-      {
-        event.weight *= event.weight_b_tag_cferr1_up;
-        b_tagging_rf_type = syst_type;
-      }
-      else if (syst_type == "B_Tag_CFErr2_Down")
-      {
-        event.weight *= event.weight_b_tag_cferr2_down;
-        b_tagging_rf_type = syst_type;
-      }
-      else if (syst_type == "B_Tag_CFErr2_Up")
-      {
-        event.weight *= event.weight_b_tag_cferr2_up;
-        b_tagging_rf_type = syst_type;
-      }
-      else if (syst_type == "B_Tag_HFStats1_Down")
-      {
-        event.weight *= event.weight_b_tag_hfstats1_down;
-        b_tagging_rf_type = syst_type;
-      }
-      else if (syst_type == "B_Tag_HFStats1_Up")
-      {
-        event.weight *= event.weight_b_tag_hfstats1_up;
-        b_tagging_rf_type = syst_type;
-      }
-      else if (syst_type == "B_Tag_HFStats2_Down")
-      {
-        event.weight *= event.weight_b_tag_hfstats2_down;
-        b_tagging_rf_type = syst_type;
-      }
-      else if (syst_type == "B_Tag_HFStats2_Up")
-      {
-        event.weight *= event.weight_b_tag_hfstats2_up;
-        b_tagging_rf_type = syst_type;
-      }
-      // fully correlated b-tagging scale factors
-      else if (syst_type.Contains("Jet_En") && syst_type.Contains("Down"))
+      else if (syst_type == "Jet_En_Down")
       {
         event.weight *= event.weight_b_tag_jes_down;
         b_tagging_rf_type = "B_Tag_JES_Down";
       }
-      else if (syst_type.Contains("Jet_En") && syst_type.Contains("Up"))
+      else if (syst_type == "Jet_En_Up")
       {
         event.weight *= event.weight_b_tag_jes_up;
         b_tagging_rf_type = "B_Tag_JES_Up";
+      }
+      // JES Breakdown
+      else if (syst_type.Contains("Jet_En_"))
+      {
+        cerr << "Will be written later" << endl;
+        exit(1);
       }
       else
       {
@@ -1405,13 +1467,12 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
 
 //////////
 
-int CR_DL::Histo_Index(const TString &sample_name)
+int CR_DL::Histo_Index(const TString &sample_name, bool &chk_discarded)
 {
   int index = -999;
 
   if ((sample_name.Contains("TTLL") || sample_name.Contains("TTLJ")))
   {
-
     TString histo_name = sample_name;
 
     if (histo_name.Contains("WtoCB"))
@@ -1474,7 +1535,48 @@ int CR_DL::Histo_Index(const TString &sample_name)
     else if (event.decay_mode == 45)
       histo_name += "_45";
 
-    index = index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), histo_name) - vec_short_name_mc.begin();
+    if (chk_use_ttbb_4f)
+    {
+      // if (sample_name.Contains("TTLJ") || sample_name.Contains("TTLL"))
+      //   cout << "test 0 Histo_Index: " << sample_name << " " << histo_name << endl;
+
+      if (histo_name.Contains("_TTbb_4f_BB"))
+        histo_name.ReplaceAll("_TTbb_4f_BB", "_BB");
+
+      else if (histo_name.Contains("_bbDPS_BB"))
+      {
+        // histo_name.ReplaceAll("_bbDPS_BB", "_bbDPS_BB");
+      }
+
+      else if (histo_name.Contains("TTLJ_BB"))
+      {
+        histo_name.ReplaceAll("TTLJ_BB", "Discard");
+        chk_discarded = true;
+      }
+
+      else if (histo_name.Contains("TTLL_BB"))
+      {
+        histo_name.ReplaceAll("TTLL_BB", "Discard");
+        chk_discarded = true;
+      }
+
+      // reject other 4f events
+      else if (histo_name.Contains("TTbb") || histo_name.Contains("bbDPS"))
+        chk_discarded = true;
+
+      // if (sample_name.Contains("TTLJ") || sample_name.Contains("TTLL"))
+      //   cout << "test 1 Histo_Index: " << sample_name << " " << histo_name << endl;
+    }
+    else 
+    {
+      if (histo_name.Contains("TTbb") || histo_name.Contains("bbDPS"))
+          chk_discarded = true;
+    }
+
+    index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), histo_name) - vec_short_name_mc.begin();
+
+    // if (sample_name.Contains("TTLJ") || sample_name.Contains("TTLL"))
+    //   cout << "test 2 Histo_Index: " << sample_name << " " << histo_name << " " << index << endl;
   } // if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
   else
     index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name) - vec_short_name_mc.begin();
@@ -1716,7 +1818,6 @@ void CR_DL::Unroller()
           // int unrolled_bin = (bin_bvsc.size() - 1) * k + l + 1;
           // histo_mc[i][j][0]->SetBinContent(unrolled_bin, content);
           // histo_mc[i][j][0]->SetBinError(unrolled_bin, error);
-      
 
           histo_mc[i][j][0]->SetBinContent(bin_index, content);
           histo_mc[i][j][0]->SetBinError(bin_index, error);

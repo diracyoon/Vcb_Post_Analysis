@@ -19,6 +19,7 @@
 
 #include <Const_Def.h>
 #include <Samples.h>
+#include <Modelling_Patch.h>
 
 using namespace std;
 using correction::Correction;
@@ -153,6 +154,10 @@ private:
 
   float sf_sl_trig;
 
+  float weight = 1;
+
+  float weight_baseline;
+
   float weight_hem_veto;
   float weight_lumi;
   float weight_mc;
@@ -239,6 +244,8 @@ private:
   TFile *fin_el;
   TFile *fout;
 
+  Modelling_Patch modelling_patch;
+
   void Combine_Lepton_Channel();
   void Draw_Result();
   void Draw_Validation();
@@ -252,6 +259,8 @@ private:
   int N_CJets();
   void Ratio();
   void Read_Tree();
+  float Reweight_CKM(const TString &sample_name);
+  float Reweight_TTHF(const TString &sample_name);
   void Run_Analysis();
   void Run_Combine();
   void Run_Draw_Validation();

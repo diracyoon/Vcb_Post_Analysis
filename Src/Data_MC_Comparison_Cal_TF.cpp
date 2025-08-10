@@ -4,7 +4,7 @@ ClassImp(Data_MC_Comparison_Cal_TF);
 
 //////////
 
-Data_MC_Comparison_Cal_TF::Data_MC_Comparison_Cal_TF(const TString &a_era, const TString &a_channel, const TString &a_extension)
+Data_MC_Comparison_Cal_TF::Data_MC_Comparison_Cal_TF(const TString &a_era, const TString &a_channel, const TString& a_tagger, const TString &a_extension)
     : samples(a_era, a_channel, "Vcb")
 {
   cout << "[Data_MC_Comparison_Cal_TF::Data_MC_Comparison_Cal_TF]: Init analysis" << endl;
@@ -15,6 +15,7 @@ Data_MC_Comparison_Cal_TF::Data_MC_Comparison_Cal_TF(const TString &a_era, const
 
   era = a_era;
   channel = a_channel;
+  tagger = a_tagger;
   extension = a_extension;
 
   TString path_base = getenv("Vcb_Post_Analysis_WD");

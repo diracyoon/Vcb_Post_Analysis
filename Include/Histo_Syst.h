@@ -25,6 +25,7 @@
 #include <Result_Event.h>
 #include <Tagging_RF.h>
 #include <Tagging_RF_Flavor.h>
+#include <Modelling_Patch.h>
 
 using namespace std;
 
@@ -86,9 +87,6 @@ protected:
 
   TString year;
 
-  bool chk_rf_tthf_breakdown = false;
-  bool chk_jes_breakdown = false;
-
   bool chk_bin_optimizer = false;
 
   bool chk_qcd_ben = true;
@@ -121,6 +119,7 @@ protected:
 
   // Tagging_RF tagging_rf;
   Tagging_RF_Flavor tagging_rf;
+  Modelling_Patch modelling_patch;
 
   TString data_short_name;
 
@@ -131,6 +130,7 @@ protected:
   map<TString, TFile *> map_fin_mc_hdamp_up;
   map<TString, TFile *> map_fin_mc_mtop_171p5;
   map<TString, TFile *> map_fin_mc_mtop_173p5;
+  map<TString, TFile *> map_fin_mc_tt_4f;
 
   vector<map<TString, TTree *>> vec_map_tree_mc;
   map<TString, TTree *> map_tree_mc_central;
@@ -140,6 +140,7 @@ protected:
   map<TString, TTree *> map_tree_mc_hdamp_up;
   map<TString, TTree *> map_tree_mc_mtop_171p5;
   map<TString, TTree *> map_tree_mc_mtop_173p5;
+  map<TString, TTree *> map_tree_mc_tt_4f;
 
   map<TString, map<TString, TFile *> *> map_map_fin_mc;
   map<TString, map<TString, TTree *> *> map_map_tree_mc;
@@ -179,14 +180,14 @@ protected:
 
   TH1D *****histo_mc_merge; // n_region, n_syst, n_sample, n_variable
 
-  TH1 ***histo_subtracted_tf;           // n_abcd_region-2, n_region
+  TH1 ***histo_subtracted_tf;            // n_abcd_region-2, n_region
   TH3D ****histo_subtracted_data_driven; // n_region, n_syst, n_variable
   TH3D ****histo_tf_corrected;           // n_region, n_syst, n_variable
-  TH3D *****histo_tf_corrected_up;         // n_region, n_variable, tf n_bin_eta, tf n_bin_pt 
-  TH3D *****histo_tf_corrected_down;       // n_region, n_variable, tf n_bin_eta, tf n_bin_pt
-  
-  TH1D ***histo_envelop_up; //n_region, n_variable
-  TH1D ***histo_envelop_down; //n_region, n_variable
+  TH3D *****histo_tf_corrected_up;       // n_region, n_variable, tf n_bin_eta, tf n_bin_pt
+  TH3D *****histo_tf_corrected_down;     // n_region, n_variable, tf n_bin_eta, tf n_bin_pt
+
+  TH1D ***histo_envelop_up;   // n_region, n_variable
+  TH1D ***histo_envelop_down; // n_region, n_variable
 
   TH2D **histo_tf; // n_region
   TH2D *histo_tf_combine;
@@ -220,7 +221,7 @@ protected:
   void Draw_TF();
   void Fill_Histo_Data();
   void Fill_Histo_MC(const TString &sample_name, const TString &sampple_name_short, const TString &tree_type);
-  int Histo_Index(const TString &sample_name);
+  int Histo_Index(const TString &sample_name, bool &chk_discarded);
   TString Histo_Name_RF(const TString &sample_name);
   int Get_Region_Index(const TString &region);
   void Init_Histo();

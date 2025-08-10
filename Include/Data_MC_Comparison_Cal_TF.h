@@ -26,12 +26,13 @@ using namespace std;
 class Data_MC_Comparison_Cal_TF : public TObject
 {
 public:
-  Data_MC_Comparison_Cal_TF(const TString &a_era, const TString &a_channel, const TString &a_extension = "png");
+  Data_MC_Comparison_Cal_TF(const TString &a_era, const TString &a_channel, const TString& a_tagger = "C", const TString &a_extension = "png");
   ~Data_MC_Comparison_Cal_TF();
 
 protected:
   TString era;
   TString channel;
+  TString tagger;
   TString extension;
 
   Samples samples;

@@ -21,5 +21,7 @@
 #pragma link C++ class Tagging_RF_DL+; 
 #pragma link C++ class Tagging_RF_Flavor_DL+;
 #pragma link C++ class Selection+;
+#pragma link C++ class Compare_TTbb+;
+#pragma link C++ class Modelling_Patch+;
 
 #endif /* __ROOTCLING__ */

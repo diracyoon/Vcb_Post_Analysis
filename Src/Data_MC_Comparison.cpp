@@ -4,11 +4,12 @@ ClassImp(Data_MC_Comparison);
 
 //////////
 
-Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_channel, const TString &a_analyser, const TString &a_extension)
+Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_channel, const TString &a_analyser, const TString &a_tagger, const TString &a_extension)
     : samples(a_era, a_channel, a_analyser)
 {
   cout << "[Data_MC_Comparison::Data_MC_Comparison]: Init analysis" << endl;
 
+  ROOT::EnableImplicitMT(1);
   TH1::AddDirectory(kFALSE);
 
   gROOT->SetBatch(kTRUE);
@@ -16,6 +17,7 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   era = a_era;
   channel = a_channel;
   analyser = a_analyser;
+  tagger = a_tagger;
   extension = a_extension;
 
   if (era == "2016preVFP")
@@ -47,7 +49,7 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   TString fin_name = path_base;
   if (analyser == "Vcb")
   {
-    fin_name += "/Workplace/Histo_Syst/Vcb_Histos_" + era + "_" + channel + ".root";
+    fin_name += "/Workplace/Histo_Syst/Vcb_Histos_" + era + "_" + channel + "_" + tagger + "_tagger.root";
 
     if (chk_simple)
     {
@@ -94,7 +96,7 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   }
   else if (analyser == "Vcb_DL")
   {
-    fin_name += "/Workplace/CR_DL/Vcb_DL_Histos_" + era + "_" + channel + ".root";
+    fin_name += "/Workplace/CR_DL/Vcb_DL_Histos_" + era + "_" + channel + "_" + tagger + "_tagger.root";
 
     if (chk_simple)
     {
@@ -158,6 +160,8 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   TList *list_syst = ((TDirectory *)fin->Get(region_name[0]))->GetListOfKeys();
   Setup_Name(list_syst, syst_name);
   syst_name.erase(find(syst_name.begin(), syst_name.end(), "Data"));
+  if (find(syst_name.begin(), syst_name.end(), "TTbb_4f") != syst_name.end())
+    syst_name.erase(find(syst_name.begin(), syst_name.end(), "TTbb_4f"));
 
   // when jes breakdown is considered, jes_total should be removed
   if (chk_jes_break_down)
@@ -276,13 +280,13 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   TList *list_sample = ((TDirectory *)fin->Get(region_name[0] + "/" + syst_name[0]))->GetListOfKeys();
   Setup_Name(list_sample, sample_name);
 
-  if (analyser == "Vcb")
-  {
-    if (chk_qcd_data_driven)
-      sample_name.erase(find(sample_name.begin(), sample_name.end(), "QCD_bEn"));
-    else
-      sample_name.erase(find(sample_name.begin(), sample_name.end(), "QCD_Data_Driven"));
-  }
+  // if (analyser == "Vcb")
+  // {
+  //   if (chk_qcd_data_driven)
+  //     sample_name.erase(find(sample_name.begin(), sample_name.end(), "QCD_bEn"));
+  //   else
+  //     sample_name.erase(find(sample_name.begin(), sample_name.end(), "QCD_Data_Driven"));
+  // }
 
   for (int i = 0; i < sample_name.size(); i++)
     cout << sample_name[i] << endl;
@@ -336,12 +340,12 @@ void Data_MC_Comparison::Run()
     if (analyser == "Vcb")
     {
       // Draw_Each(syst_name_short[i], "Best_MVA_Score");
-      // Draw_Each(syst_name_short[i], "Template_MVA_Score");
+      Draw_Each(syst_name_short[i], "Template_MVA_Score");
       // Draw_Each(syst_name_short[i], "N_BJets");
       Draw_Each(syst_name_short[i], "Total");
-      Draw_Each(syst_name_short[i], "BvsC_Leading_Jet");
-      Draw_Each(syst_name_short[i], "CvsB_Leading_Jet");
-      Draw_Each(syst_name_short[i], "CvsL_Leading_Jet");
+      // Draw_Each(syst_name_short[i], "BvsC_Leading_Jet");
+      // Draw_Each(syst_name_short[i], "CvsB_Leading_Jet");
+      // Draw_Each(syst_name_short[i], "CvsL_Leading_Jet");
       // Draw_Each(syst_name_short[i], "N_BJets");
     }
     else if (analyser == "Vcb_DL")
@@ -421,10 +425,11 @@ void Data_MC_Comparison::Compare_QCD()
       canvas[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
       canvas[i][j]->Draw();
 
-      int index_qcd_ben = find(sample_name.begin(), sample_name.end(), "QCD") - sample_name.begin();
+      int index_qcd_ben = find(sample_name.begin(), sample_name.end(), "QCD_bEn") - sample_name.begin();
       int index_qcd_dd = find(sample_name.begin(), sample_name.end(), "QCD_Data_Driven") - sample_name.begin();
 
       float max = histo_mc[i][index_mc_nominal][index_qcd_ben][j]->GetMaximum();
+
       max = (max < histo_mc[i][index_mc_nominal][index_qcd_dd][j]->GetMaximum()) ? histo_mc[i][index_mc_nominal][index_qcd_dd][j]->GetMaximum() : max;
       max *= 1.5;
 

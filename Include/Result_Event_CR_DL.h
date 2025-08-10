@@ -72,6 +72,8 @@ protected:
 
   float weight;
 
+  float weight_baseline;
+
   float weight_b_tag;
   float weight_b_tag_hf_down;
   float weight_b_tag_hf_up;
