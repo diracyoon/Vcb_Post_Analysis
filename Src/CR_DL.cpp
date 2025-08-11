@@ -13,7 +13,7 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_ta
 
   cout << "[CR_DL::CR_DL]: Init analysis" << endl;
 
-  reduction = 100;
+  reduction = 1;
 
   era = a_era;
   channel = a_channel;
@@ -208,6 +208,9 @@ CR_DL::~CR_DL()
     }
   } //  if (chk_merge_pdf_error_set)
 
+  fout->Close();
+  delete fout;
+
   cout << "[CR_DL::~CR_DL]: Done" << endl;
 } // CR_DL::~CR_DL()
 
@@ -266,6 +269,19 @@ void CR_DL::Read_Tree()
 
       chk_print = true; // only for debug
 
+      float modelling_patch_baseline = modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline");
+      float modelling_patch_top_pt = modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
+      float modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_1");
+      float modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_2");
+      float modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_3");
+      float modelling_patch_scale_variation_4 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_4");
+      float modelling_patch_scale_variation_6 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_6");
+      float modelling_patch_scale_variation_8 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_8");
+      float modelling_patch_ps_0 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_0");
+      float modelling_patch_ps_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_1");
+      float modelling_patch_ps_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_2");
+      float modelling_patch_ps_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_3");
+
       for (Long64_t i = 0; i < n_entries; i++)
       {
         if (i % 500000 == 0)
@@ -279,18 +295,18 @@ void CR_DL::Read_Tree()
         if (TMath::IsNaN(event.weight_scale_variation_6) || !TMath::Finite(event.weight_scale_variation_6))
           cout << "IsNaN scale variation 6 " << event.weight_scale_variation_6 << endl;
 
-        event.weight_baseline = modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline");
-        event.weight_top_pt *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
-        event.weight_scale_variation_1 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_1");
-        event.weight_scale_variation_2 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_2");
-        event.weight_scale_variation_3 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_3");
-        event.weight_scale_variation_4 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_4");
-        event.weight_scale_variation_6 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_6");
-        event.weight_scale_variation_8 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_8");
-        event.weight_ps[0] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_0");
-        event.weight_ps[1] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_1");
-        event.weight_ps[2] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_2");
-        event.weight_ps[3] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_3");
+        event.weight_baseline = modelling_patch_baseline;
+        event.weight_top_pt *= modelling_patch_top_pt;
+        event.weight_scale_variation_1 *= modelling_patch_scale_variation_1;
+        event.weight_scale_variation_2 *= modelling_patch_scale_variation_2;
+        event.weight_scale_variation_3 *= modelling_patch_scale_variation_3;
+        event.weight_scale_variation_4 *= modelling_patch_scale_variation_4;
+        event.weight_scale_variation_6 *= modelling_patch_scale_variation_6;
+        event.weight_scale_variation_8 *= modelling_patch_scale_variation_8;
+        event.weight_ps[0] *= modelling_patch_ps_0;
+        event.weight_ps[1] *= modelling_patch_ps_1;
+        event.weight_ps[2] *= modelling_patch_ps_2;
+        event.weight_ps[3] *= modelling_patch_ps_3;
 
         Fill_Histo_MC(sample_name, sample_name_short, syst_fix);
       } // loop over entries
@@ -1567,10 +1583,10 @@ int CR_DL::Histo_Index(const TString &sample_name, bool &chk_discarded)
       // if (sample_name.Contains("TTLJ") || sample_name.Contains("TTLL"))
       //   cout << "test 1 Histo_Index: " << sample_name << " " << histo_name << endl;
     }
-    else 
+    else
     {
       if (histo_name.Contains("TTbb") || histo_name.Contains("bbDPS"))
-          chk_discarded = true;
+        chk_discarded = true;
     }
 
     index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), histo_name) - vec_short_name_mc.begin();

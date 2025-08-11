@@ -21,7 +21,7 @@ public:
   Modelling_Patch(const TString &a_mode);
   ~Modelling_Patch();
 
-  float Get_Modelling_Patch(const TString &sample, const TString &variation);
+  float Get_Modelling_Patch(const TString &sample, const TString &variation) const;
 
   inline static bool
   Comparing_TString(const TString &str1, const TString &str2)
@@ -32,7 +32,7 @@ public:
       return false;
   } // bool Comparing_TString(const TString &str1, const TString &str2)
 
-protected:
+private:
   TString mode;
 
   vector<TString> vec_eras;

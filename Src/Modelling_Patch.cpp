@@ -32,8 +32,10 @@ Modelling_Patch::Modelling_Patch(const TString &a_mode)
     Ratio();
   }
   else if (mode == "Application")
+  {
     Read_Ratio();
-
+    // cout << "test " << Get_Modelling_Patch("TTLL_mtop173p5", "Baseline") << endl;
+  }
 } // Modelling_Patch::Modelling_Patch()
 
 //////////
@@ -77,6 +79,7 @@ Modelling_Patch::~Modelling_Patch()
     }
 
     fout->Close();
+    delete fout;
   } // if (mode == "Analysis")
 
   cout << "[Modelling_Patch::~Modelling_Patch]: Done" << endl;
@@ -85,19 +88,25 @@ Modelling_Patch::~Modelling_Patch()
 
 //////////
 
-float Modelling_Patch::Get_Modelling_Patch(const TString &sample, const TString &variation)
+float Modelling_Patch::Get_Modelling_Patch(const TString &sample, const TString &variation) const
 {
   auto it_sample = patch_all.find(sample);
   if (it_sample != patch_all.end())
   {
-    auto it_variation = it_sample->second.find(sample + "_" + variation);
+    auto it_variation = it_sample->second.find(variation);
     if (it_variation != it_sample->second.end())
       return it_variation->second;
     else
+    {
+      // cout << "[Modelling_Patch::Get_Modelling_Patch]: No variation found for " << sample << " " << variation << endl;
       return 1.;
+    }
   }
   else
+  {
+    // cout << "[Modelling_Patch::Get_Modelling_Patch]: No sample found" << endl;
     return 1.;
+  }
 
   return -999;
 } // float Modelling_Patch::Get_Modelling_Patch(const TString &sample, const TString &variation)
@@ -378,6 +387,10 @@ void Modelling_Patch::Read_Ratio()
       TString variation_name = vec_variation_name[j];
       TH1D *ratio = (TH1D *)fin->Get(sample_name + "/" + variation_name);
 
+      variation_name = variation_name.Remove(0, sample_name.Length() + 1);
+
+      // cout << variation_name << " " << ratio->GetBinContent(1) << endl;
+
       patch.insert({variation_name, ratio->GetBinContent(1)});
     }
 
@@ -385,6 +398,7 @@ void Modelling_Patch::Read_Ratio()
   }
 
   fin->Close();
+  delete fin;
 
   cout << "[Modelling_Patch::Read_Ratio]: Done" << endl;
 

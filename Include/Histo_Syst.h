@@ -72,7 +72,7 @@ public:
       return false;
   } // bool Comparing_TString(const TString &str1, const TString &str2)
 
-protected:
+private:
   bool debug;
 
   int n_split;

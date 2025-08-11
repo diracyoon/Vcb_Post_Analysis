@@ -218,6 +218,7 @@ Histo_Syst::~Histo_Syst()
 
     cout << "[Histo_Syst::~Histo_Syst]: Closing root file" << endl;
     fout->Close();
+    delete fout;
   } //  if (mode == "Cal_TF")
 
   else if (mode == "2D")
@@ -319,6 +320,7 @@ Histo_Syst::~Histo_Syst()
 
     cout << "[Histo_Syst::~Histo_Syst]: Closing root file" << endl;
     fout->Close();
+    delete fout;
   } // else if (mode == "2D")
   else if (mode == "Data_Driven")
   {
@@ -512,6 +514,10 @@ Histo_Syst::~Histo_Syst()
     fin_tf->Close();
     fout->Close();
 
+    delete fin_2d;
+    delete fin_tf;
+    delete fout;
+
     cout << "[Histo_Syst::~Histo_Syst]: Closing root file. Done." << endl;
   } // else if (mode == "Data_Driven")
 
@@ -550,6 +556,7 @@ Histo_Syst::~Histo_Syst()
     } // loop over n_region
 
     fout->Close();
+    delete fout;
   } // else
 
   cout << "[Histo_Syst::~Histo_Syst]: Done" << endl;
@@ -2079,7 +2086,7 @@ int Histo_Syst::Histo_Index(const TString &sample_name, bool &chk_discarded)
     else
     {
       if (histo_name.Contains("TTbb") || histo_name.Contains("bbDPS"))
-          chk_discarded = true;
+        chk_discarded = true;
     }
 
     index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), histo_name) - vec_short_name_mc.begin();
@@ -2679,6 +2686,21 @@ void Histo_Syst::Read_Tree()
 
       cout << "N_Entries:" << n_entries << " N_Split:" << n_split << " Index_Split:" << index_split << " Step:" << step << " Init:" << init << " End:" << end << endl;
 
+      float modelling_patch_baseline = modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline");
+      float modelling_patch_top_pt = modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
+      float modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_1");
+      float modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_2");
+      float modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_3");
+      float modelling_patch_scale_variation_4 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_4");
+      float modelling_patch_scale_variation_6 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_6");
+      float modelling_patch_scale_variation_8 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_8");
+      float modelling_patch_ps_0 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_0");
+      float modelling_patch_ps_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_1");
+      float modelling_patch_ps_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_2");
+      float modelling_patch_ps_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_3");
+
+      // cout << "test " << sample_name_short << " " << modelling_patch_baseline << endl;
+
       for (Long64_t i = init; i < end; i++)
       {
         if (i % 500000 == 0)
@@ -2719,6 +2741,19 @@ void Histo_Syst::Read_Tree()
 
         if (!chk_bin_optimizer && mode == "2D" && event.template_score < 0.1)
           continue;
+
+        event.weight_baseline = modelling_patch_baseline;
+        event.weight_top_pt *= modelling_patch_top_pt;
+        event.weight_scale_variation_1 *= modelling_patch_scale_variation_1;
+        event.weight_scale_variation_2 *= modelling_patch_scale_variation_2;
+        event.weight_scale_variation_3 *= modelling_patch_scale_variation_3;
+        event.weight_scale_variation_4 *= modelling_patch_scale_variation_4;
+        event.weight_scale_variation_6 *= modelling_patch_scale_variation_6;
+        event.weight_scale_variation_8 *= modelling_patch_scale_variation_8;
+        event.weight_ps[0] *= modelling_patch_ps_0;
+        event.weight_ps[1] *= modelling_patch_ps_1;
+        event.weight_ps[2] *= modelling_patch_ps_2;
+        event.weight_ps[3] *= modelling_patch_ps_3;
 
         Fill_Histo_MC(sample_name, sample_name_short, tree_type);
         // if (syst_fix == "None") Fill_Histo_Weight(region_index, sample_index);
