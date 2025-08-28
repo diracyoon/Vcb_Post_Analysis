@@ -1,16 +1,16 @@
 executable = Run_Job.sh
 jobbatchname = Vcb_Histo_Syst_Data_Driven
 universe   = vanilla
-arguments  = Histo_Syst.py -e $(Era) -ch $(Channel) -data_driven 1 -tagger C
+arguments  = Histo_Syst.py -e $(Era) -ch $(Channel) -data_driven -tagger $(Tagger)
 log = condor.log
 getenv     = True
 transfer_input_files = Histo_Syst.py
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 request_cpus = 1
-request_memory = 10*1024
+request_memory = 30*1024
 output = job_Data_Driven_$(Era)_$(Channel).log
 error = job_Data_Driven_$(Era)_$(Channel).err
 concurrency_limits = n1000.isyoon
 
-queue Era,Channel from external.dat
+queue Era, Channel, Tagger from external.dat

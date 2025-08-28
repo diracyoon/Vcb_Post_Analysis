@@ -1,7 +1,7 @@
 executable = Run_Job.sh
 jobbatchname = Vcb_Histo_Syst_Merge_Pdf_Error
 universe   = vanilla
-arguments  = Histo_Syst.py -e $(Era) -ch $(Channel) -merge 1
+arguments  = Histo_Syst.py -e $(Era) -ch $(Channel) -tagger $(Tagger) -merge 
 log = condor.log
 getenv     = True
 transfer_input_files = Histo_Syst.py
@@ -12,4 +12,4 @@ output = job_Merge_Pdf_Error_$(Era)_$(Channel).log
 error = job_Merge_Pdf_Error_$(Era)_$(Channel).err
 concurrency_limits = n1000.isyoon
 
-queue Era,Channel from external.dat
+queue Era,Channel,Tagger from external.dat

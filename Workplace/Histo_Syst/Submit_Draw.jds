@@ -1,14 +1,15 @@
 executable = Run_Job.sh
 jobbatchname = Data_MC_Comparison
 universe   = vanilla
-arguments  = Data_MC_Comparison.py -e $(Era) -ch $(Channel)
+arguments  = Data_MC_Comparison.py -e $(Era) -ch $(Channel) -tagger $(Tagger)
 log = condor.log
 getenv     = True
+transfer_input_files = Data_MC_Comparison.py
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 request_cpus = 1
 output = job_Data_MC_Comparison_$(Era)_$(Channel).log
 error = job_Data_MC_Comparison_$(Era)_$(Channel).err
-concurrency_limits = n1000.isyoon
+concurrency_limits = n1200.isyoon
 
-queue Era,Channel from external.dat
+queue Era,Channel,Tagger from external.dat
