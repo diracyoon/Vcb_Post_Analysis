@@ -4,6 +4,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <fstream>
 
 #include <TObject.h>
 #include <TString.h>
@@ -123,6 +124,7 @@ private:
 
   TString data_short_name;
 
+  vector<map<TString, TFile *>> vec_map_fin_mc;
   map<TString, TFile *> map_fin_mc;
   map<TString, TFile *> map_fin_mc_cp5_down;
   map<TString, TFile *> map_fin_mc_cp5_up;
@@ -213,6 +215,7 @@ private:
   // template <typename T>
   // T ****Allocate_Array(const int &dim1, const int &dim2, const int &dim3);
 
+  // void Apply_Modelling_Patch();
   void Calculate_TF();
   void Config_Sample();
   void Config_Syst();
@@ -238,6 +241,22 @@ private:
   void Setup_Template_Reader();
   int Set_ABCD_Region();
   int Set_Region();
+
+  void printMemoryUsage(const std::string &stage)
+  {
+    std::ifstream status_file("/proc/self/status");
+    std::string line;
+    long rss_kb = 0;
+    while (std::getline(status_file, line))
+    {
+      if (line.rfind("VmRSS:", 0) == 0)
+      {
+        sscanf(line.c_str(), "VmRSS:\t%ld kB", &rss_kb);
+        break;
+      }
+    }
+    std::cout << "[MemoryUsage] " << stage << ": " << rss_kb / 1024.0 << " MB" << std::endl;
+  }
 
   ClassDef(Histo_Syst, 1);
 };

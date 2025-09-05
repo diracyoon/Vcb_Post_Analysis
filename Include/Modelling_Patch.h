@@ -4,6 +4,7 @@
 #include <iostream>
 #include <vector>
 #include <map>
+#include <memory>
 
 #include <TFile.h>
 #include <TH1D.h>
@@ -43,28 +44,28 @@ private:
   vector<TString> vec_short_name_mc;
   int n_sample_merge_mc;
 
-  TH1D **histo_baseline;          // n_sample
-  TH1D **histo_pdf_alternative;   // n_sample
-  TH1D ***histo_pdf_error_set;    // n_sample, n_pdf_error_set
-  TH1D **histo_pdf_as_down;       // n_sample
-  TH1D **histo_pdf_as_up;         // n_sample
-  TH1D **histo_top_pt_reweight;   // n_sample
-  TH1D **histo_scale_variation_1; // n_sample
-  TH1D **histo_scale_variation_2; // n_sample
-  TH1D **histo_scale_variation_3; // n_sample
-  TH1D **histo_scale_variation_4; // n_sample
-  TH1D **histo_scale_variation_6; // n_sample
-  TH1D **histo_scale_variation_8; // n_sample
-  TH1D **histo_ps_0;              // n_sample
-  TH1D **histo_ps_1;              // n_sample
-  TH1D **histo_ps_2;              // n_sample
-  TH1D **histo_ps_3;              // n_sample
-  TH1D **histo_cp5_down;          // n_sample
-  TH1D **histo_cp5_up;            // n_sample
-  TH1D **histo_hdamp_down;        // n_sample
-  TH1D **histo_hdamp_up;          // n_sample
-  TH1D **histo_mtop_down;         // n_sample
-  TH1D **histo_mtop_up;           // n_sample
+  vector<unique_ptr<TH1D>> histo_baseline;              // n_sample
+  vector<unique_ptr<TH1D>> histo_pdf_alternative;       // n_sample
+  vector<vector<unique_ptr<TH1D>>> histo_pdf_error_set; // n_sample, n_pdf_error_set
+  vector<unique_ptr<TH1D>> histo_pdf_as_down;           // n_sample
+  vector<unique_ptr<TH1D>> histo_pdf_as_up;             // n_sample
+  vector<unique_ptr<TH1D>> histo_top_pt_reweight;       // n_sample
+  vector<unique_ptr<TH1D>> histo_scale_variation_1;     // n_sample
+  vector<unique_ptr<TH1D>> histo_scale_variation_2;     // n_sample
+  vector<unique_ptr<TH1D>> histo_scale_variation_3;     // n_sample
+  vector<unique_ptr<TH1D>> histo_scale_variation_4;     // n_sample
+  vector<unique_ptr<TH1D>> histo_scale_variation_6;     // n_sample
+  vector<unique_ptr<TH1D>> histo_scale_variation_8;     // n_sample
+  vector<unique_ptr<TH1D>> histo_ps_0;                  // n_sample
+  vector<unique_ptr<TH1D>> histo_ps_1;                  // n_sample
+  vector<unique_ptr<TH1D>> histo_ps_2;                  // n_sample
+  vector<unique_ptr<TH1D>> histo_ps_3;                  // n_sample
+  vector<unique_ptr<TH1D>> histo_cp5_down;              // n_sample
+  vector<unique_ptr<TH1D>> histo_cp5_up;                // n_sample
+  vector<unique_ptr<TH1D>> histo_hdamp_down;            // n_sample
+  vector<unique_ptr<TH1D>> histo_hdamp_up;              // n_sample
+  vector<unique_ptr<TH1D>> histo_mtop_down;             // n_sample
+  vector<unique_ptr<TH1D>> histo_mtop_up;               // n_sample
 
   // too bulky to store single float
   // TH1D ***histo_ratio;             // n_sample, n_variations

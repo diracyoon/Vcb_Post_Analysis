@@ -5,8 +5,9 @@ ClassImp(Histo_Syst);
 //////////
 
 Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TString &a_mode, const int &a_index_tree_type, const int &a_last_index_tree_type, const TString &a_tagger, const TString &a_swap_mode)
-    : samples(a_era, a_channel, (a_mode == "Cal_TF") ? "Vcb_Cal_TF" : "Vcb"), event(a_era, a_channel, (a_mode == "Cal_TF") ? "Vcb_Cal_TF" : "Vcb", a_swap_mode), tagging_rf(a_era), modelling_patch("Application")
+    : samples(a_era, a_channel, (a_mode == "Cal_TF") ? "Vcb_Cal_TF" : "Vcb"), event(a_era, a_channel, (a_mode == "Cal_TF") ? "Vcb_Cal_TF" : "Vcb", a_tagger, a_swap_mode), tagging_rf(a_era), modelling_patch("Application")
 {
+  // VALGRIND_MONITOR_COMMAND("start_massif");
   TH1::AddDirectory(kFALSE);
 
   cout << "[Histo_Syst::Histo_Syst]: Init analysis" << endl;
@@ -65,16 +66,6 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
 
   n_tree_type = vec_tree_type.size();
 
-  chk_cut_best_mva_score_pre = false;
-  if (chk_cut_best_mva_score_pre)
-    cut_best_mva_score_pre = 0.2;
-  else
-    cut_best_mva_score_pre = 0;
-
-  chk_cut_template_score = false;
-  if (chk_cut_template_score)
-    cut_template_score = 0.2;
-
   if (era == "2016preVFP")
   {
     bvsc_wp_m = bvsc_wp_m_2016preVFP;
@@ -108,19 +99,22 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
 
   // Signal should be last
   if (mode == "Cal_TF")
-    region_name = {"TwoB"};
+    region_name = {"Control"};
   else
   {
     if (chk_bin_optimizer)
-      region_name = {"TwoB", "ThreeB_CR"};
+      // region_name = {"TwoB", "ThreeB_CR"};
+      region_name = {"Control"};
     else
-      region_name = {"TwoB", "ThreeB_CR", "Signal"};
+      // region_name = {"TwoB", "ThreeB_CR", "Signal"};
+      region_name = {"Control", "Signal"};
   }
+
   n_region = region_name.size();
 
   if (mode == "Cal_TF")
   {
-    ROOT::EnableImplicitMT(2);
+    ROOT::EnableImplicitMT(1);
 
     Config_Sample();
     Config_Syst();
@@ -128,12 +122,13 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
     Register_Sample_TF();
     Init_Histo_TF();
     Read_Tree();
+    // Apply_Modelling_Patch();
     Calculate_TF();
     Draw_TF();
   }
   else if (mode == "2D")
   {
-    ROOT::EnableImplicitMT(4);
+    ROOT::EnableImplicitMT(1);
 
     Config_Sample();
     Config_Syst();
@@ -141,6 +136,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
     Register_Sample();
     Init_Histo();
     Read_Tree();
+    // Apply_Modelling_Patch();
   }
   else if (mode == "Data_Driven")
   {
@@ -519,6 +515,8 @@ Histo_Syst::~Histo_Syst()
     delete fout;
 
     cout << "[Histo_Syst::~Histo_Syst]: Closing root file. Done." << endl;
+
+    // VALGRIND_MONITOR_COMMAND("stop_massif");
   } // else if (mode == "Data_Driven")
 
   // PDF error set
@@ -561,6 +559,75 @@ Histo_Syst::~Histo_Syst()
 
   cout << "[Histo_Syst::~Histo_Syst]: Done" << endl;
 } // Histo_Syst::~Histo_Syst()
+
+//////////
+
+// void Histo_Syst::Apply_Modelling_Patch()
+// {
+//   cout << "[Histo_Syst::Apply_Modelling_Patch]: Init" << endl;
+
+//   for (int i = 0; i < n_abcd_region; i++)
+//   {
+//     for (int j = 0; j < n_region; j++)
+//     {
+//       for (int k = 0; k < n_syst; k++)
+//       {
+//         cout << syst_name[k] << endl;
+
+//         TString variation_name_modelling_patch;
+//         if (syst_name[k].Contains("MuF"))
+//         {
+//           if (syst_name[k].Contains("Down"))
+//             variation_name_modelling_patch = "Scale_Variation_2";
+//           else if (syst_name[k].Contains("Up"))
+//             variation_name_modelling_patch = "Scale_Variation_1";
+//         }
+//         else if (syst_name[k].Contains("MuR"))
+//         {
+//           if (syst_name[k].Contains("Down"))
+//             variation_name_modelling_patch = "Scale_Variation_6";
+//           else if (syst_name[k].Contains("Up"))
+//             variation_name_modelling_patch = "Scale_Variation_3";
+//         }
+//         else if (syst_name[k].Contains("FSR"))
+//         {
+//           if (syst_name[k].Contains("Down"))
+//             variation_name_modelling_patch = "PS_0";
+//           else if (syst_name[k].Contains("Up"))
+//             variation_name_modelling_patch = "PS_1";
+//         }
+//         else if (syst_name[k].Contains("ISR"))
+//         {
+//           if (syst_name[k].Contains("Down"))
+//             variation_name_modelling_patch = "PS_2";
+//           else if (syst_name[k].Contains("Up"))
+//             variation_name_modelling_patch = "PS_3";
+//         }
+//         else if (syst_name[k] == "Top_Pt_Reweight")
+//           variation_name_modelling_patch = "Top_Pt_Reweight";
+//         else if (syst_name[k].Contains("CP5") || syst_name[k].Contains("hdamp") || syst_name[k].Contains("mtop"))
+//           variation_name_modelling_patch = "Baseline";
+//         else
+//           continue;
+
+//         for (int l = 0; l < n_sample_merge_mc; l++)
+//         {
+//           cout << vec_short_name_mc[l] << endl;
+//           TString sample_name_modelling_patch;
+
+//           for (int m = 0; m < n_variable; m++)
+//           {
+//             // histo_mc[i][j][k][l][m]->Scale();
+//           } // loop over n_variable
+//         } // loop over n_sample_merge_mc
+//       } // loop over n_syst
+//     } // loop over n_region
+//   } // loop over n_abcd_region
+
+//   cout << "[Histo_Syst::Apply_Modelling_Patch]: Done" << endl;
+
+//   return;
+// } // void Histo_Syst::Apply_Modelling_Patch()
 
 //////////
 
@@ -888,78 +955,101 @@ void Histo_Syst::Config_Variable()
     {
       if (channel == "Mu")
       {
-        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.26, 0.3, 0.36, 0.44, 0.57, 1};
-        bin_template_mva_score[0] = {0.1, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.26, 0.3, 0.36, 0.44, 0.57, 1};
-        // bin_template_mva_score[1] = {0, 0.04, 0.09, 0.16, 0.23, 0.31, 0.41, 0.54, 0.72, 0.95};
-        bin_template_mva_score[1] = {0.1, 0.16, 0.23, 0.31, 0.41, 0.54, 0.72, 0.95};
-        bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
+        // bin_template_mva_score[0] = {0.35, 1};
+        // bin_template_mva_score[1] = {0.35, 0.38, 0.41, 0.45, 0.5, 0.56, 0.65, 0.85};
+        // bin_template_mva_score[2] = {0.85, 0.88, 0.91, 1};
+
+        bin_template_mva_score[0] = {0.35, 0.37, 0.4, 0.43, 0.47, 0.52, 0.58, 0.68, 0.85};
+        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.94, 1};
       }
       else if (channel == "El")
       {
-        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.09, 0.11, 0.14, 0.17, 0.21, 0.26, 0.34, 0.48, 1};
-        bin_template_mva_score[0] = {0.1, 0.14, 0.17, 0.21, 0.26, 0.34, 0.48, 1};
-        // bin_template_mva_score[1] = {0, 0.1, 0.22, 0.37, 0.59, 0.95};
-        bin_template_mva_score[1] = {0.1, 0.22, 0.37, 0.59, 0.95};
-        bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
+        // bin_template_mva_score[0] = {0.35, 1};
+        // bin_template_mva_score[1] = {0.35, 0.42, 0.49, 0.59, 0.85};
+        // bin_template_mva_score[2] = {0.85, 0.89, 1};
+
+        bin_template_mva_score[0] = {0.35, 0.4, 0.45, 0.51, 0.61, 0.85};
+        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.9, 0.92, 1};
       }
-    }
+    } // if (era == "2016preVFP")
     else if (era == "2016postVFP")
     {
       if (channel == "Mu")
       {
-        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.13, 0.15, 0.17, 0.2, 0.23, 0.27, 0.32, 0.4, 0.54, 1};
-        bin_template_mva_score[0] = {0.1, 0.11, 0.13, 0.15, 0.17, 0.2, 0.23, 0.27, 0.32, 0.4, 0.54, 1};
-        // bin_template_mva_score[1] = {0, 0.04, 0.1, 0.18, 0.26, 0.36, 0.49, 0.67, 0.95};
-        bin_template_mva_score[1] = {0.1, 0.18, 0.26, 0.36, 0.49, 0.67, 0.95};
-        bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
+        // bin_template_mva_score[0] = {0.35, 1};
+        // bin_template_mva_score[1] = {0.35, 0.4, 0.44, 0.49, 0.55, 0.64, 0.85};
+        // bin_template_mva_score[2] = {0.85, 0.88, 0.91, 1};
+
+        bin_template_mva_score[0] = {0.35, 0.39, 0.42, 0.46, 0.51, 0.57, 0.66, 0.85};
+        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.93, 1};
       }
       else if (channel == "El")
       {
-        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.09, 0.11, 0.14, 0.18, 0.23, 0.3, 0.44, 1};
-        bin_template_mva_score[0] = {0.10, 0.14, 0.18, 0.23, 0.3, 0.44, 1};
-        // bin_template_mva_score[1] = {0.0, 0.05, 0.17, 0.32, 0.54, 0.95};
-        bin_template_mva_score[1] = {0.1, 0.17, 0.32, 0.54, 0.95};
-        bin_template_mva_score[2] = {0.95, 0.97, 1};
+        // bin_template_mva_score[0] = {0.35, 1};
+        // bin_template_mva_score[1] = {0.35, 0.4, 0.47, 0.58, 0.85};
+        // bin_template_mva_score[2] = {0.85, 0.89, 1};
+
+        bin_template_mva_score[0] = {0.35, 0.43, 0.5, 0.6, 0.85};
+        bin_template_mva_score[1] = {0.85, 0.86, 0.88, 0.9, 0.92, 1};
       }
-    }
+    } // else if (era == "2016postVFP")
     else if (era == "2017")
     {
       if (channel == "Mu")
       {
-        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.21, 0.23, 0.25, 0.27, 0.29, 0.32, 0.35, 0.39, 0.44, 0.5, 0.58, 0.7, 1};
-        bin_template_mva_score[0] = {0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.21, 0.23, 0.25, 0.27, 0.29, 0.32, 0.35, 0.39, 0.44, 0.5, 0.58, 0.7, 1};
-        // bin_template_mva_score[1] = {0.0, 0.01, 0.02, 0.04, 0.07, 0.11, 0.15, 0.19, 0.23, 0.28, 0.33, 0.39, 0.46, 0.54, 0.63, 0.73, 0.84, 0.95};
-        bin_template_mva_score[1] = {0.10, 0.15, 0.19, 0.23, 0.28, 0.33, 0.39, 0.46, 0.54, 0.63, 0.73, 0.84, 0.95};
-        bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 0.99, 1};
+        // bin_template_mva_score[0] = {0.35, 0.4, 0.44, 0.51, 1};
+        // bin_template_mva_score[1] = {0.35, 0.37, 0.39, 0.41, 0.43, 0.45, 0.47, 0.49, 0.51, 0.54, 0.57, 0.6, 0.64, 0.69, 0.76, 0.85};
+        // bin_template_mva_score[2] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.94, 1};
+        bin_template_mva_score[0] = {0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.44, 0.46, 0.48, 0.5, 0.52, 0.54, 0.57, 0.6, 0.63, 0.67, 0.72, 0.79, 0.85};
+        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 1};
       }
       else if (channel == "El")
       {
-        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.25, 0.29, 0.34, 0.4, 0.48, 0.62, 1};
-        bin_template_mva_score[0] = {0.1, 0.11, 0.12, 0.14, 0.16, 0.18, 0.2, 0.22, 0.25, 0.29, 0.34, 0.4, 0.48, 0.62, 1};
-        // bin_template_mva_score[1] = {0, 0.03, 0.08, 0.14, 0.21, 0.28, 0.37, 0.47, 0.61, 0.77, 0.95};
-        bin_template_mva_score[1] = {0.1, 0.14, 0.21, 0.28, 0.37, 0.47, 0.61, 0.77, 0.95};
-        bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
+        // bin_template_mva_score[0] = {0.35, 0.4, 0.47, 1};
+        // bin_template_mva_score[1] = {0.35, 0.37, 0.39, 0.41, 0.44, 0.47, 0.5, 0.54, 0.58, 0.64, 0.72, 0.85};
+        // bin_template_mva_score[2] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.91, 0.93, 1};
+
+        bin_template_mva_score[0] = {0.35, 0.37, 0.39, 0.41, 0.43, 0.45, 0.47, 0.5, 0.53, 0.57, 0.61, 0.67, 0.75, 0.85};
+        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.95, 1};
       }
-    }
+    } // else if (era == "2017")
     else if (era == "2018")
     {
       if (channel == "Mu")
       {
-        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.37, 0.4, 0.43, 0.47, 0.52, 0.58, 0.65, 0.75, 1};
-        bin_template_mva_score[0] = {0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.24, 0.26, 0.28, 0.3, 0.32, 0.34, 0.37, 0.4, 0.43, 0.47, 0.52, 0.58, 0.65, 0.75, 1};
-        // bin_template_mva_score[1] = {0.0, 0.01, 0.02, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.25, 0.28, 0.31, 0.34, 0.38, 0.42, 0.46, 0.51, 0.56, 0.61, 0.67, 0.74, 0.81, 0.88, 0.95};
-        bin_template_mva_score[1] = {0.10, 0.13, 0.15, 0.17, 0.19, 0.22, 0.25, 0.28, 0.31, 0.34, 0.38, 0.42, 0.46, 0.51, 0.56, 0.61, 0.67, 0.74, 0.81, 0.88, 0.95};
-        bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 0.99, 1};
+        // bin_template_mva_score[0] = {0.35, 0.37, 0.4, 0.43, 0.47, 0.54, 1};
+        // bin_template_mva_score[1] = {0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.48, 0.5, 0.52, 0.54, 0.56, 0.58, 0.6, 0.63, 0.66, 0.69, 0.73, 0.78, 0.85};
+        // bin_template_mva_score[2] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 1};
+
+        bin_template_mva_score[0] = {0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.51, 0.53, 0.55, 0.57, 0.59, 0.61, 0.64, 0.67, 0.71, 0.76, 0.82, 0.85};
+        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 1};
       }
       else if (channel == "El")
       {
-        // bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.29, 0.32, 0.36, 0.41, 0.47, 0.55, 0.67, 1};
-        bin_template_mva_score[0] = {0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.18, 0.2, 0.22, 0.24, 0.26, 0.29, 0.32, 0.36, 0.41, 0.47, 0.55, 0.67, 1};
-        // bin_template_mva_score[1] = {0.0, 0.01, 0.02, 0.03, 0.06, 0.09, 0.13, 0.17, 0.21, 0.25, 0.3, 0.36, 0.43, 0.51, 0.6, 0.7, 0.82, 0.95};
-        bin_template_mva_score[1] = {0.10, 0.17, 0.21, 0.25, 0.3, 0.36, 0.43, 0.51, 0.6, 0.7, 0.82, 0.95};
-        bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 0.99, 1};
+        // bin_template_mva_score[0] = {0.35, 0.38, 0.43, 0.5, 1};
+        // bin_template_mva_score[1] = {0.35, 0.36, 0.38, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.53, 0.56, 0.59, 0.63, 0.68, 0.75, 0.85};
+        // bin_template_mva_score[2] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.93, 1};
+
+        bin_template_mva_score[0] = {0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.52, 0.55, 0.58, 0.61, 0.65, 0.7, 0.78, 0.85};
+        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 1};
       }
-    }
+    } // else if (era == "2018")
+
+    // float step = 0.01;
+    // int n_step = (1 - template_score_cut) / step;
+    // for (int i = 0; i < n_step; i++)
+    //   bin_template_mva_score[0].push_back(template_score_cut + i * step);
+    // bin_template_mva_score[0].push_back(1);
+
+    // n_step = (threeb_cr_cut - template_score_cut) / step;
+    // for (int i = 0; i < n_step; i++)
+    //   bin_template_mva_score[1].push_back(template_score_cut + i * step);
+    // bin_template_mva_score[1].push_back(threeb_cr_cut);
+
+    // n_step = (1 - threeb_cr_cut) / step;
+    // for (int i = 0; i < n_step; i++)
+    //   bin_template_mva_score[2].push_back(threeb_cr_cut + i * step);
+    // bin_template_mva_score[2].push_back(1);
 
     //   // QCD MC
     //   if (era == "2016preVFP")
@@ -1071,7 +1161,7 @@ void Histo_Syst::Config_Variable()
                        {"CvsL_W_d", 25, 0, 1}};
 
       if (chk_bin_optimizer)
-        variable_conf.push_back({"Template_MVA_Score", 100, 0, 1});
+        variable_conf.push_back({"Template_MVA_Score", 80, 0.2, 1});
       else
         variable_conf.push_back({"Template_MVA_Score"});
 
@@ -1314,7 +1404,7 @@ void Histo_Syst::Draw_TF()
   for (int i = 0; i < n_region; i++)
   {
     canvas[i] = new TCanvas("", "", 800, 500);
-    canvas[i]->Divide(2, 1);
+    // canvas[i]->Divide(2, 1);
     canvas[i]->Draw();
 
     double max = histo_tf[i]->GetMaximum();
@@ -1325,20 +1415,29 @@ void Histo_Syst::Draw_TF()
     min = min < histo_tf_qcd_mc[i]->GetMinimum() ? min : histo_tf_qcd_mc[i]->GetMinimum();
     min *= 0.9;
 
-    canvas[i]->cd(1);
-    canvas[i]->cd(1)->SetLogy();
-    histo_tf[i]->SetTitle("TF Data Driven");
-    histo_tf[i]->GetXaxis()->SetTitle("Lepton #eta");
-    histo_tf[i]->GetYaxis()->SetTitle("Lepton P_{T}");
-    histo_tf[i]->Draw("colz texte");
+    // canvas[i]->cd(1);
+    // canvas[i]->cd(1)->SetLogy();
+    canvas[i]->cd();
+    canvas[i]->SetLogx();
+    // histo_tf[i]->SetTitle("TF Data Driven");
+    // histo_tf[i]->GetXaxis()->SetTitle("Lepton #eta");
+    // histo_tf[i]->GetYaxis()->SetTitle("Lepton P_{T}");
+    // histo_tf[i]->Draw("colz texte");
+    TH1D *histo_proj_data_driven = (TH1D *)histo_tf[i]->ProjectionY(region_name[i] + "Data_Driven")->Clone();
+    // histo_proj->SetTitle("TF Data Driven");
+    histo_proj_data_driven->GetXaxis()->SetTitle("Lepton P_{T}");
+    histo_proj_data_driven->GetYaxis()->SetTitle("TF");
+    histo_proj_data_driven->Draw();
 
-    canvas[i]->cd(2);
-    canvas[i]->cd(2)->SetLogy();
+    // canvas[i]->cd(2);
+    // canvas[i]->cd(2)->SetLogy();
     TString qcd_mc_name;
     if (chk_qcd_ben)
       qcd_mc_name = "TF QCD bEn MC Sample";
     else
       qcd_mc_name = "TF QCD MC Sample";
+    TH1D *histo_proj_qcd_mc = (TH1D *)histo_tf_qcd_mc[i]->ProjectionY(region_name[i] + qcd_mc_name)->Clone();
+
     histo_tf_qcd_mc[i]->SetTitle(qcd_mc_name);
     histo_tf_qcd_mc[i]->GetXaxis()->SetTitle("Lepton #eta");
     histo_tf_qcd_mc[i]->GetYaxis()->SetTitle("Lepton P_{T}");
@@ -1373,6 +1472,8 @@ void Histo_Syst::Fill_Histo_Data()
     return;
 
   int region_index = Set_Region();
+  if (region_index < 0)
+    return;
 
   // to save time
   if (mode == "2D" && (abcd_region_name[abcd_region_index] == "A" || abcd_region_name[abcd_region_index] == "B"))
@@ -1423,7 +1524,7 @@ void Histo_Syst::Fill_Histo_Data()
       // for blind
       if (abcd_region_name[abcd_region_index] == "D")
       {
-        if (region_name[region_index] != "Signal")
+        if (!region_name[region_index].Contains("Signal"))
           dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][30])->Fill(event.template_score, event.lepton_eta, event.lepton_pt, 1);
       }
       else
@@ -1445,6 +1546,8 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &sample
   // int sample_index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name) - vec_short_name_mc.begin();
   int abcd_region_index = Set_ABCD_Region();
   int region_index = Set_Region();
+  if (region_index < 0)
+    return;
 
   // to save time
   if (mode == "2D" && (abcd_region_name[abcd_region_index] == "A" || abcd_region_name[abcd_region_index] == "B"))
@@ -2661,6 +2764,7 @@ void Histo_Syst::Read_Tree()
     {
       TString sample_name = it->first;
       cout << "Sample_Name = " << sample_name << endl;
+      printMemoryUsage(sample_name.Data());
 
       TString sample_name_short;
       if (it->first.Contains("TTLJ") || it->first.Contains("TTLL"))
@@ -2669,6 +2773,9 @@ void Histo_Syst::Read_Tree()
         sample_name_short = samples.map_short_name_mc[it->first];
 
       cout << sample_name << " " << sample_name_short << endl;
+
+      // stupid
+      // it->second->SetDirectory(nullptr);
 
       Long64_t n_entries = it->second->GetEntries();
       n_entries /= reduction;
@@ -2686,8 +2793,10 @@ void Histo_Syst::Read_Tree()
 
       cout << "N_Entries:" << n_entries << " N_Split:" << n_split << " Index_Split:" << index_split << " Step:" << step << " Init:" << init << " End:" << end << endl;
 
+      // cout << "test " << sample_name_short << " " << modelling_patch_baseline << endl;
+
       float modelling_patch_baseline = modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline");
-      float modelling_patch_top_pt = modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
+      float modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
       float modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_1");
       float modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_2");
       float modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_3");
@@ -2699,32 +2808,36 @@ void Histo_Syst::Read_Tree()
       float modelling_patch_ps_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_2");
       float modelling_patch_ps_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_3");
 
-      // cout << "test " << sample_name_short << " " << modelling_patch_baseline << endl;
-
       for (Long64_t i = init; i < end; i++)
       {
         if (i % 500000 == 0)
+        {
           cout << "Processing... " << i << "/" << n_entries << endl;
+          printMemoryUsage("Event " + std::to_string(i));
+        }
 
+        event.Clear();
         it->second->GetEntry(i);
+
+        // event.template_score = TMath::Exp(event.template_score);
+        event.template_score = event.Multi_To_One();
+
+        // quick and dirty method to fix index ordering issue
+        event.Swap_Scale_Variation(sample_name_short);
 
         // // cut on best_mva_score_pre
         // if (chk_cut_best_mva_score_pre && event.best_mva_score_pre < cut_best_mva_score_pre)
         //   continue;
 
-        // // cut on template_score
-        if (chk_cut_template_score && event.template_score < cut_template_score)
-          continue;
-
         // event veto
-        if (100 < TMath::Abs(event.weight_pdf_alternative))
+        if (5 < TMath::Abs(event.weight_pdf_alternative - 1))
         {
           cout << "strange weight_pdf_alternative is detected. " << tree_type << ", " << i << ", weight_pdf_alternative = " << event.weight_pdf_alternative << endl;
 
           continue;
         }
 
-        if (TMath::IsNaN(event.weight_scale_variation_1) || !TMath::Finite(event.weight_scale_variation_1) || TMath::IsNaN(event.weight_scale_variation_2) || !TMath::Finite(event.weight_scale_variation_2))
+        if ((TMath::IsNaN(event.weight_scale_variation_1) || !TMath::Finite(event.weight_scale_variation_1) || TMath::IsNaN(event.weight_scale_variation_2) || !TMath::Finite(event.weight_scale_variation_2)))
         {
           cout << "strange weight_scale_variation is detected. " << tree_type << ", " << i << ", weight_scale_variation_1 = " << event.weight_scale_variation_1 << ", weight_scale_variation_2 = " << event.weight_scale_variation_2 << endl;
 
@@ -2739,21 +2852,33 @@ void Histo_Syst::Read_Tree()
 
         // event.Swap();
 
-        if (!chk_bin_optimizer && mode == "2D" && event.template_score < 0.1)
-          continue;
+        if (chk_bin_optimizer)
+        {
+          if (event.template_score < 0.2)
+            continue;
+        }
+        else
+        {
+          if (mode == "2D" && event.template_score < template_score_cut)
+            continue;
+        }
 
-        event.weight_baseline = modelling_patch_baseline;
-        event.weight_top_pt *= modelling_patch_top_pt;
-        event.weight_scale_variation_1 *= modelling_patch_scale_variation_1;
-        event.weight_scale_variation_2 *= modelling_patch_scale_variation_2;
-        event.weight_scale_variation_3 *= modelling_patch_scale_variation_3;
-        event.weight_scale_variation_4 *= modelling_patch_scale_variation_4;
-        event.weight_scale_variation_6 *= modelling_patch_scale_variation_6;
-        event.weight_scale_variation_8 *= modelling_patch_scale_variation_8;
-        event.weight_ps[0] *= modelling_patch_ps_0;
-        event.weight_ps[1] *= modelling_patch_ps_1;
-        event.weight_ps[2] *= modelling_patch_ps_2;
-        event.weight_ps[3] *= modelling_patch_ps_3;
+        if (sample_name_short.Contains("CP5") || sample_name_short.Contains("hdamp") || sample_name_short.Contains("mtop"))
+          event.weight_baseline *= modelling_patch_baseline;
+        else
+        {
+          event.weight_top_pt *= modelling_patch_top_pt_reweight;
+          event.weight_scale_variation_1 *= modelling_patch_scale_variation_1;
+          event.weight_scale_variation_2 *= modelling_patch_scale_variation_2;
+          event.weight_scale_variation_3 *= modelling_patch_scale_variation_3;
+          event.weight_scale_variation_4 *= modelling_patch_scale_variation_4;
+          event.weight_scale_variation_6 *= modelling_patch_scale_variation_6;
+          event.weight_scale_variation_8 *= modelling_patch_scale_variation_8;
+          event.weight_ps[0] *= modelling_patch_ps_0;
+          event.weight_ps[1] *= modelling_patch_ps_1;
+          event.weight_ps[2] *= modelling_patch_ps_2;
+          event.weight_ps[3] *= modelling_patch_ps_3;
+        }
 
         Fill_Histo_MC(sample_name, sample_name_short, tree_type);
         // if (syst_fix == "None") Fill_Histo_Weight(region_index, sample_index);
@@ -2776,15 +2901,16 @@ void Histo_Syst::Read_Tree()
       if (i % 500000 == 0)
         cout << "Processing... " << i << "/" << n_entries << "." << endl;
 
+      event.Clear();
+
       it->second->GetEntry(i);
+
+      // event.template_score = TMath::Exp(event.template_score);
+      event.template_score = event.Multi_To_One();
 
       // cut on best_mva_score_pre
       if (chk_cut_best_mva_score_pre && event.best_mva_score_pre < cut_best_mva_score_pre)
         continue;
-
-      // cut on template_score
-      // if (chk_cut_template_score && event.template_score < cut_template_score)
-      //   continue;
 
       // if (event.n_jets == 3)
       //   continue;
@@ -2794,8 +2920,19 @@ void Histo_Syst::Read_Tree()
 
       // event.Swap();
 
-      if (!chk_bin_optimizer && mode == "2D" && event.template_score < 0.1)
-        continue;
+      // if (!chk_bin_optimizer && mode == "2D" && event.template_score < template_score_cut)
+      //   continue;
+
+      if (chk_bin_optimizer)
+      {
+        if (event.template_score < 0.2)
+          continue;
+      }
+      else
+      {
+        if (mode == "2D" && event.template_score < template_score_cut)
+          continue;
+      }
 
       Fill_Histo_Data();
     } // loop over n_entries
@@ -2862,7 +2999,11 @@ void Histo_Syst::Register_Sample()
     cout << it->first << endl;
 
     TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
-    TString result_path = path_sample_base + era + "/Vcb/";
+    TString result_path;
+    if (tagger == "B")
+      result_path = path_sample_base + era + "/Vcb_BTag/";
+    else if (tagger == "C")
+      result_path = path_sample_base + era + "/Vcb_CTag/";
 
     map_fin_mc[it->first] = new TFile(result_path + "Central_Syst/" + it->second);
 
@@ -2875,8 +3016,6 @@ void Histo_Syst::Register_Sample()
 
       if (tree_type.Contains("CP5") || tree_type.Contains("hdamp") || tree_type.Contains("mtop"))
         continue;
-
-      cout << tree_type << endl;
 
       vec_map_tree_mc[i][it->first] = (TTree *)map_fin_mc[it->first]->Get(channel + "/" + tree_type + "/Result_Tree");
 
@@ -3002,7 +3141,11 @@ void Histo_Syst::Register_Sample()
   if (find(vec_tree_type.begin(), vec_tree_type.end(), "Data") != vec_tree_type.end())
   {
     TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
-    TString result_path = path_sample_base + era + "/Vcb/DATA/";
+    TString result_path;
+    if (tagger == "B")
+      result_path = path_sample_base + era + "/Vcb_BTag/DATA/";
+    else if (tagger == "C")
+      result_path = path_sample_base + era + "/Vcb_CTag/DATA/";
 
     for (auto it = samples.map_data.begin(); it != samples.map_data.end(); it++)
     {
@@ -3013,6 +3156,7 @@ void Histo_Syst::Register_Sample()
 
       map_fin_data[it->first] = new TFile(result_path + it->second);
       map_tree_data[it->first] = (TTree *)map_fin_data[it->first]->Get(channel + "/Central/Result_Tree");
+
       event.Setup_Tree(map_tree_data[it->first], Syst::Central, false);
     }
   } // if (find(vec_tree_type.begin(), vec_tree_type.end(), "Data") != vec_tree_type.end())
@@ -3066,7 +3210,11 @@ void Histo_Syst::Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TStr
   cout << "[Histo_Syst::Register_Top_Syst]:" << type << endl;
 
   TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
-  TString result_path = path_sample_base + era + "/Vcb/Top_Syst/";
+  TString result_path;
+  if (tagger == "B")
+    result_path = path_sample_base + era + "/Vcb_BTag/Top_Syst/";
+  else if (tagger == "C")
+    result_path = path_sample_base + era + "/Vcb_CTag/Top_Syst/";
 
   if (type != "TTbb4f")
   {
@@ -3326,26 +3474,39 @@ int Histo_Syst::Set_Region()
   {
     if (chk_bin_optimizer)
     {
-      if (event.n_bjets == 2)
+      // if (event.n_bjets == 2)
+      //   return 0;
+      // else
+      //   return 1;
+      return 0;
+
+      // if (3 <= event.n_bjets)
+      //   return 2;
+      // else if (1 <= event.n_cjets)
+      //   return 1;
+      // else
+      //   return 0;
+    }
+    else
+    {
+      // if (event.n_bjets == 2)
+      //   return 0;
+      // else
+      // {
+      //   if (event.template_score < threeb_cr_cut)
+      //     return 1;
+      //   else
+      //     return 2;
+      // }
+
+      if (event.template_score < threeb_cr_cut)
         return 0;
       else
         return 1;
     }
-    else
-    {
-      if (event.n_bjets == 2)
-        return 0;
-      else
-      {
-        if (event.template_score < threeb_cr_cut)
-          return 1;
-        else
-          return 2;
-      }
-    }
   }
 
-  return 0;
+  return -1;
 
 } // void Histo_Syst::Set_Region()
 

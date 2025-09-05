@@ -7,7 +7,7 @@ ClassImp(CR_DL);
 CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_tagger, const int &a_index_tree_type)
     : samples(a_era, a_channel, "Vcb_DL"), tagging_rf_dl(a_era), modelling_patch("Application")
 {
-  ROOT::EnableImplicitMT(2);
+  ROOT::EnableImplicitMT(1);
 
   TH1::AddDirectory(kFALSE);
 
@@ -270,7 +270,7 @@ void CR_DL::Read_Tree()
       chk_print = true; // only for debug
 
       float modelling_patch_baseline = modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline");
-      float modelling_patch_top_pt = modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
+      float modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
       float modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_1");
       float modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_2");
       float modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_3");
@@ -287,7 +287,11 @@ void CR_DL::Read_Tree()
         if (i % 500000 == 0)
           cout << "Processing... " << i << "/" << n_entries << endl;
 
+        event.Clear();
         it->second->GetEntry(i);
+
+        // quick and dirty method to fix index ordering issue
+        event.Swap_Scale_Variation(sample_name_short);
 
         // if ((channel == "MM" || channel == "EE") && abs(event.dilepton_mass - Z_MASS) < 15)
         //   continue;
@@ -295,18 +299,22 @@ void CR_DL::Read_Tree()
         if (TMath::IsNaN(event.weight_scale_variation_6) || !TMath::Finite(event.weight_scale_variation_6))
           cout << "IsNaN scale variation 6 " << event.weight_scale_variation_6 << endl;
 
-        event.weight_baseline = modelling_patch_baseline;
-        event.weight_top_pt *= modelling_patch_top_pt;
-        event.weight_scale_variation_1 *= modelling_patch_scale_variation_1;
-        event.weight_scale_variation_2 *= modelling_patch_scale_variation_2;
-        event.weight_scale_variation_3 *= modelling_patch_scale_variation_3;
-        event.weight_scale_variation_4 *= modelling_patch_scale_variation_4;
-        event.weight_scale_variation_6 *= modelling_patch_scale_variation_6;
-        event.weight_scale_variation_8 *= modelling_patch_scale_variation_8;
-        event.weight_ps[0] *= modelling_patch_ps_0;
-        event.weight_ps[1] *= modelling_patch_ps_1;
-        event.weight_ps[2] *= modelling_patch_ps_2;
-        event.weight_ps[3] *= modelling_patch_ps_3;
+        if (sample_name_short.Contains("CP5") || sample_name_short.Contains("hdamp") || sample_name_short.Contains("mtop"))
+          event.weight_baseline *= modelling_patch_baseline;
+        else
+        {
+          event.weight_top_pt *= modelling_patch_top_pt_reweight;
+          event.weight_scale_variation_1 *= modelling_patch_scale_variation_1;
+          event.weight_scale_variation_2 *= modelling_patch_scale_variation_2;
+          event.weight_scale_variation_3 *= modelling_patch_scale_variation_3;
+          event.weight_scale_variation_4 *= modelling_patch_scale_variation_4;
+          event.weight_scale_variation_6 *= modelling_patch_scale_variation_6;
+          event.weight_scale_variation_8 *= modelling_patch_scale_variation_8;
+          event.weight_ps[0] *= modelling_patch_ps_0;
+          event.weight_ps[1] *= modelling_patch_ps_1;
+          event.weight_ps[2] *= modelling_patch_ps_2;
+          event.weight_ps[3] *= modelling_patch_ps_3;
+        }
 
         Fill_Histo_MC(sample_name, sample_name_short, syst_fix);
       } // loop over entries
@@ -328,7 +336,8 @@ void CR_DL::Read_Tree()
       if (i % 500000 == 0)
         cout << "Processing... " << i << "/" << n_entries << "." << endl;
 
-      it->second->GetEntry(i);
+      event.Clear();
+      it->second->GetEntry(i);     
 
       // if ((channel == "MM" || channel == "EE") && abs(event.dilepton_mass - Z_MASS) < 15)
       //   continue;
@@ -770,43 +779,43 @@ void CR_DL::Setup_Variable()
   } // if(chk_bin_optimizer)
   else
   {
-    // Data Driven
-    if (era == "2016preVFP")
-    {
-      if (channel == "MM")
-        bin_bvsc = {0.0, 0.025, 0.075, 0.25, 1.0};
-      else if (channel == "ME")
-        bin_bvsc = {0.0, 0.025, 0.05, 0.125, 0.35, 1.0};
-      else if (channel == "EE")
-        bin_bvsc = {0.0, 0.025, 0.125, 1.0};
-    }
-    else if (era == "2016postVFP")
-    {
-      if (channel == "MM")
-        bin_bvsc = {0.0, 0.025, 0.075, 0.2, 1.0};
-      else if (channel == "ME")
-        bin_bvsc = {0.0, 0.025, 0.05, 0.125, 0.325, 1.0};
-      else if (channel == "EE")
-        bin_bvsc = {0.0, 0.025, 0.125, 1.0};
-    }
-    else if (era == "2017")
-    {
-      if (channel == "MM")
-        bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.2, 0.525, 1.0};
-      else if (channel == "ME")
-        bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.15, 0.3, 0.7, 1.0};
-      else if (channel == "EE")
-        bin_bvsc = {0.0, 0.025, 0.05, 0.1, 0.3, 1.0};
-    }
-    else if (era == "2018")
-    {
-      if (channel == "MM")
-        bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.15, 0.3, 0.7, 1.0};
-      else if (channel == "ME")
-        bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.125, 0.225, 0.425, 0.8, 1.0};
-      else if (channel == "EE")
-        bin_bvsc = {0.0, 0.025, 0.05, 0.125, 0.4, 1.0};
-    }
+    // // Data Driven
+    // if (era == "2016preVFP")
+    // {
+    //   if (channel == "MM")
+    //     bin_bvsc = {0.0, 0.025, 0.075, 0.25, 1.0};
+    //   else if (channel == "ME")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.125, 0.35, 1.0};
+    //   else if (channel == "EE")
+    //     bin_bvsc = {0.0, 0.025, 0.125, 1.0};
+    // }
+    // else if (era == "2016postVFP")
+    // {
+    //   if (channel == "MM")
+    //     bin_bvsc = {0.0, 0.025, 0.075, 0.2, 1.0};
+    //   else if (channel == "ME")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.125, 0.325, 1.0};
+    //   else if (channel == "EE")
+    //     bin_bvsc = {0.0, 0.025, 0.125, 1.0};
+    // }
+    // else if (era == "2017")
+    // {
+    //   if (channel == "MM")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.2, 0.525, 1.0};
+    //   else if (channel == "ME")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.15, 0.3, 0.7, 1.0};
+    //   else if (channel == "EE")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.1, 0.3, 1.0};
+    // }
+    // else if (era == "2018")
+    // {
+    //   if (channel == "MM")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.15, 0.3, 0.7, 1.0};
+    //   else if (channel == "ME")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.075, 0.125, 0.225, 0.425, 0.8, 1.0};
+    //   else if (channel == "EE")
+    //     bin_bvsc = {0.0, 0.025, 0.05, 0.125, 0.4, 1.0};
+    // }
 
     // // MC
     // if (era == "2016preVFP")
@@ -846,40 +855,40 @@ void CR_DL::Setup_Variable()
     //     bin_bvsc = {0.0, 0.025, 0.05, 0.1, 0.35, 1.0};
     // }
 
-    // // Old
-    // bin_bvsc.push_back(0);
-    // if (era == "2016preVFP")
-    // {
-    //   bin_bvsc.push_back(bvsc_wp_l_2016preVFP);
-    //   bin_bvsc.push_back(bvsc_wp_m_2016preVFP);
-    //   bin_bvsc.push_back(bvsc_wp_t_2016preVFP);
-    // }
-    // else if (era == "2016postVFP")
-    // {
-    //   bin_bvsc.push_back(bvsc_wp_l_2016postVFP);
-    //   bin_bvsc.push_back(bvsc_wp_m_2016postVFP);
-    //   bin_bvsc.push_back(bvsc_wp_t_2016postVFP);
-    // }
-    // else if (era == "2017")
-    // {
-    //   bin_bvsc.push_back(bvsc_wp_l_2017);
-    //   bin_bvsc.push_back(bvsc_wp_m_2017);
-    //   bin_bvsc.push_back(bvsc_wp_t_2017);
-    // }
-    // else if (era == "2018")
-    // {
-    //   bin_bvsc.push_back(bvsc_wp_l_2018);
-    //   bin_bvsc.push_back(bvsc_wp_m_2018);
-    //   bin_bvsc.push_back(bvsc_wp_t_2018);
-    // }
-    // bin_bvsc.push_back(1);
+    // Old
+    bin_bvsc.push_back(0);
+    if (era == "2016preVFP")
+    {
+      bin_bvsc.push_back(bvsc_wp_l_2016preVFP);
+      bin_bvsc.push_back(bvsc_wp_m_2016preVFP);
+      bin_bvsc.push_back(bvsc_wp_t_2016preVFP);
+    }
+    else if (era == "2016postVFP")
+    {
+      bin_bvsc.push_back(bvsc_wp_l_2016postVFP);
+      bin_bvsc.push_back(bvsc_wp_m_2016postVFP);
+      bin_bvsc.push_back(bvsc_wp_t_2016postVFP);
+    }
+    else if (era == "2017")
+    {
+      bin_bvsc.push_back(bvsc_wp_l_2017);
+      bin_bvsc.push_back(bvsc_wp_m_2017);
+      bin_bvsc.push_back(bvsc_wp_t_2017);
+    }
+    else if (era == "2018")
+    {
+      bin_bvsc.push_back(bvsc_wp_l_2018);
+      bin_bvsc.push_back(bvsc_wp_m_2018);
+      bin_bvsc.push_back(bvsc_wp_t_2018);
+    }
+    bin_bvsc.push_back(1);
   } // else
 
   sort(bin_bvsc.begin(), bin_bvsc.end());
   int n_bin_bvsc = bin_bvsc.size() - 1;
 
   // set variables to be drawn
-  variable_conf = {{"BvsC_3rd_4th_Jets_Unrolled", (int)TMath::Binomial(n_bin_bvsc, 2), 0., (float)TMath::Binomial(n_bin_bvsc, 2)},
+  variable_conf = {{"BvsC_3rd_4th_Jets_Unrolled", (int)TMath::Binomial(n_bin_bvsc, 2) + n_bin_bvsc, 0., (float)TMath::Binomial(n_bin_bvsc, 2) + n_bin_bvsc},
                    {"N_Vertex", 40, 0, 80},
                    {"Leading_Lepton_Eta", 30, -3, 3},
                    {"Leading_Lepton_Pt", 50, 0, 400},

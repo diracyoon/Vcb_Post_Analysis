@@ -12,6 +12,11 @@ const bool chk_use_ttbb_4f = false;
 const bool chk_jes_breakdown = false;
 const bool chk_rf_tthf_breakdown = false;
 
+const float template_score_cut = 0.35;
+
+const float threeb_cr_cut = 0.85;
+//const float threeb_cr_cut = 0.90;
+
 // 2016preVFP
 const float bvsc_wp_l_2016preVFP = 0.0508;
 const float bvsc_wp_m_2016preVFP = 0.2598;
@@ -284,6 +289,6 @@ static Syst StringToSyst(const TString &syst_str)
     }
 }
 
-const float threeb_cr_cut = 0.95;
+
 
 #endif /* __Const_Def_H__ */

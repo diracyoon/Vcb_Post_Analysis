@@ -22,6 +22,7 @@
 #include <Samples.h>
 #include <Result_Event.h>
 #include <Tagging_RF.h>
+#include <Tagging_RF_Flavor.h>
 #include <Const_Def.h>
 
 using namespace std;
@@ -56,7 +57,8 @@ protected:
   int reduction;
 
   Samples samples;
-  Tagging_RF tagging_rf;
+  // Tagging_RF tagging_rf;
+  Tagging_RF_Flavor tagging_rf;
 
   TString era;
   TString channel;

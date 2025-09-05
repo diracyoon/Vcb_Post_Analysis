@@ -39,7 +39,7 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   chk_simple = true;
 
   if (analyser == "Vcb")
-    signal_scale = 10;
+    signal_scale = 5;
   else if (analyser == "Vcb_DL")
   {
     signal_scale = 1000;
@@ -498,6 +498,8 @@ void Data_MC_Comparison::Draw()
       float max = stack_mc[i][index_mc_nominal][j]->GetMaximum();
       stack_mc[i][index_mc_nominal][j]->SetMaximum(1.6 * max);
 
+      stack_mc[i][index_mc_nominal][j]->SetMinimum(1);
+
       gr_variation_merged[i][j]->SetFillColor(1);
       gr_variation_merged[i][j]->SetFillStyle(3002);
       gr_variation_merged[i][j]->Draw("SAME3");
@@ -536,6 +538,11 @@ void Data_MC_Comparison::Draw()
       latex->DrawLatexNDC(0.1, 0.91, "CMS #bf{work in progress}");
       latex->DrawLatexNDC(0.785, 0.91, Form("%s, %.2f fb^{-1}", channel.Data(), lumi));
 
+      if (variable_name[j] == "Template_MVA_Score")
+      {
+        pad[i][j][0]->SetLogy();
+      }
+
       pad[i][j][1] = new TPad(pad_name + "Ratio", pad_name + "Ratio", 0, 0, 1, 0.3);
       canvas[i][j]->cd();
       pad[i][j][1]->Draw();
@@ -557,8 +564,6 @@ void Data_MC_Comparison::Draw()
       gr_ratio[i][j]->SetFillStyle(3001);
       gr_ratio[i][j]->Draw("SAME3");
       // }
-
-      // canvas[i][j]->SetLogy();
 
       canvas[i][j]->Update();
       canvas[i][j]->Modified();

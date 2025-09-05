@@ -1,9 +1,12 @@
 #ifndef __Result_Event_H__
 #define __Result_Event_H__
 
+#include <valgrind/valgrind.h>
+
 #include <TString.h>
 #include <TTree.h>
 #include <TH1D.h>
+#include <TMath.h>
 
 #include "Const_Def.h"
 #include "W_Event.h"
@@ -19,17 +22,23 @@ class Result_Event : public W_Event
   friend class Compare_TTbb;
 
 public:
-  Result_Event(const TString &a_era = "2017", const TString &a_channel = "Mu", const TString &a_analyser = "Vcb", const TString &a_swap_mode = "Permutation_MVA");
+  Result_Event(const TString &a_era = "2017", const TString &a_channel = "Mu", const TString &a_analyser = "Vcb", const TString &a_tagger = "C", const TString &a_swap_mode = "Permutation_MVA");
   virtual ~Result_Event();
 
+  void Clear();
+  float Multi_To_One();
   void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all = false, const bool chk_data = false);
   void Setup_Tree_Cal_TF(TTree *tree, const Syst syst, const bool chk_all = false, const bool chk_data = false);
+  void Swap_Scale_Variation(const TString &sample_name);
 
 protected:
   TString analyser;
+  TString tagger;
+
+  vector<float> weight_multi_to_one;
 
   float weight;
-  
+
   float weight_baseline;
 
   float weight_mu_id;
@@ -127,7 +136,9 @@ protected:
   float weight_scale_variation_2;
   float weight_scale_variation_3;
   float weight_scale_variation_4;
+  float weight_scale_variation_5;
   float weight_scale_variation_6;
+  float weight_scale_variation_7;
   float weight_scale_variation_8;
 
   float weight_top_pt;
@@ -192,7 +203,15 @@ protected:
   float eta_had_t_b;
   float eta_lep_t_b;
 
+  float least_dr_bb;
+  float least_m_bb;
+
   float template_score;
+
+  float template_score_multi_0;
+  float template_score_multi_1;
+  float template_score_multi_2;
+  float template_score_multi_3;
 
   // For MC
   int decay_mode;

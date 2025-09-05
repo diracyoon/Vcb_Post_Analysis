@@ -676,6 +676,30 @@ void Tagging_RF_Flavor_DL::Combine_Lepton_Channel()
 
 //////////
 
+void Tagging_RF_Flavor_DL::Clear()
+{
+  weight = 1;
+
+  weight_baseline = 1;
+
+  memset(weight_ps, 1, sizeof(weight_ps));
+
+  weight_top_pt = 1;
+
+  weight_scale_variation_1 = 1;
+  weight_scale_variation_2 = 1;
+  weight_scale_variation_3 = 1;
+  weight_scale_variation_4 = 1;
+  weight_scale_variation_5 = 1;
+  weight_scale_variation_6 = 1;
+  weight_scale_variation_7 = 1;
+  weight_scale_variation_8 = 1;
+
+  return;
+} // void Tagging_RF_Flavor_DL::Clear()
+
+//////////
+
 void Tagging_RF_Flavor_DL::Draw_Result()
 {
   cout << "[Tagging_RF_DL::Draw_Result]: Init" << endl;
@@ -2136,31 +2160,46 @@ void Tagging_RF_Flavor_DL::Read_Tree()
       n_entries /= reduction;
       cout << "N_Entries = " << it->second->GetEntries() << ", Reduction = " << reduction << ", N_Entries/Reduction = " << n_entries << endl;
 
+      float modelling_patch_baseline = modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline");
+      float modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
+      float modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_1");
+      float modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_2");
+      float modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_3");
+      float modelling_patch_scale_variation_4 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_4");
+      float modelling_patch_scale_variation_6 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_6");
+      float modelling_patch_scale_variation_8 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_8");
+      float modelling_patch_ps_0 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_0");
+      float modelling_patch_ps_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_1");
+      float modelling_patch_ps_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_2");
+      float modelling_patch_ps_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_3");
+
       for (Long64_t i = 0; i < n_entries; i++)
       {
         if (i % 500000 == 0)
           cout << "Processing... " << i << "/" << n_entries << endl;
 
+        Clear();
         it->second->GetEntry(i);
 
         // if (sample_name.Contains("CP5") || sample_name.Contains("hdamp") || sample_name.Contains("mtop"))
         //   cout << "test " << sample_name << " " << sample_name_short << " " << modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline") << endl;
 
-        /////////////////////
-        /* modelling patch */
-        /////////////////////
-        weight_baseline = modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline");
-        weight_top_pt *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
-        weight_scale_variation_1 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_1");
-        weight_scale_variation_2 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_2");
-        weight_scale_variation_3 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_3");
-        weight_scale_variation_4 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_4");
-        weight_scale_variation_6 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_6");
-        weight_scale_variation_8 *= modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_8");
-        weight_ps[0] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_0");
-        weight_ps[1] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_1");
-        weight_ps[2] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_2");
-        weight_ps[3] *= modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_3");
+        if (sample_name_short.Contains("CP5") || sample_name_short.Contains("hdamp") || sample_name_short.Contains("mtop"))
+          weight_baseline *= modelling_patch_baseline;
+        else
+        {
+          weight_top_pt *= modelling_patch_top_pt_reweight;
+          weight_scale_variation_1 *= modelling_patch_scale_variation_1;
+          weight_scale_variation_2 *= modelling_patch_scale_variation_2;
+          weight_scale_variation_3 *= modelling_patch_scale_variation_3;
+          weight_scale_variation_4 *= modelling_patch_scale_variation_4;
+          weight_scale_variation_6 *= modelling_patch_scale_variation_6;
+          weight_scale_variation_8 *= modelling_patch_scale_variation_8;
+          weight_ps[0] *= modelling_patch_ps_0;
+          weight_ps[1] *= modelling_patch_ps_1;
+          weight_ps[2] *= modelling_patch_ps_2;
+          weight_ps[3] *= modelling_patch_ps_3;
+        }
 
         if (mode == "Analysis")
           Fill_Histo_MC(sample_name, tree_type);

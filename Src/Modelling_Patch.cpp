@@ -13,7 +13,7 @@ Modelling_Patch::Modelling_Patch(const TString &a_mode)
 
   for (auto it = samples.map_short_name_mc.begin(); it != samples.map_short_name_mc.end(); it++)
   {
-    cout << it->first << " " << it->second << endl;
+    // cout << it->first << " " << it->second << endl;
     vec_short_name_mc.push_back(it->second);
   }
   sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
@@ -93,7 +93,48 @@ float Modelling_Patch::Get_Modelling_Patch(const TString &sample, const TString 
   auto it_sample = patch_all.find(sample);
   if (it_sample != patch_all.end())
   {
-    auto it_variation = it_sample->second.find(variation);
+    TString variation_may_swap = variation;
+
+    if (variation_may_swap.Contains("Scale_Variation"))
+    {
+      if (sample == "TTLJ_WtoCB" || sample == "TTLJ" || sample == "TTLL" ||
+          sample == "TTLJ_TTbb_4f" || sample == "TTLJ_bbDPS" || sample == "TTLL_TTbb_4f" || sample == "TTLL_bbDPS" ||
+          sample == "ST_tch" || sample == "ST_tw" ||
+          sample == "ttHTobb" || sample == "ttHToNonbb")
+      {
+        // index is OK
+        // do nothing
+      }
+      else if (sample == "ST_sch" ||
+               sample == "WJets" || sample == "DYJets" ||
+               sample == "QCD_bEn" ||
+               sample == "ttWToLNu" || sample == "ttWToQQ" ||
+               sample == "ttZToLLNuNu" || sample == "ttZToQQ" || sample == "ttZToQQ")
+      {
+        if (variation_may_swap.Contains("_1"))
+          variation_may_swap.ReplaceAll("_1", "_3");
+        else if (variation_may_swap.Contains("_3"))
+          variation_may_swap.ReplaceAll("_3", "_1");
+        else if (variation_may_swap.Contains("_2"))
+          variation_may_swap.ReplaceAll("_2", "_6");
+        else if (variation_may_swap.Contains("_6"))
+          variation_may_swap.ReplaceAll("_6", "_2");
+        else if (variation_may_swap.Contains("_5"))
+          variation_may_swap.ReplaceAll("_5", "_7");
+        else if (variation_may_swap.Contains("_7"))
+          variation_may_swap.ReplaceAll("_7", "_5");
+      }
+      else if (sample == "WW" || sample == "WZ" || sample == "ZZ" ||
+               sample.Contains("CP5") || sample.Contains("mtop") || sample.Contains("hdamp"))
+      {
+        // irrelevant
+        // do nothing
+      }
+      else
+        cerr << "[Modelling_Patch::Get_Modelling_Patch]: Unknown sample name: " << sample << endl;
+    } // if (varation_may_swap.Contains("Scale_Variation"))
+
+    auto it_variation = it_sample->second.find(variation_may_swap);
     if (it_variation != it_sample->second.end())
       return it_variation->second;
     else
@@ -128,99 +169,77 @@ void Modelling_Patch::Init_Histo()
 {
   cout << "[Modelling_Patch::Init_Histo]: Init" << endl;
 
-  histo_baseline = new TH1D *[n_sample_merge_mc];
-  histo_pdf_alternative = new TH1D *[n_sample_merge_mc];
-  histo_pdf_error_set = new TH1D **[n_sample_merge_mc];
-  histo_pdf_as_down = new TH1D *[n_sample_merge_mc];
-  histo_pdf_as_up = new TH1D *[n_sample_merge_mc];
-  histo_top_pt_reweight = new TH1D *[n_sample_merge_mc];
-  histo_scale_variation_1 = new TH1D *[n_sample_merge_mc];
-  histo_scale_variation_2 = new TH1D *[n_sample_merge_mc];
-  histo_scale_variation_3 = new TH1D *[n_sample_merge_mc];
-  histo_scale_variation_4 = new TH1D *[n_sample_merge_mc];
-  histo_scale_variation_6 = new TH1D *[n_sample_merge_mc];
-  histo_scale_variation_8 = new TH1D *[n_sample_merge_mc];
-  histo_ps_0 = new TH1D *[n_sample_merge_mc];
-  histo_ps_1 = new TH1D *[n_sample_merge_mc];
-  histo_ps_2 = new TH1D *[n_sample_merge_mc];
-  histo_ps_3 = new TH1D *[n_sample_merge_mc];
-  histo_cp5_down = new TH1D *[n_sample_merge_mc];
-  histo_cp5_up = new TH1D *[n_sample_merge_mc];
-  histo_hdamp_down = new TH1D *[n_sample_merge_mc];
-  histo_hdamp_up = new TH1D *[n_sample_merge_mc];
-  histo_mtop_down = new TH1D *[n_sample_merge_mc];
-  histo_mtop_up = new TH1D *[n_sample_merge_mc];
+  histo_pdf_error_set.resize(n_sample_merge_mc);
   for (int i = 0; i < n_sample_merge_mc; i++)
   {
     TString histo_name = vec_short_name_mc[i] + "_Baseline";
-    histo_baseline[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_baseline.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_PDF_Alternative";
-    histo_pdf_alternative[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_pdf_alternative.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
-    histo_pdf_error_set[i] = new TH1D *[100];
     for (int j = 0; j < 100; j++)
     {
       histo_name = vec_short_name_mc[i] + "_PDF_Error_Set_" + to_string(j);
-      histo_pdf_error_set[i][j] = new TH1D(histo_name, histo_name, 1, 0, 1);
+      histo_pdf_error_set[i].push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
     }
 
     histo_name = vec_short_name_mc[i] + "_PDF_As_Down";
-    histo_pdf_as_down[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_pdf_as_down.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_PDF_As_Up";
-    histo_pdf_as_up[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_pdf_as_up.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_Top_Pt_Reweight";
-    histo_top_pt_reweight[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_top_pt_reweight.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_Scale_Variation_1";
-    histo_scale_variation_1[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_scale_variation_1.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_Scale_Variation_2";
-    histo_scale_variation_2[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_scale_variation_2.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_Scale_Variation_3";
-    histo_scale_variation_3[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_scale_variation_3.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_Scale_Variation_4";
-    histo_scale_variation_4[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_scale_variation_4.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_Scale_Variation_6";
-    histo_scale_variation_6[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_scale_variation_6.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_Scale_Variation_8";
-    histo_scale_variation_8[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_scale_variation_8.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_PS_0";
-    histo_ps_0[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_ps_0.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_PS_1";
-    histo_ps_1[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_ps_1.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_PS_2";
-    histo_ps_2[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_ps_2.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_PS_3";
-    histo_ps_3[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_ps_3.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_CP5_Down";
-    histo_cp5_down[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_cp5_down.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_CP5_Up";
-    histo_cp5_up[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_cp5_up.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_hdamp_Down";
-    histo_hdamp_down[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_hdamp_down.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_hdamp_Up";
-    histo_hdamp_up[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_hdamp_up.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_mtop_171p5";
-    histo_mtop_down[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_mtop_down.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_mtop_173p5";
-    histo_mtop_up[i] = new TH1D(histo_name, histo_name, 1, 0, 1);
+    histo_mtop_up.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
   }
 
   cout << "[Modelling_Patch::Init_Histo]: Done" << endl;
@@ -248,27 +267,26 @@ void Modelling_Patch::Ratio()
 
       int index_nominal = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name) - vec_short_name_mc.begin();
 
-      histo_baseline[i]->Divide(histo_baseline[index_nominal], histo_baseline[i]);
-      // histo_baseline[i]->Divide();
+      histo_baseline[i]->Divide(histo_baseline[index_nominal].get(), histo_baseline[i].get());
     }
     else
     {
-      histo_pdf_alternative[i]->Divide(histo_baseline[i], histo_pdf_alternative[i]);
+      histo_pdf_alternative[i]->Divide(histo_baseline[i].get(), histo_pdf_alternative[i].get());
       for (int j = 0; j < 100; j++)
-        histo_pdf_error_set[i][j]->Divide(histo_baseline[i], histo_pdf_error_set[i][j]);
-      histo_pdf_as_down[i]->Divide(histo_baseline[i], histo_pdf_as_down[i]);
-      histo_pdf_as_up[i]->Divide(histo_baseline[i], histo_pdf_as_up[i]);
-      histo_top_pt_reweight[i]->Divide(histo_baseline[i], histo_top_pt_reweight[i]);
-      histo_scale_variation_1[i]->Divide(histo_baseline[i], histo_scale_variation_1[i]);
-      histo_scale_variation_2[i]->Divide(histo_baseline[i], histo_scale_variation_2[i]);
-      histo_scale_variation_3[i]->Divide(histo_baseline[i], histo_scale_variation_3[i]);
-      histo_scale_variation_4[i]->Divide(histo_baseline[i], histo_scale_variation_4[i]);
-      histo_scale_variation_6[i]->Divide(histo_baseline[i], histo_scale_variation_6[i]);
-      histo_scale_variation_8[i]->Divide(histo_baseline[i], histo_scale_variation_8[i]);
-      histo_ps_0[i]->Divide(histo_baseline[i], histo_ps_0[i]);
-      histo_ps_1[i]->Divide(histo_baseline[i], histo_ps_1[i]);
-      histo_ps_2[i]->Divide(histo_baseline[i], histo_ps_2[i]);
-      histo_ps_3[i]->Divide(histo_baseline[i], histo_ps_3[i]);
+        histo_pdf_error_set[i][j]->Divide(histo_baseline[i].get(), histo_pdf_error_set[i][j].get());
+      histo_pdf_as_down[i]->Divide(histo_baseline[i].get(), histo_pdf_as_down[i].get());
+      histo_pdf_as_up[i]->Divide(histo_baseline[i].get(), histo_pdf_as_up[i].get());
+      histo_top_pt_reweight[i]->Divide(histo_baseline[i].get(), histo_top_pt_reweight[i].get());
+      histo_scale_variation_1[i]->Divide(histo_baseline[i].get(), histo_scale_variation_1[i].get());
+      histo_scale_variation_2[i]->Divide(histo_baseline[i].get(), histo_scale_variation_2[i].get());
+      histo_scale_variation_3[i]->Divide(histo_baseline[i].get(), histo_scale_variation_3[i].get());
+      histo_scale_variation_4[i]->Divide(histo_baseline[i].get(), histo_scale_variation_4[i].get());
+      histo_scale_variation_6[i]->Divide(histo_baseline[i].get(), histo_scale_variation_6[i].get());
+      histo_scale_variation_8[i]->Divide(histo_baseline[i].get(), histo_scale_variation_8[i].get());
+      histo_ps_0[i]->Divide(histo_baseline[i].get(), histo_ps_0[i].get());
+      histo_ps_1[i]->Divide(histo_baseline[i].get(), histo_ps_1[i].get());
+      histo_ps_2[i]->Divide(histo_baseline[i].get(), histo_ps_2[i].get());
+      histo_ps_3[i]->Divide(histo_baseline[i].get(), histo_ps_3[i].get());
     }
   }
 

@@ -18,7 +18,9 @@ public:
   Result_Event_CR_DL();
   ~Result_Event_CR_DL();
 
+  void Clear();
   void Setup_Tree(TTree *tree, const Syst syst, const bool chk_all = false, const bool chk_data = false);
+  void Swap_Scale_Variation(const TString &sample_name);
 
 protected:
   int n_pv;
@@ -165,7 +167,9 @@ protected:
   float weight_scale_variation_2;
   float weight_scale_variation_3;
   float weight_scale_variation_4;
+  float weight_scale_variation_5;
   float weight_scale_variation_6;
+  float weight_scale_variation_7;
   float weight_scale_variation_8;
 
   float weight_sl_trig;

@@ -4,7 +4,8 @@ ClassImp(Reco_Eval);
 
 //////////
 
-Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TString &a_tagger, const TString &a_swap_mode, const TString &a_draw_extension) : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
+Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TString &a_tagger, const TString &a_swap_mode, const TString &a_draw_extension)
+    : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
 {
   ROOT::EnableImplicitMT(10);
 
@@ -12,6 +13,8 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 
   TH1::AddDirectory(kFALSE);
   reduction = 1;
+
+  gROOT->SetBatch(kTRUE);
 
   era = a_era;
   channel = a_channel;
@@ -45,7 +48,10 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 
   TString path_base = getenv("Vcb_Post_Analysis_Sample_Dir");
 
-  path_base += era + "/Vcb/Central_Syst/";
+  if (tagger == "B")
+    path_base += era + "/Vcb_BTag/Central_Syst/";
+  else if (tagger == "C")
+    path_base += era + "/Vcb_CTag/Central_Syst/";
 
   if (samples.map_mc.size() != samples.map_short_name_mc.size())
   {
@@ -76,20 +82,23 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     vec_histo_sample.push_back(it->second);
 
   vec_histo_sample.erase(remove(vec_histo_sample.begin(), vec_histo_sample.end(), "TTLJ"));
-  vec_histo_sample.erase(remove(vec_histo_sample.begin(), vec_histo_sample.end(), "TTLJ_WtoCB"));
+  vec_histo_sample.push_back("TTLJ_2");    // TTLJ, w->ud or w->us
+  vec_histo_sample.push_back("TTLJ_4");    // TTLJ, w->cd or w->cs
+  vec_histo_sample.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
+  vec_histo_sample.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
+  vec_histo_sample.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
+  vec_histo_sample.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
 
-  vec_histo_sample.push_back("TTLJ_ud");
-  vec_histo_sample.push_back("TTLJ_us");
-  vec_histo_sample.push_back("TTLJ_cd");
-  vec_histo_sample.push_back("TTLJ_cs");
-  vec_histo_sample.push_back("TTLJ_cb");
-  n_histo_sample = vec_histo_sample.size();
+  vec_histo_sample.erase(remove(vec_histo_sample.begin(), vec_histo_sample.end(), "TTLJ_WtoCB"));
+  vec_histo_sample.push_back("TTLJ_45"); // TTLJ, w->cb
+  // vec_short_name_mc.push_back("TTLJ_CC_45"); // TTLJ+cc, w->cb
+  // vec_short_name_mc.push_back("TTLJ_BB_45"); // TTLJ+cc, w->cb
 
   // remove redundancy
   sort(vec_histo_sample.begin(), vec_histo_sample.end(), Comparing_TString);
   vec_histo_sample.erase(unique(vec_histo_sample.begin(), vec_histo_sample.end()), vec_histo_sample.end());
-  n_histo_sample = vec_histo_sample.size();
 
+  n_histo_sample = vec_histo_sample.size();
   cout << "n_histo_sample = " << n_histo_sample << endl;
 
   n_fail_reason = sizeof(fail_reason) / sizeof(TString);
@@ -167,15 +176,24 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     }
   }
 
-  dv_histo_conf = {{"MVA_Scores", 100, 0, 1},
-                   {"M_Had_W", 100, 20, 140},
-                   {"M_Had_T", 100, 100, 240},
-                   {"BvsC_w_u", 100, 0, 1},
-                   {"CvsB_w_u", 100, 0, 1},
-                   {"CvsL_w_u", 100, 0, 1},
-                   {"BvsC_w_d", 100, 0, 1},
-                   {"CvsB_w_d", 100, 0, 1},
-                   {"CvsL_w_d", 100, 0, 1}};
+  if (tagger == "B")
+  {
+    dv_histo_conf = {{"N_Jets", 20, 0, 20},
+                     {"N_BJets", 10, 0, 10},
+                     {"MVA_Scores", 100, 0, 1},
+                     {"M_Had_W", 100, 20, 140},
+                     {"M_Had_T", 100, 100, 240},
+                     {"BvsC_w_u", 100, 0, 1},
+                     //  {"CvsB_w_u", 100, 0, 1},
+                     //  {"CvsL_w_u", 100, 0, 1},
+                     {"BvsC_w_d", 100, 0, 1},
+                     //  {"CvsB_w_d", 100, 0, 1},
+                     //  {"CvsL_w_d", 100, 0, 1},
+                     {"Least_M_bb", 100, 0, 500}};
+  }
+  else if (tagger == "C")
+  {
+  }
 
   n_discriminators = dv_histo_conf.size();
 
@@ -434,6 +452,7 @@ void Reco_Eval::Draw_DV()
     for (int j = 0; j < n_discriminators; j++)
     {
       name = vec_histo_sample[i] + "_" + dv_histo_conf[j].discriminator;
+    
       stack_dv[i][j] = new THStack(name, name);
 
       for (int k = 0; k < n_histo_type; k++)
@@ -484,55 +503,55 @@ void Reco_Eval::Draw_Reco()
   cout << "[Reco_Eval::Draw_Reco]: start drawing raw distributions " << endl;
 
   /* Raw distributions */
-  TCanvas *canvas_mva_pre[4];
-  TCanvas *canvas_mva[4];
-  TCanvas *canvas_had_w[4];
-  TCanvas *canvas_had_t[4];
-  TCanvas *canvas_lep_w[4];
-  TCanvas *canvas_lep_t[4];
-  TCanvas *canvas_template[4];
-  for (int i = 0; i < 4; i++)
+  TCanvas *canvas_mva_pre[3];
+  TCanvas *canvas_mva[3];
+  TCanvas *canvas_had_w[3];
+  TCanvas *canvas_had_t[3];
+  TCanvas *canvas_lep_w[3];
+  TCanvas *canvas_lep_t[3];
+  TCanvas *canvas_template[3];
+  for (int i = 0; i < 3; i++)
   {
     TString name = "Permutation_MVA_Pre_" + to_string(i);
     canvas_mva_pre[i] = new TCanvas(name, name, 1300, 800);
-    canvas_mva_pre[i]->Divide(3, 2);
+    canvas_mva_pre[i]->Divide(3, 3);
     canvas_mva_pre[i]->Draw();
 
     name = "Permutation_MVA_" + to_string(i);
     canvas_mva[i] = new TCanvas(name, name, 1300, 800);
-    canvas_mva[i]->Divide(3, 2);
+    canvas_mva[i]->Divide(3, 3);
     canvas_mva[i]->Draw();
 
     name = "Had_W_" + to_string(i);
     canvas_had_w[i] = new TCanvas(name, name, 1300, 800);
-    canvas_had_w[i]->Divide(3, 2);
+    canvas_had_w[i]->Divide(3, 3);
     canvas_had_w[i]->Draw();
 
     name = "Had_T_" + to_string(i);
     canvas_had_t[i] = new TCanvas(name, name, 1300, 800);
-    canvas_had_t[i]->Divide(3, 2);
+    canvas_had_t[i]->Divide(3, 3);
     canvas_had_t[i]->Draw();
 
     name = "Lep_W_" + to_string(i);
     canvas_lep_w[i] = new TCanvas(name, name, 1300, 800);
-    canvas_lep_w[i]->Divide(3, 2);
+    canvas_lep_w[i]->Divide(3, 3);
     canvas_lep_w[i]->Draw();
 
     name = "Lep_T_" + to_string(i);
     canvas_lep_t[i] = new TCanvas(name, name, 1300, 800);
-    canvas_lep_t[i]->Divide(3, 2);
+    canvas_lep_t[i]->Divide(3, 3);
     canvas_lep_t[i]->Draw();
 
     name = "Template_" + to_string(i);
     canvas_template[i] = new TCanvas(name, name, 1300, 800);
-    canvas_template[i]->Divide(3, 2);
+    canvas_template[i]->Divide(3, 3);
     canvas_template[i]->Draw();
   }
 
-  float ttlj_correct[5] = {0};
-  float ttlj_wrong[5] = {0};
-  float ttlj_wrong_not_sel[5] = {0};
-  float ttlj_wrong_hf[5] = {0};
+  float ttlj_correct[7] = {0};
+  float ttlj_wrong[7] = {0};
+  float ttlj_wrong_not_sel[7] = {0};
+  float ttlj_wrong_hf[7] = {0};
 
   THStack *stack_mva_pre[n_histo_sample];
   THStack *stack_mva[n_histo_sample];
@@ -545,6 +564,10 @@ void Reco_Eval::Draw_Reco()
   for (unsigned int i = 0; i < n_histo_sample; i++)
   {
     TString name = vec_histo_sample[i];
+
+    if (name.Contains("TTbb") || name.Contains("bbDPS"))
+      continue;
+
     cout << name << endl;
 
     stack_mva_pre[i] = new THStack(name + "_MVA_Pre_Score", name + "_MVA_Pre_Score");
@@ -585,19 +608,27 @@ void Reco_Eval::Draw_Reco()
       histo_template[i][j]->SetFillColor(color[j]);
       stack_template[i]->Add(histo_template[i][j]);
 
+      // dirty and quick method
+      // do not change the ordering
       if (name.Contains("TTLJ"))
       {
         int index;
-        if (name.Contains("ud"))
-          index = 0;
-        else if (name.Contains("us"))
-          index = 1;
-        else if (name.Contains("cd"))
+        if (name.Contains("_45"))
+          index = 6;
+        else if (name.Contains("_BB_2"))
           index = 2;
-        else if (name.Contains("cs"))
-          index = 3;
-        else if (name.Contains("cb"))
+        else if (name.Contains("_CC_2"))
+          index = 1;
+        else if (name.Contains("_2"))
+          index = 0;
+        else if (name.Contains("_BB_4"))
+          index = 5;
+        else if (name.Contains("_CC_4"))
           index = 4;
+        else if (name.Contains("_4"))
+          index = 3;
+        else if (name.Contains("_45"))
+          index = 6;
 
         if (j == 0)
           ttlj_correct[index] += histo_mva[i][j]->Integral();
@@ -611,21 +642,26 @@ void Reco_Eval::Draw_Reco()
     } // loop over reco type
 
     // indexing for position
+    // do not change the ordering
     int canvas_index;
     int subpad_index;
     if (name.Contains("TTLJ"))
     {
       canvas_index = 0;
-      if (name.Contains("ud"))
-        subpad_index = 1;
-      else if (name.Contains("us"))
+      if (name.Contains("_45"))
+        subpad_index = 7;
+      else if (name.Contains("_BB_2"))
+        subpad_index = 3;
+      else if (name.Contains("_CC_2"))
         subpad_index = 2;
-      else if (name.Contains("cd"))
-        subpad_index = 4;
-      else if (name.Contains("cs"))
-        subpad_index = 5;
-      else if (name.Contains("cb"))
+      else if (name.Contains("_2"))
+        subpad_index = 1;
+      else if (name.Contains("_BB_4"))
         subpad_index = 6;
+      else if (name.Contains("_CC_4"))
+        subpad_index = 5;
+      else if (name.Contains("_4"))
+        subpad_index = 4;
     }
     else
     {
@@ -661,53 +697,53 @@ void Reco_Eval::Draw_Reco()
       }
       else if (name.Contains("ttWToLNu"))
       {
-        canvas_index = 2;
-        subpad_index = 1;
+        canvas_index = 1;
+        subpad_index = 7;
       }
       else if (name.Contains("ttWToQQ"))
       {
-        canvas_index = 2;
-        subpad_index = 2;
+        canvas_index = 1;
+        subpad_index = 8;
       }
       else if (name.Contains("ttZToLLNuNu"))
       {
-        canvas_index = 2;
-        subpad_index = 3;
+        canvas_index = 1;
+        subpad_index = 9;
       }
       else if (name.Contains("ttZToQQ"))
       {
         canvas_index = 2;
-        subpad_index = 4;
+        subpad_index = 1;
       }
       else if (name.Contains("DYJets"))
       {
         canvas_index = 2;
-        subpad_index = 5;
+        subpad_index = 2;
       }
       else if (name.Contains("WJets"))
       {
         canvas_index = 2;
-        subpad_index = 6;
+        subpad_index = 3;
       }
       else if (name.Contains("WW"))
       {
-        canvas_index = 3;
-        subpad_index = 1;
+        canvas_index = 2;
+        subpad_index = 4;
       }
       else if (name.Contains("WZ"))
       {
-        canvas_index = 3;
-        subpad_index = 2;
+        canvas_index = 2;
+        subpad_index = 5;
       }
       else if (name.Contains("ZZ"))
       {
-        canvas_index = 3;
-        subpad_index = 3;
+        canvas_index = 2;
+        subpad_index = 6;
       }
       else if (name.Contains("QCD_bEn"))
       {
-        canvas_index = 3;
-        subpad_index = 4;
+        canvas_index = 2;
+        subpad_index = 7;
       }
     } // else
 
@@ -742,15 +778,19 @@ void Reco_Eval::Draw_Reco()
   for (int i = 0; i < 5; i++)
   {
     if (i == 0)
-      cout << "TTLJ_ud" << endl;
+      cout << "TTLJ_2" << endl;
     else if (i == 1)
-      cout << "TTLJ_us" << endl;
+      cout << "TTLJ_2_CC" << endl;
     else if (i == 2)
-      cout << "TTLJ_cd" << endl;
+      cout << "TTLJ_2_BB" << endl;
     else if (i == 3)
-      cout << "TTLJ_cs" << endl;
+      cout << "TTLJ_4" << endl;
     else if (i == 4)
-      cout << "TTLJ_cb" << endl;
+      cout << "TTLJ_4_CC" << endl;
+    else if (i == 5)
+      cout << "TTLJ_4_BB" << endl;
+    else if (i == 6)
+      cout << "TTLJ_45" << endl;
 
     cout << ttlj_correct[i] << " " << ttlj_wrong[i] << " " << ttlj_wrong_not_sel[i] << " " << ttlj_wrong_hf[i] << endl;
   }
@@ -771,43 +811,43 @@ void Reco_Eval::Draw_Reco()
 
   for (int i = 0; i < 1; i++)
   {
-    canvas_mva_pre[i]->cd(3);
+    canvas_mva_pre[i]->cd(8);
     latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
     latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
     legend->Draw("SAME");
 
-    canvas_mva[i]->cd(3);
+    canvas_mva[i]->cd(8);
     latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
     latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
     legend->Draw("SAME");
 
-    canvas_had_w[i]->cd(3);
+    canvas_had_w[i]->cd(8);
     latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
     latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
     legend->Draw("SAME");
 
-    canvas_had_t[i]->cd(3);
+    canvas_had_t[i]->cd(8);
     latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
     latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
     legend->Draw("SAME");
 
-    canvas_lep_w[i]->cd(3);
+    canvas_lep_w[i]->cd(8);
     latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
     latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
     legend->Draw("SAME");
 
-    canvas_lep_t[i]->cd(3);
+    canvas_lep_t[i]->cd(8);
     latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
     latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
     legend->Draw("SAME");
 
-    canvas_template[i]->cd(3);
+    canvas_template[i]->cd(8);
     latex->DrawLatex(0.2, 0.9, "CMS Work in progress");
     latex->DrawLatex(0.2, 0.85, Form("L = %.2f /fb", lumi));
     legend->Draw("SAME");
   }
 
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 3; i++)
   {
     canvas_mva_pre[i]->Update();
     canvas_mva[i]->Update();
@@ -818,7 +858,7 @@ void Reco_Eval::Draw_Reco()
     canvas_template[i]->Update();
   }
 
-  for (int i = 0; i < 4; i++)
+  for (int i = 0; i < 3; i++)
   {
     TString name = "Permutation_MVA_Pre_" + to_string(i) + "_" + era + "_" + channel + "." + draw_extension;
     canvas_mva_pre[i]->Print(name, draw_extension);
@@ -930,18 +970,37 @@ void Reco_Eval::Draw_Swap()
 
   /* swap */
   TCanvas *canvas_swap = new TCanvas("Swap", "Swap", 1300, 800);
-  canvas_swap->Divide(3, 2);
+  canvas_swap->Divide(3, 3);
   canvas_swap->Draw();
 
   int index = 0;
   for (int i = 0; i < n_histo_sample; i++)
   {
+    if (vec_histo_sample[i].Contains("TTbb") || vec_histo_sample[i].Contains("bbDPS"))
+      continue;
+
     if (vec_histo_sample[i].Contains("TTLJ"))
     {
-      if (index == 0 || index == 1)
-        canvas_swap->cd(index + 1);
-      else
-        canvas_swap->cd(index + 2);
+      // if (index == 0 || index == 1)
+      //   canvas_swap->cd(index + 1);
+      // else
+      //   canvas_swap->cd(index + 2);
+      if (vec_histo_sample[i] == "TTLJ_2")
+        index = 0;
+      else if (vec_histo_sample[i] == "TTLJ_CC_2")
+        index = 1;
+      else if (vec_histo_sample[i] == "TTLJ_BB_2")
+        index = 2;
+      else if (vec_histo_sample[i] == "TTLJ_4")
+        index = 3;
+      else if (vec_histo_sample[i] == "TTLJ_CC_4")
+        index = 4;
+      else if (vec_histo_sample[i] == "TTLJ_BB_4")
+        index = 5;
+      else if (vec_histo_sample[i] == "TTLJ_45")
+        index = 6;
+
+      canvas_swap->cd(index + 1);
 
       histo_swap[i]->GetYaxis()->SetRangeUser(0, 1.1 * histo_swap[i]->GetMaximum());
       histo_swap[i]->Draw();
@@ -954,18 +1013,37 @@ void Reco_Eval::Draw_Swap()
 
   /* swap_fixed */
   TCanvas *canvas_swap_fixed = new TCanvas("Swap_Fixed", "Swap_Fixed", 1300, 800);
-  canvas_swap_fixed->Divide(3, 2);
+  canvas_swap_fixed->Divide(3, 3);
   canvas_swap_fixed->Draw();
 
   index = 0;
   for (int i = 0; i < n_histo_sample; i++)
   {
+    if (vec_histo_sample[i].Contains("TTbb") || vec_histo_sample[i].Contains("bbDPS"))
+      continue;
+
     if (vec_histo_sample[i].Contains("TTLJ"))
     {
-      if (index == 0 || index == 1)
-        canvas_swap_fixed->cd(index + 1);
-      else
-        canvas_swap_fixed->cd(index + 2);
+      // if (index == 0 || index == 1)
+      //   canvas_swap_fixed->cd(index + 1);
+      // else
+      //   canvas_swap_fixed->cd(index + 2);
+      if (vec_histo_sample[i] == "TTLJ_2")
+        index = 0;
+      else if (vec_histo_sample[i] == "TTLJ_CC_2")
+        index = 1;
+      else if (vec_histo_sample[i] == "TTLJ_BB_2")
+        index = 2;
+      else if (vec_histo_sample[i] == "TTLJ_4")
+        index = 3;
+      else if (vec_histo_sample[i] == "TTLJ_CC_4")
+        index = 4;
+      else if (vec_histo_sample[i] == "TTLJ_BB_4")
+        index = 5;
+      else if (vec_histo_sample[i] == "TTLJ_45")
+        index = 6;
+
+      canvas_swap_fixed->cd(index + 1);
 
       histo_swap_fix[i]->GetYaxis()->SetRangeUser(0, 1.1 * histo_swap_fix[i]->GetMaximum());
       histo_swap_fix[i]->Draw();
@@ -1031,15 +1109,25 @@ void Reco_Eval::Fill_Histo_Discriminators(const TString &short_name, const int &
 {
   int index = Get_Index(short_name, index_decay_mode);
 
-  histo_discriminator[index][0][index_fail_reason]->Fill(event.best_mva_score, event.weight);
-  histo_discriminator[index][1][index_fail_reason]->Fill(event.m_had_w, event.weight);
-  histo_discriminator[index][2][index_fail_reason]->Fill(event.m_had_t, event.weight);
-  histo_discriminator[index][3][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
-  histo_discriminator[index][4][index_fail_reason]->Fill(event.cvsb_w_u, event.weight);
-  histo_discriminator[index][5][index_fail_reason]->Fill(event.cvsl_w_u, event.weight);
+  histo_discriminator[index][0][index_fail_reason]->Fill(event.n_jets, event.weight);
+  histo_discriminator[index][1][index_fail_reason]->Fill(event.n_bjets, event.weight);
+  histo_discriminator[index][2][index_fail_reason]->Fill(event.best_mva_score, event.weight);
+  histo_discriminator[index][3][index_fail_reason]->Fill(event.m_had_w, event.weight);
+  histo_discriminator[index][4][index_fail_reason]->Fill(event.m_had_t, event.weight);
+  histo_discriminator[index][5][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
   histo_discriminator[index][6][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
-  histo_discriminator[index][7][index_fail_reason]->Fill(event.cvsb_w_d, event.weight);
-  histo_discriminator[index][8][index_fail_reason]->Fill(event.cvsl_w_d, event.weight);
+  histo_discriminator[index][7][index_fail_reason]->Fill(event.least_m_bb, event.weight);
+
+  // histo_discriminator[index][0][index_fail_reason]->Fill(event.best_mva_score, event.weight);
+  // histo_discriminator[index][1][index_fail_reason]->Fill(event.m_had_w, event.weight);
+  // histo_discriminator[index][2][index_fail_reason]->Fill(event.m_had_t, event.weight);
+  // histo_discriminator[index][3][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
+  // histo_discriminator[index][4][index_fail_reason]->Fill(event.cvsb_w_u, event.weight);
+  // histo_discriminator[index][5][index_fail_reason]->Fill(event.cvsl_w_u, event.weight);
+  // histo_discriminator[index][6][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
+  // histo_discriminator[index][7][index_fail_reason]->Fill(event.cvsb_w_d, event.weight);
+  // histo_discriminator[index][8][index_fail_reason]->Fill(event.cvsl_w_d, event.weight);
+  // histo_discriminator[index][9][index_fail_reason]->Fill(event.least_m_bb, event.weight);
 
   return;
 } // void Reco_Eval::Fill_Histo_Discriminators(const TString& short_name, const int& index_decay_mode, const int& index_fail_reason)
@@ -1110,16 +1198,43 @@ int Reco_Eval::Get_Index(const TString &short_name, const int &index_decay_mode)
   TString name;
   if (short_name == "TTLJ" || short_name == "TTLJ_WtoCB")
   {
-    if (index_decay_mode == 21)
-      name = "TTLJ_ud";
-    else if (index_decay_mode == 23)
-      name = "TTLJ_us";
-    else if (index_decay_mode == 41)
-      name = "TTLJ_cd";
-    else if (index_decay_mode == 43)
-      name = "TTLJ_cs";
+    TString decay_mode;
+    if (index_decay_mode == 21 || index_decay_mode == 23)
+      decay_mode = "2";
+    else if (index_decay_mode == 41 || index_decay_mode == 43)
+      decay_mode = "4";
     else if (index_decay_mode == 45)
-      name = "TTLJ_cb";
+      decay_mode = "45";
+
+    bool chk_b = false;
+    bool chk_c = false;
+
+    if (chk_include_pseudo_additional)
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 56)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 46)
+        chk_c = true;
+    }
+    else
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 55)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 45)
+        chk_c = true;
+    }
+
+    name = "TTLJ";
+
+    if (decay_mode != 45)
+    {
+      if (chk_b)
+        name += "_BB";
+      else if (chk_c)
+        name += "_CC";
+    }
+
+    name += "_" + decay_mode;
   }
   else
     name = short_name;
@@ -1230,6 +1345,8 @@ void Reco_Eval::Read_Tree()
       if (abcd_region_index != 3)
         continue;
 
+      event.template_score = event.Multi_To_One();
+
       // if (event.best_mva_score_pre < 0.0 || event.template_score < 0.2)
       //   continue;
 
@@ -1275,12 +1392,12 @@ void Reco_Eval::Read_Tree()
       if (tagger == "B")
       {
         event.weight *= event.weight_b_tag;
-        event.weight *= tagging_rf.Get_Tagging_RF_B_Tag("D", histo_name_rf, "B_Tag_Nominal", event.n_jets, event.ht);
+        event.weight *= tagging_rf.Get_Tagging_RF_B_Tag("D", histo_name_rf, "B_Tag_Nominal", event.vec_jet_pt, event.vec_jet_eta, event.vec_jet_flavor);
       }
       else if (tagger == "C")
       {
         event.weight *= event.weight_c_tag;
-        event.weight *= tagging_rf.Get_Tagging_RF_C_Tag("D", histo_name_rf, "C_Tag_Nominal", event.n_pileup, event.ht);
+        event.weight *= tagging_rf.Get_Tagging_RF_C_Tag("D", histo_name_rf, "C_Tag_Nominal", event.vec_jet_pt, event.vec_jet_eta, event.vec_jet_flavor);
       }
 
       // if (event.chk_gentau_conta == true)

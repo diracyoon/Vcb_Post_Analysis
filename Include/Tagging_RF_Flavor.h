@@ -154,7 +154,7 @@ private:
 
   float sf_sl_trig;
 
-  float weight = 1;
+  float weight;
 
   float weight_baseline;
 
@@ -176,7 +176,9 @@ private:
   float weight_scale_variation_2;
   float weight_scale_variation_3;
   float weight_scale_variation_4;
+  float weight_scale_variation_5;
   float weight_scale_variation_6;
+  float weight_scale_variation_7;
   float weight_scale_variation_8;
 
   float weight_b_tag;
@@ -247,6 +249,7 @@ private:
   Modelling_Patch modelling_patch;
 
   void Combine_Lepton_Channel();
+  void Clear();
   void Draw_Result();
   void Draw_Validation();
   void Fill_Histo_MC(const int &region_index, const TString &sample_name, const TString &tree_type);

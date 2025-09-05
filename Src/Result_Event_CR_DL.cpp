@@ -16,6 +16,119 @@ Result_Event_CR_DL::~Result_Event_CR_DL()
 
 //////////
 
+void Result_Event_CR_DL::Clear()
+{
+  weight = 1;
+
+  weight_baseline = 1;
+
+  weight_b_tag = 1;
+  weight_b_tag_hf_down = 1;
+  weight_b_tag_hf_up = 1;
+  weight_b_tag_lf_down = 1;
+  weight_b_tag_lf_up = 1;
+  weight_b_tag_jes_down = 1;
+  weight_b_tag_jes_up = 1;
+  weight_b_tag_lfstats1_down = 1;
+  weight_b_tag_lfstats1_up = 1;
+  weight_b_tag_lfstats2_down = 1;
+  weight_b_tag_lfstats2_up = 1;
+  weight_b_tag_cferr1_down = 1;
+  weight_b_tag_cferr1_up = 1;
+  weight_b_tag_cferr2_down = 1;
+  weight_b_tag_cferr2_up = 1;
+  weight_b_tag_hfstats1_down = 1;
+  weight_b_tag_hfstats1_up = 1;
+  weight_b_tag_hfstats2_down = 1;
+  weight_b_tag_hfstats2_up = 1;
+
+  weight_c_tag = 1;
+  weight_c_tag_extrap_down = 1;
+  weight_c_tag_extrap_up = 1;
+  weight_c_tag_interp_down = 1;
+  weight_c_tag_interp_up = 1;
+  weight_c_tag_lhe_scale_muf_down = 1;
+  weight_c_tag_lhe_scale_muf_up = 1;
+  weight_c_tag_lhe_scale_mur_down = 1;
+  weight_c_tag_lhe_scale_mur_up = 1;
+  weight_c_tag_ps_fsr_fixed_down = 1;
+  weight_c_tag_ps_fsr_fixed_up = 1;
+  weight_c_tag_ps_isr_fixed_down = 1;
+  weight_c_tag_ps_isr_fixed_up = 1;
+  weight_c_tag_pu_down = 1;
+  weight_c_tag_pu_up = 1;
+  weight_c_tag_stat_down = 1;
+  weight_c_tag_stat_up = 1;
+  weight_c_tag_xsec_br_unc_dyjets_b_down = 1;
+  weight_c_tag_xsec_br_unc_dyjets_b_up = 1;
+  weight_c_tag_xsec_br_unc_dyjets_c_down = 1;
+  weight_c_tag_xsec_br_unc_dyjets_c_up = 1;
+  weight_c_tag_xsec_br_unc_wjets_c_down = 1;
+  weight_c_tag_xsec_br_unc_wjets_c_up = 1;
+  weight_c_tag_jer_down = 1;
+  weight_c_tag_jer_up = 1;
+  weight_c_tag_jes_total_down = 1;
+  weight_c_tag_jes_total_up = 1;
+
+  weight_el_id = 1;
+  weight_el_id_down = 1;
+  weight_el_id_up = 1;
+
+  weight_el_reco = 1;
+  weight_el_reco_down = 1;
+  weight_el_reco_up = 1;
+
+  weight_hem_veto = 1;
+  weight_lumi = 1;
+  weight_mc = 1;
+
+  weight_mu_id = 1;
+  weight_mu_id_down = 1;
+  weight_mu_id_up = 1;
+
+  weight_mu_iso = 1;
+  weight_mu_iso_down = 1;
+  weight_mu_iso_up = 1;
+
+  weight_pdf_alternative = 1;
+  memset(weight_pdf_error_set, 1, sizeof(weight_pdf_error_set));
+  weight_pdf_as_down = 1;
+  weight_pdf_as_up = 1;
+
+  weight_pileup = 1;
+  weight_pileup_down = 1;
+  weight_pileup_up = 1;
+
+  weight_prefire = 1;
+  weight_prefire_down = 1;
+  weight_prefire_up = 1;
+
+  memset(weight_ps, 1, sizeof(weight_ps));
+
+  weight_pujet_veto = 1;
+  weight_pujet_veto_down = 1;
+  weight_pujet_veto_up = 1;
+
+  weight_scale_variation_1 = 1;
+  weight_scale_variation_2 = 1;
+  weight_scale_variation_3 = 1;
+  weight_scale_variation_4 = 1;
+  weight_scale_variation_6 = 1;
+  weight_scale_variation_8 = 1;
+
+  weight_sl_trig = 1;
+  weight_sl_trig_el_down = 1;
+  weight_sl_trig_el_up = 1;
+  weight_sl_trig_mu_down = 1;
+  weight_sl_trig_mu_up = 1;
+
+  weight_top_pt = 1;
+
+  return;
+} // void Result_Event_CR_DL::Clear()
+
+//////////
+
 void Result_Event_CR_DL::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all, const bool chk_data)
 {
 
@@ -314,3 +427,48 @@ void Result_Event_CR_DL::Setup_Tree(TTree *tree, const Syst syst, const bool chk
 } // void Result_Event_CR_DL::Setup_Tree(TTree *tree, const bool &chk_syst)
 
 //////////
+
+void Result_Event_CR_DL::Swap_Scale_Variation(const TString &sample_name_short)
+{
+  // quick and dirty method
+  // it seems index for scale_variation is different between POWHEG and madgraph
+  // To save time, let's swap it in here although code become dirty
+  if (sample_name_short == "TTLJ_WtoCB" || sample_name_short == "TTLJ" || sample_name_short == "TTLL" ||
+      sample_name_short == "TTLJ_TTbb_4f" || sample_name_short == "TTLJ_bbDPS" || sample_name_short == "TTLL_TTbb_4f" || sample_name_short == "TTLL_bbDPS" ||
+      sample_name_short == "ST_tch" || sample_name_short == "ST_tw" ||
+      sample_name_short == "ttHTobb" || sample_name_short == "ttHToNonbb")
+  {
+    // index is OK
+    // do nothing
+  }
+  else if (sample_name_short == "ST_sch" ||
+           sample_name_short == "WJets" || sample_name_short == "DYJets" ||
+           sample_name_short == "QCD_bEn" ||
+           sample_name_short == "ttWToLNu" || sample_name_short == "ttWToQQ" ||
+           sample_name_short == "ttZToLLNuNu" || sample_name_short == "ttZToQQ" || sample_name_short == "ttZToQQ")
+  {
+    float temp = weight_scale_variation_1;
+    weight_scale_variation_1 = weight_scale_variation_3;
+    weight_scale_variation_3 = temp;
+
+    temp = weight_scale_variation_2;
+    weight_scale_variation_2 = weight_scale_variation_6;
+    weight_scale_variation_6 = temp;
+
+    temp = weight_scale_variation_5;
+    weight_scale_variation_5 = weight_scale_variation_7;
+    weight_scale_variation_7 = temp;
+  }
+  else if (sample_name_short == "WW" || sample_name_short == "WZ" || sample_name_short == "ZZ" ||
+           sample_name_short.Contains("CP5") || sample_name_short.Contains("mtop") || sample_name_short.Contains("hdamp"))
+  {
+    // irrelevant
+    // do nothing
+  }
+  else
+    cerr << "[Result_Event::Swap_Scale_Variation]: Unknown sample name: " << sample_name_short << endl;
+    
+  return;
+} // void Result_Event_CR_DL::Swap_Scale_Variation(const TString &sample_name_short)
+
+    //////////
