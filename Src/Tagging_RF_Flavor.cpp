@@ -1482,48 +1482,48 @@ void Tagging_RF_Flavor::Fill_Histo_MC(const int &region_index, const TString &sa
 
       // muf
       float c_tag_sf_muf_down = correction_ref_ctag->evaluate({"down_LHEScaleWeight_muF", flavor, cvsl, cvsb});
-      histo_mc_before_c[region_index][sample_index][5][flavor_index]->Fill(pt, eta, weight * weight_scale_variation_2);
-      histo_mc_after_c[region_index][sample_index][5][flavor_index]->Fill(pt, eta, weight * weight_scale_variation_2 * c_tag_sf_muf_down);
+      histo_mc_before_c[region_index][sample_index][5][flavor_index]->Fill(pt, eta, weight);
+      histo_mc_after_c[region_index][sample_index][5][flavor_index]->Fill(pt, eta, weight * c_tag_sf_muf_down);
 
       float c_tag_sf_muf_up = correction_ref_ctag->evaluate({"up_LHEScaleWeight_muF", flavor, cvsl, cvsb});
-      histo_mc_before_c[region_index][sample_index][6][flavor_index]->Fill(pt, eta, weight * weight_scale_variation_1);
-      histo_mc_after_c[region_index][sample_index][6][flavor_index]->Fill(pt, eta, weight * weight_scale_variation_1 * c_tag_sf_muf_up);
+      histo_mc_before_c[region_index][sample_index][6][flavor_index]->Fill(pt, eta, weight);
+      histo_mc_after_c[region_index][sample_index][6][flavor_index]->Fill(pt, eta, weight * c_tag_sf_muf_up);
 
       // mur
       float c_tag_sf_mur_down = correction_ref_ctag->evaluate({"down_LHEScaleWeight_muR", flavor, cvsl, cvsb});
-      histo_mc_before_c[region_index][sample_index][7][flavor_index]->Fill(pt, eta, weight * weight_scale_variation_6);
-      histo_mc_after_c[region_index][sample_index][7][flavor_index]->Fill(pt, eta, weight * weight_scale_variation_6 * c_tag_sf_mur_down);
+      histo_mc_before_c[region_index][sample_index][7][flavor_index]->Fill(pt, eta, weight);
+      histo_mc_after_c[region_index][sample_index][7][flavor_index]->Fill(pt, eta, weight * c_tag_sf_mur_down);
 
       float c_tag_sf_mur_up = correction_ref_ctag->evaluate({"up_LHEScaleWeight_muR", flavor, cvsl, cvsb});
-      histo_mc_before_c[region_index][sample_index][8][flavor_index]->Fill(pt, eta, weight * weight_scale_variation_3);
-      histo_mc_after_c[region_index][sample_index][8][flavor_index]->Fill(pt, eta, weight * weight_scale_variation_3 * c_tag_sf_mur_up);
+      histo_mc_before_c[region_index][sample_index][8][flavor_index]->Fill(pt, eta, weight);
+      histo_mc_after_c[region_index][sample_index][8][flavor_index]->Fill(pt, eta, weight * c_tag_sf_mur_up);
 
       // fsr
       float c_tag_sf_fsr_down = correction_ref_ctag->evaluate({"down_PSWeightFSR", flavor, cvsl, cvsb});
-      histo_mc_before_c[region_index][sample_index][9][flavor_index]->Fill(pt, eta, weight * weight_ps[0]);
-      histo_mc_after_c[region_index][sample_index][9][flavor_index]->Fill(pt, eta, weight * weight_ps[0] * c_tag_sf_fsr_down);
+      histo_mc_before_c[region_index][sample_index][9][flavor_index]->Fill(pt, eta, weight);
+      histo_mc_after_c[region_index][sample_index][9][flavor_index]->Fill(pt, eta, weight * c_tag_sf_fsr_down);
 
       float c_tag_sf_fsr_up = correction_ref_ctag->evaluate({"up_PSWeightFSR", flavor, cvsl, cvsb});
-      histo_mc_before_c[region_index][sample_index][10][flavor_index]->Fill(pt, eta, weight * weight_ps[1]);
-      histo_mc_after_c[region_index][sample_index][10][flavor_index]->Fill(pt, eta, weight * weight_ps[1] * c_tag_sf_fsr_up);
+      histo_mc_before_c[region_index][sample_index][10][flavor_index]->Fill(pt, eta, weight);
+      histo_mc_after_c[region_index][sample_index][10][flavor_index]->Fill(pt, eta, weight * c_tag_sf_fsr_up);
 
       // isr
       float c_tag_sf_isr_down = correction_ref_ctag->evaluate({"down_PSWeightISR", flavor, cvsl, cvsb});
-      histo_mc_before_c[region_index][sample_index][11][flavor_index]->Fill(pt, eta, weight * weight_ps[2]);
-      histo_mc_after_c[region_index][sample_index][11][flavor_index]->Fill(pt, eta, weight * weight_ps[2] * c_tag_sf_isr_down);
+      histo_mc_before_c[region_index][sample_index][11][flavor_index]->Fill(pt, eta, weight);
+      histo_mc_after_c[region_index][sample_index][11][flavor_index]->Fill(pt, eta, weight * c_tag_sf_isr_down);
 
       float c_tag_sf_isr_up = correction_ref_ctag->evaluate({"up_PSWeightISR", flavor, cvsl, cvsb});
-      histo_mc_before_c[region_index][sample_index][12][flavor_index]->Fill(pt, eta, weight * weight_ps[3]);
-      histo_mc_after_c[region_index][sample_index][12][flavor_index]->Fill(pt, eta, weight * weight_ps[3] * c_tag_sf_isr_up);
+      histo_mc_before_c[region_index][sample_index][12][flavor_index]->Fill(pt, eta, weight);
+      histo_mc_after_c[region_index][sample_index][12][flavor_index]->Fill(pt, eta, weight * c_tag_sf_isr_up);
 
       // pu
       float c_tag_sf_pu_down = correction_ref_ctag->evaluate({"down_PUWeight", flavor, cvsl, cvsb});
-      histo_mc_before_c[region_index][sample_index][13][flavor_index]->Fill(pt, eta, weight * weight_pileup_down / weight_pileup);
-      histo_mc_after_c[region_index][sample_index][13][flavor_index]->Fill(pt, eta, weight * weight_pileup_down / weight_pileup * c_tag_sf_pu_down);
+      histo_mc_before_c[region_index][sample_index][13][flavor_index]->Fill(pt, eta, weight);
+      histo_mc_after_c[region_index][sample_index][13][flavor_index]->Fill(pt, eta, weight * c_tag_sf_pu_down);
 
       float c_tag_sf_pu_up = correction_ref_ctag->evaluate({"up_PUWeight", flavor, cvsl, cvsb});
-      histo_mc_before_c[region_index][sample_index][14][flavor_index]->Fill(pt, eta, weight * weight_pileup_up / weight_pileup);
-      histo_mc_after_c[region_index][sample_index][14][flavor_index]->Fill(pt, eta, weight * weight_pileup_up / weight_pileup * c_tag_sf_pu_up);
+      histo_mc_before_c[region_index][sample_index][14][flavor_index]->Fill(pt, eta, weight);
+      histo_mc_after_c[region_index][sample_index][14][flavor_index]->Fill(pt, eta, weight * c_tag_sf_pu_up);
 
       // stat
       float c_tag_sf_stat_down = correction_ref_ctag->evaluate({"down_Stat", flavor, cvsl, cvsb});
