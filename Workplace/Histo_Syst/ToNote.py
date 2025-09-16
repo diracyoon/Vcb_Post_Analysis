@@ -4,6 +4,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Vcb_Post_Analysis Command')
 parser.add_argument('-e', dest='Era', default="2017")
 parser.add_argument('-ch', dest='Channel', default="Mu")
+parser.add_argument('-tagger', dest='Tagger', default="B")
 args = parser.parse_args()
 
 if args.Era=="2016a": args.Era="2016preVFP"
@@ -11,12 +12,12 @@ if args.Era=="2016b": args.Era="2016postVFP"
 
 import os
 path=os.environ['Vcb_Post_Analysis_WD']
-path=f"{path}/Workplace/Histo_Syst/{args.Era}/"
+path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag/{args.Era}/"
 
 import shutil
 
 ## TF ##
-region_list = ['Control0', 'Signal']  
+region_list = ['Control',]  
 
 tf_list = ['Transfer_Function',
 ]
@@ -27,10 +28,16 @@ for region in region_list:
         print(origin)
 
         origin = f"{path}/{origin}"
-        des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataDriven/{args.Era}/{args.Channel}"
 
-        #shutil.copy(origin, des)
+        if args.Tagger == "B":
+            des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataDriven/{args.Era}/{args.Channel}"
+        elif args.Tagger == "C":
+            continue
+            
+        os.makedirs(des, exist_ok=True)
+        shutil.copy(origin, des)
 
+region_list = ['Control', 'Signal']
 var_list = ['Best_MVA_Score',
             'Template_MVA_Score',
             'BvsC_Leading_Jet',
@@ -72,7 +79,13 @@ for region in region_list:
             print(origin)
 
             origin = f"{path}/{origin}"
-            des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/BRExtraction/{args.Era}/{args.Channel}"
+
+            if args.Tagger == "B":
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/BRExtraction/{args.Era}/{args.Channel}"
+            elif args.Tagger == "C":
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/CTaggingAnalysis/BRExtraction/{args.Era}/{args.Channel}"
+
+            os.makedirs(des, exist_ok=True)
             shutil.copy(origin, des)
 
         ## Data vs MC ## 
@@ -81,7 +94,14 @@ for region in region_list:
             print(origin)
             
             origin = f"{path}/{origin}"
-            des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataMCComparison/CR_2B/{args.Era}/{args.Channel}"
+
+            if args.Tagger == "B":
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataMCComparison/{region}/{args.Era}/{args.Channel}"
+            elif args.Tagger == "C":
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/CTaggingAnalysis/DataMCComparison/{region}/{args.Era}/{args.Channel}"
+                
+            #dst_dir = os.path.dirname(des)
+            os.makedirs(des, exist_ok=True)
             shutil.copy(origin, des)
 
 
@@ -91,7 +111,13 @@ for region in region_list:
             print(origin)
 
             origin = f"{path}/{origin}"
-            des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataDriven/{args.Era}/{args.Channel}"
+
+            if args.Tagger == "B":
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataDriven/{args.Era}/{args.Channel}"
+            elif args.Tagger == "C":
+                continue
+                
+            os.makedirs(des, exist_ok=True)
             shutil.copy(origin, des)
 
 ## Each ##
@@ -102,10 +128,20 @@ if args.Era == "2017":
     for each in each_list:
         print(each)
      
-        if "Control0" in each:
-            des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataMCComparison/CR_2B/{args.Era}/{args.Channel}"
+        if "Control" in each:
+            if args.Tagger == "B":
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataMCComparison/Control/{args.Era}/{args.Channel}"
+            elif args.Tagger == "C":
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/CTaggingAnalysis/DataMCComparison/Control/{args.Era}/{args.Channel}"
+
+            os.makedirs(des, exist_ok=True)
             shutil.copy(f"{path}/{each}", des)
         
         if "Signal" in each:
-            des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/BRExtraction/{args.Era}/{args.Channel}"
+            if args.Tagger == "B":
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/BRExtraction/{args.Era}/{args.Channel}"
+            elif args.Tagger == "C":
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/CTaggingAnalysis/BRExtraction/{args.Era}/{args.Channel}"
+
+            os.makedirs(des, exist_ok=True)
             shutil.copy(f"{path}/{each}", des)
