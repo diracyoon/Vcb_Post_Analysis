@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
 chk_jes_breakdown = False
+#chk_jes_breakdown = True
 
 Era = ['2016preVFP', '2016postVFP', '2017', '2018']
 #Era = ['2018']
 
 Channel = ['Mu', 'El']
-#Channel = ['El']
+#Channel = ['Mu']
 
 Tagger = 'B'
 

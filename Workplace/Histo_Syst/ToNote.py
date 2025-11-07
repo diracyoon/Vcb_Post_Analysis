@@ -5,6 +5,7 @@ parser = argparse.ArgumentParser(description='Vcb_Post_Analysis Command')
 parser.add_argument('-e', dest='Era', default="2017")
 parser.add_argument('-ch', dest='Channel', default="Mu")
 parser.add_argument('-tagger', dest='Tagger', default="B")
+parser.add_argument('-reco', dest='Reco', default="XGBoost")
 args = parser.parse_args()
 
 if args.Era=="2016a": args.Era="2016preVFP"
@@ -12,7 +13,7 @@ if args.Era=="2016b": args.Era="2016postVFP"
 
 import os
 path=os.environ['Vcb_Post_Analysis_WD']
-path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag/{args.Era}/"
+path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag_5f/{args.Era}/"
 
 import shutil
 
