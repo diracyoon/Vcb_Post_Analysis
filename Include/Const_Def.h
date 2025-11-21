@@ -9,13 +9,19 @@ using namespace std;
 
 const bool chk_include_pseudo_additional = true;
 const bool chk_use_ttbb_4f = false;
-const bool chk_jes_breakdown = false;
+// const bool chk_use_ttbb_4f = true;
+// const bool chk_jes_breakdown = false;
+const bool chk_jes_breakdown = true;
 const bool chk_rf_tthf_breakdown = false;
 
-const float template_score_cut = 0.35;
+const float template_score_cut = 0.2;
 
-const float threeb_cr_cut = 0.85;
-//const float threeb_cr_cut = 0.90;
+// XGBoost
+// const float threeb_cr_cut_b = 0.90;
+const float threeb_cr_cut_b = 0.80;
+const float threeb_cr_cut_c = 0.85;
+
+// const float threeb_cr_cut = 0.90;
 
 // 2016preVFP
 const float bvsc_wp_l_2016preVFP = 0.0508;
@@ -284,11 +290,9 @@ static Syst StringToSyst(const TString &syst_str)
         return Syst::UEUp;
     else
     {
-        cerr << "Unkonwn Syst." << endl;
+        cerr << "Const_Def::SystToString Unknown Syst." << endl;
         exit(1);
     }
 }
-
-
 
 #endif /* __Const_Def_H__ */

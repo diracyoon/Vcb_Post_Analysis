@@ -4,14 +4,15 @@ ClassImp(Reco_Eval);
 
 //////////
 
-Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TString &a_tagger, const TString &a_swap_mode, const TString &a_draw_extension)
-    : samples(a_era, a_channel), event(a_era, a_channel, a_swap_mode), tagging_rf(a_era)
+Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TString &a_tagger, const bool &a_use_spanet, const TString &a_swap_mode, const TString &a_draw_extension)
+    : samples(a_era, a_channel), event(a_era, a_channel, "Vcb", a_tagger, a_use_spanet, a_swap_mode), tagging_rf(a_era)
 {
   ROOT::EnableImplicitMT(10);
 
   cout << "[Reco_Eval::Reco_Eval]: Init analysis" << endl;
 
   TH1::AddDirectory(kFALSE);
+
   reduction = 1;
 
   gROOT->SetBatch(kTRUE);
@@ -19,6 +20,7 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   era = a_era;
   channel = a_channel;
   tagger = a_tagger;
+  use_spanet = a_use_spanet;
   draw_extension = a_draw_extension;
 
   if (era == "2016preVFP")
@@ -48,10 +50,20 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 
   TString path_base = getenv("Vcb_Post_Analysis_Sample_Dir");
 
-  if (tagger == "B")
-    path_base += era + "/Vcb_BTag/Central_Syst/";
-  else if (tagger == "C")
-    path_base += era + "/Vcb_CTag/Central_Syst/";
+  if (use_spanet)
+  {
+    if (tagger == "B")
+      path_base += era + "/Vcb_BTag_SPANet/Central_Syst/";
+    else if (tagger == "C")
+      path_base += era + "/Vcb_CTag_SPANet/Central_Syst/";
+  }
+  else
+  {
+    if (tagger == "B")
+      path_base += era + "/Vcb_BTag/Central_Syst/";
+    else if (tagger == "C")
+      path_base += era + "/Vcb_CTag/Central_Syst/";
+  }
 
   if (samples.map_mc.size() != samples.map_short_name_mc.size())
   {
@@ -67,6 +79,7 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     //  continue;
 
     map_fin[it->first] = new TFile(path_base + it->second);
+    map_fin_template[it->first] = new TFile(path_base + "11Class/" + it->second);
 
     TString key;
     if (channel == "Mu")
@@ -75,6 +88,10 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
       key = "El/Central/Result_Tree";
 
     map_tree[it->first] = (TTree *)map_fin[it->first]->Get(key);
+    map_template_tree[it->first] = (TTree *)map_fin_template[it->first]->Get(key);
+
+    map_tree[it->first]->AddFriend(map_template_tree[it->first]);
+
     event.Setup_Tree(map_tree[it->first], Syst::Central, false);
   }
 
@@ -193,6 +210,19 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
   }
   else if (tagger == "C")
   {
+    dv_histo_conf = {{"N_Jets", 20, 0, 20},
+                     {"N_BJets", 10, 0, 10},
+                     {"N_CJets", 15, 0, 15},
+                     {"MVA_Scores", 100, 0, 1},
+                     {"M_Had_W", 100, 20, 140},
+                     {"M_Had_T", 100, 100, 240},
+                     {"BvsC_w_u", 100, 0, 1},
+                     {"CvsB_w_u", 100, 0, 1},
+                     {"CvsL_w_u", 100, 0, 1},
+                     {"BvsC_w_d", 100, 0, 1},
+                     {"CvsB_w_d", 100, 0, 1},
+                     {"CvsL_w_d", 100, 0, 1},
+                     {"Least_M_bb", 100, 0, 500}};
   }
 
   n_discriminators = dv_histo_conf.size();
@@ -452,7 +482,7 @@ void Reco_Eval::Draw_DV()
     for (int j = 0; j < n_discriminators; j++)
     {
       name = vec_histo_sample[i] + "_" + dv_histo_conf[j].discriminator;
-    
+
       stack_dv[i][j] = new THStack(name, name);
 
       for (int k = 0; k < n_histo_type; k++)
@@ -765,8 +795,10 @@ void Reco_Eval::Draw_Reco()
     canvas_lep_t[canvas_index]->cd(subpad_index);
     stack_lep_t[i]->Draw("BAR");
 
+    canvas_template[canvas_index]->cd(subpad_index)->SetLogy();
     canvas_template[canvas_index]->cd(subpad_index);
     stack_template[i]->Draw("BAR");
+    stack_template[i]->SetMinimum(0.1);
 
     fout->cd();
     stack_mva[i]->Write();
@@ -775,7 +807,7 @@ void Reco_Eval::Draw_Reco()
 
   // to summary table
   cout << "Summary Table Marker" << endl;
-  for (int i = 0; i < 5; i++)
+  for (int i = 0; i < 7; i++)
   {
     if (i == 0)
       cout << "TTLJ_2" << endl;
@@ -1109,25 +1141,33 @@ void Reco_Eval::Fill_Histo_Discriminators(const TString &short_name, const int &
 {
   int index = Get_Index(short_name, index_decay_mode);
 
-  histo_discriminator[index][0][index_fail_reason]->Fill(event.n_jets, event.weight);
-  histo_discriminator[index][1][index_fail_reason]->Fill(event.n_bjets, event.weight);
-  histo_discriminator[index][2][index_fail_reason]->Fill(event.best_mva_score, event.weight);
-  histo_discriminator[index][3][index_fail_reason]->Fill(event.m_had_w, event.weight);
-  histo_discriminator[index][4][index_fail_reason]->Fill(event.m_had_t, event.weight);
-  histo_discriminator[index][5][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
-  histo_discriminator[index][6][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
-  histo_discriminator[index][7][index_fail_reason]->Fill(event.least_m_bb, event.weight);
-
-  // histo_discriminator[index][0][index_fail_reason]->Fill(event.best_mva_score, event.weight);
-  // histo_discriminator[index][1][index_fail_reason]->Fill(event.m_had_w, event.weight);
-  // histo_discriminator[index][2][index_fail_reason]->Fill(event.m_had_t, event.weight);
-  // histo_discriminator[index][3][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
-  // histo_discriminator[index][4][index_fail_reason]->Fill(event.cvsb_w_u, event.weight);
-  // histo_discriminator[index][5][index_fail_reason]->Fill(event.cvsl_w_u, event.weight);
-  // histo_discriminator[index][6][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
-  // histo_discriminator[index][7][index_fail_reason]->Fill(event.cvsb_w_d, event.weight);
-  // histo_discriminator[index][8][index_fail_reason]->Fill(event.cvsl_w_d, event.weight);
-  // histo_discriminator[index][9][index_fail_reason]->Fill(event.least_m_bb, event.weight);
+  if (tagger == "B")
+  {
+    histo_discriminator[index][0][index_fail_reason]->Fill(event.n_jets, event.weight);
+    histo_discriminator[index][1][index_fail_reason]->Fill(event.n_bjets, event.weight);
+    histo_discriminator[index][2][index_fail_reason]->Fill(event.best_mva_score, event.weight);
+    histo_discriminator[index][3][index_fail_reason]->Fill(event.m_had_w, event.weight);
+    histo_discriminator[index][4][index_fail_reason]->Fill(event.m_had_t, event.weight);
+    histo_discriminator[index][5][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
+    histo_discriminator[index][6][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
+    histo_discriminator[index][7][index_fail_reason]->Fill(event.least_m_bb, event.weight);
+  }
+  else if (tagger == "C")
+  {
+    histo_discriminator[index][0][index_fail_reason]->Fill(event.n_jets, event.weight);
+    histo_discriminator[index][1][index_fail_reason]->Fill(event.n_bjets, event.weight);
+    histo_discriminator[index][2][index_fail_reason]->Fill(event.n_bjets, event.weight);
+    histo_discriminator[index][3][index_fail_reason]->Fill(event.best_mva_score, event.weight);
+    histo_discriminator[index][4][index_fail_reason]->Fill(event.m_had_w, event.weight);
+    histo_discriminator[index][5][index_fail_reason]->Fill(event.m_had_t, event.weight);
+    histo_discriminator[index][6][index_fail_reason]->Fill(event.bvsc_w_u, event.weight);
+    histo_discriminator[index][7][index_fail_reason]->Fill(event.cvsb_w_u, event.weight);
+    histo_discriminator[index][8][index_fail_reason]->Fill(event.cvsl_w_u, event.weight);
+    histo_discriminator[index][9][index_fail_reason]->Fill(event.bvsc_w_d, event.weight);
+    histo_discriminator[index][10][index_fail_reason]->Fill(event.cvsb_w_d, event.weight);
+    histo_discriminator[index][11][index_fail_reason]->Fill(event.cvsl_w_d, event.weight);
+    histo_discriminator[index][12][index_fail_reason]->Fill(event.least_m_bb, event.weight);
+  }
 
   return;
 } // void Reco_Eval::Fill_Histo_Discriminators(const TString& short_name, const int& index_decay_mode, const int& index_fail_reason)
@@ -1346,6 +1386,7 @@ void Reco_Eval::Read_Tree()
         continue;
 
       event.template_score = event.Multi_To_One();
+      // cout << "test " << event.template_score << endl;
 
       // if (event.best_mva_score_pre < 0.0 || event.template_score < 0.2)
       //   continue;

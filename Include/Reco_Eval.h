@@ -32,7 +32,7 @@ class Reco_Eval : public TObject
   // class for evaluation of recostruction and signal study
 
 public:
-  Reco_Eval(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_tagger = "C", const TString &a_swap_mode = "Permutation_MVA", const TString &a_draw_extension = "png");
+  Reco_Eval(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_tagger = "C", const bool &a_use_spanet = false, const TString &a_swap_mode = "Permutation_MVA", const TString &a_draw_extension = "png");
   ~Reco_Eval();
 
   void Run();
@@ -63,12 +63,16 @@ protected:
   TString era;
   TString channel;
   TString tagger;
+  bool use_spanet;
   TString draw_extension;
 
   bool chk_rf_tthf_breakdown = false;
 
   map<TString, TFile *> map_fin;
+  map<TString, TFile *> map_fin_template;
+
   map<TString, TTree *> map_tree;
+  map<TString, TTree*> map_template_tree;
 
   vector<TString> vec_short_name_mc;
   int n_sample_merge_mc;

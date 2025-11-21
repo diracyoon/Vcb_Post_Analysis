@@ -23,7 +23,7 @@ using namespace std;
 class Compare_TTbb : public TObject
 {
 public:
-  Compare_TTbb(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_tagger = "C");
+  Compare_TTbb(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_tagger = "C",const bool& a_use_spanet = false);
   ~Compare_TTbb();
 
 private:
@@ -32,6 +32,8 @@ private:
   TString era;
   TString channel;
   TString tagger;
+
+  bool use_spanet;
 
   Samples samples;
 
@@ -44,9 +46,17 @@ private:
   TFile *fin_4f;
   TFile *fin_dps;
 
+  TFile* fin_template_5f;
+  TFile* fin_template_4f;
+  TFile* fin_template_dps;
+
   TTree *tree_5f;
   TTree *tree_4f;
   TTree *tree_dps;
+
+  TTree *template_tree_5f;
+  TTree *template_tree_4f;
+  TTree *template_tree_dps;
 
   TH1D **histo;
   TH1D **histo_ratio;

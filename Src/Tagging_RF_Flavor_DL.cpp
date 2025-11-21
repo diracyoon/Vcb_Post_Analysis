@@ -32,7 +32,8 @@ Tagging_RF_Flavor_DL::Tagging_RF_Flavor_DL(const TString &a_era, const TString &
     year = era;
 
   chk_tthf_breakdown = false;
-  chk_jes_breakdown = false;
+  // chk_jes_breakdown = false;
+  chk_jes_breakdown = true;
 
   // syst_tree
   vec_tree_type = {"JetResDown", "JetResUp",
@@ -787,6 +788,8 @@ void Tagging_RF_Flavor_DL::Draw_Validation()
                         "B_Tag_HF_Down", "B_Tag_HF_Up",
                         "B_Tag_LF_Down", "B_Tag_LF_Up",
                         "B_Tag_JES_Down", "B_Tag_JES_Up",
+                        "B_Tag_JES_Absolute_Down", "B_Tag_JES_Absolute_Up",
+                        "B_Tag_JES_BBEC1_Down", "B_Tag_JES_BBEC1_Up",
                         "B_Tag_LFStats1_Down", "B_Tag_LFStats1_Up",
                         "B_Tag_LFStats2_Down", "B_Tag_LFStats2_Up",
                         "B_Tag_CFErr1_Down", "B_Tag_CFErr1_Up",
@@ -832,15 +835,16 @@ void Tagging_RF_Flavor_DL::Draw_Validation()
       cout << can_name << endl;
 
       TCanvas *canvas = new TCanvas(can_name, can_name, 1600, 1000);
-      // if (tagger == "C_Tagger")
-      canvas->Divide(3, 1);
+
+      if (tagger == "C_Tagger")
+        canvas->Divide(3, 1);
       canvas->Draw();
 
       int n_scores;
-      // if (tagger == "B_Tagger")
-      //   n_scores = 1;
-      // else if (tagger == "C_Tagger")
-      n_scores = 3;
+      if (tagger == "B_Tagger")
+        n_scores = 1;
+      else if (tagger == "C_Tagger")
+        n_scores = 3;
 
       TPad *pad[n_scores][2];
       TH1D *histo_closure[n_flavor][3];
@@ -869,15 +873,14 @@ void Tagging_RF_Flavor_DL::Draw_Validation()
             cout << histo_name << endl;
 
             histo_closure[l][m] = (TH1D *)fin->Get(sample_to_draw + "/" + histo_name);
-            cout << "test " << histo_closure[l][m] << endl;
           } // loop over 3
         } // loop over n_flavor
 
         // Absolute
-        // if (tagger == "B_Tagger")
-        //   canvas->cd();
-        // else if (tagger == "C_Tagger")
-        canvas->cd(k + 1);
+        if (tagger == "B_Tagger")
+          canvas->cd();
+        else if (tagger == "C_Tagger")
+          canvas->cd(k + 1);
 
         pad[k][0]->Draw();
         pad[k][0]->cd();
@@ -949,10 +952,10 @@ void Tagging_RF_Flavor_DL::Draw_Validation()
         } //   if (k == 0)
 
         // Ratio
-        // if (tagger == "B_Tagger")
-        //   canvas->cd();
-        // else if (tagger == "C_Tagger")
-        canvas->cd(k + 1);
+        if (tagger == "B_Tagger")
+          canvas->cd();
+        else if (tagger == "C_Tagger")
+          canvas->cd(k + 1);
 
         pad[k][1]->Draw();
         pad[k][1]->cd();
@@ -996,21 +999,19 @@ void Tagging_RF_Flavor_DL::Draw_Validation()
         } // loop over n_flavor
       } // loop over n_scores
 
-      /*
-              float lumi;
-              if (era == "2016preVFP")
-                lumi = lumi_2016a;
-              else if (era == "2016postVFP")
-                lumi = lumi_2016a;
-              else if (era == "2017")
-                lumi = lumi_2017;
-              if (era == "2018")
-                lumi = lumi_2018;
+      float lumi;
+      if (era == "2016preVFP")
+        lumi = lumi_2016a;
+      else if (era == "2016postVFP")
+        lumi = lumi_2016a;
+      else if (era == "2017")
+        lumi = lumi_2017;
+      if (era == "2018")
+        lumi = lumi_2018;
 
-              canvas->cd();
-              latex->DrawLatexNDC(0.1, 0.9, "CMS work in progress");
-              latex->DrawLatexNDC(0.9, 0.9, Form("%f fb^{-1}", lumi));
-      */
+      canvas->cd();
+      latex->DrawLatexNDC(0.1, 0.9, "CMS work in progress");
+      latex->DrawLatexNDC(0.9, 0.9, Form("%f fb^{-1}", lumi));
 
       canvas->Print(can_name + "." + extension, extension);
     } // loop over n_syst_c
@@ -1482,7 +1483,7 @@ void Tagging_RF_Flavor_DL::Fill_Histo_MC(const TString &sample_name, const TStri
     }
 
     // jes break down
-    if (chk_jes_breakdown == true)
+    else if (chk_jes_breakdown == true)
     {
       int histo_index = -1;
       if (tree_type == "JetEnAbsoluteDown")
@@ -1582,6 +1583,12 @@ void Tagging_RF_Flavor_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &samp
     // JES Breakdown
     else if (tree_type.Contains("JetEn"))
     {
+      TString temp = b_tag_type;
+      temp.ReplaceAll("B_Tag_JES", "JetEn");
+      temp.ReplaceAll("_", "");
+
+      if (tree_type != temp)
+        continue;
     }
 
     float weight_raw = 1;
@@ -1642,7 +1649,10 @@ void Tagging_RF_Flavor_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &samp
     // JES Breakdown
     else if (b_tag_type.Contains("B_Tag_JES"))
     {
-      cerr << "will be filled later" << endl;
+      if (b_tag_type.Contains("Down"))
+        weight_b_sf = weight_b_tag_jes_down;
+      else if (b_tag_type.Contains("Up"))
+        weight_b_sf = weight_b_tag_jes_up;
     }
 
     float weight_sf = weight_raw * weight_b_sf;
@@ -1947,6 +1957,45 @@ int Tagging_RF_Flavor_DL::Histo_Index(const TString &sample_name)
 
 //////////
 
+TString Tagging_RF_Flavor_DL::Histo_Name_Modelling_Patch(const TString &sample_name)
+{
+  if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
+  {
+    TString histo_name_modelling_patch = sample_name;
+
+    bool chk_b = false;
+    bool chk_c = false;
+
+    if (chk_include_pseudo_additional)
+    {
+      if (51 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 56)
+        chk_b = true;
+      else if (41 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 46)
+        chk_c = true;
+    }
+    else
+    {
+      if (51 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 55)
+        chk_b = true;
+      else if (41 <= gen_ttbar_id % 100 && gen_ttbar_id % 100 <= 45)
+        chk_c = true;
+    }
+
+    if (chk_b)
+      histo_name_modelling_patch += "_BB";
+    else if (chk_c)
+      histo_name_modelling_patch += "_CC";
+
+    return histo_name_modelling_patch;
+  }
+  else
+    return sample_name;
+
+  return "-1";
+} // TString Tagging_RF_Flavor_DL::Histo_Name_Modelling_Patch(const TString &sample_name)
+
+//////////
+
 TString Tagging_RF_Flavor_DL::Histo_Name_RF(const TString &sample_name)
 {
   TString histo_name_rf;
@@ -2160,18 +2209,8 @@ void Tagging_RF_Flavor_DL::Read_Tree()
       n_entries /= reduction;
       cout << "N_Entries = " << it->second->GetEntries() << ", Reduction = " << reduction << ", N_Entries/Reduction = " << n_entries << endl;
 
-      float modelling_patch_baseline = modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline");
-      float modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
-      float modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_1");
-      float modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_2");
-      float modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_3");
-      float modelling_patch_scale_variation_4 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_4");
-      float modelling_patch_scale_variation_6 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_6");
-      float modelling_patch_scale_variation_8 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_8");
-      float modelling_patch_ps_0 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_0");
-      float modelling_patch_ps_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_1");
-      float modelling_patch_ps_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_2");
-      float modelling_patch_ps_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_3");
+      sample_name_modelling_patch = "sample_name_modelling_patch";
+      sample_name_modelling_patch_prev = "sample_name_modelling_patch_prev";
 
       for (Long64_t i = 0; i < n_entries; i++)
       {
@@ -2184,22 +2223,38 @@ void Tagging_RF_Flavor_DL::Read_Tree()
         // if (sample_name.Contains("CP5") || sample_name.Contains("hdamp") || sample_name.Contains("mtop"))
         //   cout << "test " << sample_name << " " << sample_name_short << " " << modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline") << endl;
 
-        if (sample_name_short.Contains("CP5") || sample_name_short.Contains("hdamp") || sample_name_short.Contains("mtop"))
-          weight_baseline *= modelling_patch_baseline;
-        else
+        sample_name_modelling_patch = Histo_Name_Modelling_Patch(sample_name_short);
+
+        // to save time
+        // only fetch when the sample changes
+        if (sample_name_modelling_patch != sample_name_modelling_patch_prev)
         {
-          weight_top_pt *= modelling_patch_top_pt_reweight;
-          weight_scale_variation_1 *= modelling_patch_scale_variation_1;
-          weight_scale_variation_2 *= modelling_patch_scale_variation_2;
-          weight_scale_variation_3 *= modelling_patch_scale_variation_3;
-          weight_scale_variation_4 *= modelling_patch_scale_variation_4;
-          weight_scale_variation_6 *= modelling_patch_scale_variation_6;
-          weight_scale_variation_8 *= modelling_patch_scale_variation_8;
-          weight_ps[0] *= modelling_patch_ps_0;
-          weight_ps[1] *= modelling_patch_ps_1;
-          weight_ps[2] *= modelling_patch_ps_2;
-          weight_ps[3] *= modelling_patch_ps_3;
+          modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Top_Pt_Reweight");
+          modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_1");
+          modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_2");
+          modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_3");
+          modelling_patch_scale_variation_4 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_4");
+          modelling_patch_scale_variation_6 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_6");
+          modelling_patch_scale_variation_8 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_8");
+          modelling_patch_ps_0 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_0");
+          modelling_patch_ps_1 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_1");
+          modelling_patch_ps_2 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_2");
+          modelling_patch_ps_3 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_3");
+
+          sample_name_modelling_patch_prev = sample_name_modelling_patch;
         }
+
+        weight_top_pt *= modelling_patch_top_pt_reweight;
+        weight_scale_variation_1 *= modelling_patch_scale_variation_1;
+        weight_scale_variation_2 *= modelling_patch_scale_variation_2;
+        weight_scale_variation_3 *= modelling_patch_scale_variation_3;
+        weight_scale_variation_4 *= modelling_patch_scale_variation_4;
+        weight_scale_variation_6 *= modelling_patch_scale_variation_6;
+        weight_scale_variation_8 *= modelling_patch_scale_variation_8;
+        weight_ps[0] *= modelling_patch_ps_0;
+        weight_ps[1] *= modelling_patch_ps_1;
+        weight_ps[2] *= modelling_patch_ps_2;
+        weight_ps[3] *= modelling_patch_ps_3;
 
         if (mode == "Analysis")
           Fill_Histo_MC(sample_name, tree_type);
@@ -2292,7 +2347,7 @@ void Tagging_RF_Flavor_DL::Run_Analysis()
 {
   cout << "[Tagging_RF_DL_Flavor::Run_Analysis]: Init" << endl;
 
-  ROOT::EnableImplicitMT(4);
+  ROOT::EnableImplicitMT(1);
 
   Setup_Analysis();
   Setup_Binning();
@@ -2338,7 +2393,7 @@ void Tagging_RF_Flavor_DL::Run_Validation()
 {
   cout << "[Tagging_RF_DL_Flavor::Run_Validation]: Init" << endl;
 
-  ROOT::EnableImplicitMT(4);
+  ROOT::EnableImplicitMT(1);
 
   Setup_Application();
   Setup_Analysis();
@@ -2684,9 +2739,9 @@ void Tagging_RF_Flavor_DL::Setup_Tree(TTree *tree, const TString &syst)
     tree->SetBranchAddress("weight_b_tag_down_hfstats2", &weight_b_tag_hfstats2_down);
     tree->SetBranchAddress("weight_b_tag_up_hfstats2", &weight_b_tag_hfstats2_up);
   }
-  else if (syst == "JetEnDown")
+  else if (syst.Contains("JetEn") && syst.Contains("Down"))
     tree->SetBranchAddress("weight_b_tag_down_jes", &weight_b_tag_jes_down);
-  else if (syst == "JetEnUp")
+  else if (syst.Contains("JetEn") && syst.Contains("Up"))
     tree->SetBranchAddress("weight_b_tag_up_jes", &weight_b_tag_jes_up);
 
   if (syst == "Central")

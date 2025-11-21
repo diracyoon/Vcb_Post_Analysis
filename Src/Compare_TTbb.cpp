@@ -4,11 +4,11 @@ ClassImp(Compare_TTbb);
 
 //////////
 
-Compare_TTbb::Compare_TTbb(const TString &a_era, const TString &a_channel, const TString &a_tagger)
+Compare_TTbb::Compare_TTbb(const TString &a_era, const TString &a_channel, const TString &a_tagger, const bool &a_use_spanet)
     : samples(a_era, a_channel, "Vcb"), tagging_rf(a_era)
 {
   cout << "[Compare_TTbb::Compare_TTbb]: Init analysis" << endl;
-  
+
   ROOT::EnableImplicitMT(4);
 
   reduction = 1;
@@ -16,17 +16,44 @@ Compare_TTbb::Compare_TTbb(const TString &a_era, const TString &a_channel, const
   era = a_era;
   channel = a_channel;
   tagger = a_tagger;
+  use_spanet = a_use_spanet;
 
   TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
-  TString path = path_sample_base + era + "/Vcb/Central_Syst/";
+  TString path = path_sample_base + era;
+  if (use_spanet)
+  {
+    if (tagger == "B")
+      path += "/Vcb_BTag_SPANet/Central_Syst/";
+    else if (tagger == "C")
+      path += "/Vcb_CTag_SPANet/Central_Syst/";
+  }
+  else
+  {
+    if (tagger == "B")
+      path += "/Vcb_BTag/Central_Syst/";
+    else if (tagger == "C")
+      path += "/Vcb_CTag/Central_Syst/";
+  }
 
   fin_5f = new TFile(path + samples.map_mc["TTLJ"]);
   fin_4f = new TFile(path + samples.map_mc["TTLJ_TTbb_4f"]);
   fin_dps = new TFile(path + samples.map_mc["TTLJ_bbDPS"]);
 
+  fin_template_5f = new TFile(path + "7Class_BigModel/" + samples.map_mc["TTLJ"]);
+  fin_template_4f = new TFile(path + "7Class_BigModel/" + samples.map_mc["TTLJ_TTbb_4f"]);
+  fin_template_dps = new TFile(path + "7Class_BigModel/" + samples.map_mc["TTLJ_bbDPS"]);
+
   tree_5f = (TTree *)fin_5f->Get(channel + "/Central/Result_Tree");
   tree_4f = (TTree *)fin_4f->Get(channel + "/Central/Result_Tree");
   tree_dps = (TTree *)fin_dps->Get(channel + "/Central/Result_Tree");
+
+  template_tree_5f = (TTree *)fin_template_5f->Get(channel + "/Central/Result_Tree");
+  template_tree_4f = (TTree *)fin_template_4f->Get(channel + "/Central/Result_Tree");
+  template_tree_dps = (TTree *)fin_template_dps->Get(channel + "/Central/Result_Tree");
+
+  tree_5f->AddFriend(template_tree_5f);
+  tree_4f->AddFriend(template_tree_4f);
+  tree_dps->AddFriend(template_tree_dps);
 
   event.Setup_Tree(tree_5f, Syst::Central, false, false);
   event.Setup_Tree(tree_4f, Syst::Central, false, false);
@@ -77,13 +104,13 @@ void Compare_TTbb::Draw()
       pad[i][0]->cd();
 
       TString histo_name;
-      if(i==0)
-       histo_name = "TT+BJ, W#rightarrowud (us)";
-      else if(i==1)
+      if (i == 0)
+        histo_name = "TT+BJ, W#rightarrowud (us)";
+      else if (i == 1)
         histo_name = "TT+BB, W#rightarrowud (us)";
-      else if(i==2)
+      else if (i == 2)
         histo_name = "TT+BJ, W#rightarrowcs (cd)";
-      else if(i==3)
+      else if (i == 3)
         histo_name = "TT+BB, W#rightarrowcs (cd)";
 
       histo[2 * i]->SetTitle(histo_name);
@@ -92,7 +119,7 @@ void Compare_TTbb::Draw()
       histo[2 * i + 1]->SetLineColor(2);
       histo[2 * i + 1]->Draw("same");
 
-      if(i==0)
+      if (i == 0)
       {
         TLegend *tl = new TLegend(0.65, 0.75, 0.9, 0.9);
         tl->AddEntry(histo[2 * i], "5f", "lep");
@@ -113,7 +140,10 @@ void Compare_TTbb::Draw()
     }
   }
 
-  canvas->Print("5f_Vs_4f.png", "png");
+  if (use_spanet)
+    canvas->Print(Form("5f_Vs_4f_%s_tagger_SPANet.png", tagger.Data()), "png");
+  else
+    canvas->Print(Form("5f_Vs_4f_%s_tagger_XGBoost.png", tagger.Data()), "png");
 
   return;
 } // Compare_TTbb::Draw()
@@ -301,6 +331,8 @@ void Compare_TTbb::Read_Tree()
         cout << "Processing... " << i << "/" << n_entries << endl;
 
       it->second->GetEntry(i);
+
+      event.template_score = event.Multi_To_One();
 
       if (event.template_score < 0.1)
         continue;

@@ -4,13 +4,15 @@ ClassImp(Histo_Syst);
 
 //////////
 
-Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TString &a_mode, const int &a_index_tree_type, const int &a_last_index_tree_type, const TString &a_tagger, const TString &a_swap_mode)
-    : samples(a_era, a_channel, (a_mode == "Cal_TF") ? "Vcb_Cal_TF" : "Vcb"), event(a_era, a_channel, (a_mode == "Cal_TF") ? "Vcb_Cal_TF" : "Vcb", a_tagger, a_swap_mode), tagging_rf(a_era), modelling_patch("Application")
+Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TString &a_mode, const int &a_index_tree_type, const int &a_last_index_tree_type, const TString &a_tagger, const bool &a_use_spanet, const TString &a_swap_mode)
+    : samples(a_era, a_channel, (a_mode == "Cal_TF") ? "Vcb_Cal_TF" : "Vcb"), event(a_era, a_channel, (a_mode == "Cal_TF") ? "Vcb_Cal_TF" : "Vcb", a_tagger, a_use_spanet, a_swap_mode), tagging_rf(a_era), modelling_patch("Application")
 {
   // VALGRIND_MONITOR_COMMAND("start_massif");
-  TH1::AddDirectory(kFALSE);
 
   cout << "[Histo_Syst::Histo_Syst]: Init analysis" << endl;
+
+  gROOT->SetBatch(kTRUE);
+  TH1::AddDirectory(kFALSE);
 
   debug = false;
 
@@ -22,6 +24,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
   index_tree_type = a_index_tree_type;
   last_index_tree_type = a_last_index_tree_type;
   tagger = a_tagger;
+  use_spanet = a_use_spanet;
 
   cout << "[Histo_Syst::Histo_Syst]: mode = " << mode << endl;
 
@@ -33,38 +36,10 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
   // chk_bin_optimizer = true;
   chk_bin_optimizer = false;
 
-  // syst_tree
-  vec_tree_type = {"Data",
-                   "UEDown", "UEUp",
-                   "JetResDown", "JetResUp",
-                   "JetEnDown", "JetEnUp",
-                   "CP5Down", "CP5Up",
-                   "hdampDown", "hdampUp",
-                   "mtop171p5", "mtop173p5"};
-
-  if (chk_jes_breakdown == true)
-  {
-    vector<TString> vec_tree_type_jes_breakdown = {"JetEnAbsoluteDown", "JetEnAbsoluteUp",
-                                                   "JetEnBBEC1Down", "JetEnBBEC1Up",
-                                                   "JetEnEC2Down", "JetEnEC2Up",
-                                                   "JetEnFlavorQCDDown", "JetEnFlavorQCDUp",
-                                                   "JetEnHFDown", "JetEnHFUp",
-                                                   "JetEnRelativeBalDown", "JetEnRelativeBalUp"};
-
-    vector<TString> vec_tree_type_jes_breakdown_year = {"JetEnAbsolute", "JetEnBBEC1", "JetEnEC2", "JetEnHF", "JetEnRelativeSample"};
-    for (unsigned int i = 0; i < vec_tree_type_jes_breakdown_year.size(); i++)
-    {
-      vec_tree_type_jes_breakdown.push_back(vec_tree_type_jes_breakdown_year[i] + year + "Down");
-      vec_tree_type_jes_breakdown.push_back(vec_tree_type_jes_breakdown_year[i] + year + "Up");
-    }
-
-    vec_tree_type.insert(vec_tree_type.end(), vec_tree_type_jes_breakdown.begin(), vec_tree_type_jes_breakdown.end());
-  } // if (chk_jes_breakdown == true)
-
-  // Central should be the last
-  vec_tree_type.push_back("Central");
-
-  n_tree_type = vec_tree_type.size();
+  if (tagger == "B")
+    threeb_cr_cut = threeb_cr_cut_b;
+  else if (tagger == "C")
+    threeb_cr_cut = threeb_cr_cut_c;
 
   if (era == "2016preVFP")
   {
@@ -112,9 +87,13 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
 
   n_region = region_name.size();
 
-  if (mode == "Cal_TF")
+  if (mode == "Check")
   {
-    ROOT::EnableImplicitMT(1);
+    Register_Sample();
+  }
+  else if (mode == "Cal_TF")
+  {
+    ROOT::EnableImplicitMT(2);
 
     Config_Sample();
     Config_Syst();
@@ -122,21 +101,20 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
     Register_Sample_TF();
     Init_Histo_TF();
     Read_Tree();
-    // Apply_Modelling_Patch();
     Calculate_TF();
     Draw_TF();
   }
   else if (mode == "2D")
   {
-    ROOT::EnableImplicitMT(1);
+    ROOT::EnableImplicitMT(2);
 
+    Config_Vec_Tree_Type();
     Config_Sample();
     Config_Syst();
     Config_Variable();
     Register_Sample();
     Init_Histo();
     Read_Tree();
-    // Apply_Modelling_Patch();
   }
   else if (mode == "Data_Driven")
   {
@@ -146,7 +124,7 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
     Init_Histo_Data_Driven();
     Data_Driven();
   }
-  else if (mode == "Merge")
+  else if (mode == "Merge" && chk_bin_optimizer == false)
   {
     chk_qcd_data_driven = true;
     cout << "[Histo_Syst::Hist_Syst]: Mode of QCD_Data_Driven = " << chk_qcd_data_driven << endl;
@@ -157,6 +135,67 @@ Histo_Syst::Histo_Syst(const TString &a_era, const TString &a_channel, const TSt
     Init_Merge_PDF_Error_Set();
     Merge_PDF_Error_Set();
   }
+  else if (mode == "Para_Smoothing")
+  {
+    cout << "[Histo_Syst::Histo_Syst]: Parametrization of top syst for smoothing template MVA histogram" << endl;
+
+    if (chk_bin_optimizer == false && chk_use_ttbb_4f == false)
+    {
+      Config_Vec_Tree_Type();
+      Config_Sample();
+      Config_Syst();
+      Config_Variable();
+      Register_Sample_Para_Smoothing();
+      Init_Histo_Para_Smoothing();
+      Read_Tree();
+      Ratio_Para_Smoothing();
+    }
+    else
+    {
+      if (chk_bin_optimizer)
+        cout << "[Histo_Syst::Histo_Syst]: Skip parametrization since bin optimizer is used" << endl;
+      if (chk_use_ttbb_4f)
+        cout << "[Histo_Syst::Histo_Syst]: Skip parametrization since ttbb 4f is used" << endl;
+    }
+  }
+  else if (mode == "Smoothing")
+  {
+    cout << "[Histo_Syst::Histo_Syst]: Smoothing top syst" << endl;
+
+    if (chk_bin_optimizer == false && chk_use_ttbb_4f == false)
+    {
+      Config_Sample();
+      Config_Syst();
+      Config_Variable();
+      Init_Histo_Smoothing();
+      Smoothing();
+    }
+    else
+    {
+      if (chk_bin_optimizer)
+        cout << "[Histo_Syst::Histo_Syst]: Skip parametrization since bin optimizer is used" << endl;
+      if (chk_use_ttbb_4f)
+        cout << "[Histo_Syst::Histo_Syst]: Skip parametrization since ttbb 4f is used" << endl;
+    }
+  }
+  else if (mode == "Draw_Smoothing")
+  {
+    if (chk_bin_optimizer == false && chk_use_ttbb_4f == false)
+    {
+      Config_Sample();
+      Config_Syst();
+      Config_Variable();
+      Init_Histo_Draw_Smoothing();
+      Draw_Smoothing();
+    }
+    else
+    {
+      if (chk_bin_optimizer)
+        cout << "[Histo_Syst::Histo_Syst]: Skip parametrization since bin optimizer is used" << endl;
+      if (chk_use_ttbb_4f)
+        cout << "[Histo_Syst::Histo_Syst]: Skip parametrization since ttbb 4f is used" << endl;
+    }
+  }
 } // Histo_Syst::Histo_Syst(const TString& a_era, const TString& a_channel, const TString& a_swap_mode)
 
 //////////
@@ -165,7 +204,11 @@ Histo_Syst::~Histo_Syst()
 {
   cout << "[Histo_Syst::~Histo_Syst]: Init" << endl;
 
-  if (mode == "Cal_TF")
+  if (mode == "Check")
+  {
+  }
+
+  else if (mode == "Cal_TF")
   {
     // output file
     TString fout_name = "Vcb_TF_" + era + "_" + channel + "_" + tagger + "_tagger.root";
@@ -318,6 +361,7 @@ Histo_Syst::~Histo_Syst()
     fout->Close();
     delete fout;
   } // else if (mode == "2D")
+
   else if (mode == "Data_Driven")
   {
     cout << "[Histo_Syst::~Histo_Syst]: Writing fout." << endl;
@@ -373,7 +417,8 @@ Histo_Syst::~Histo_Syst()
       {
         for (int k = 0; k < bin_pt_tf.size() - 1; k++)
         {
-          /* QCD TF Down */
+
+          // QCD TF Down //
           cout << "[Histo_Syst::~Histo_Syst]: Writing QCD TF Down" << endl;
 
           TString dir_name_down = "QCD_TF_Eta_Bin" + to_string(j) + "_Pt_Bin" + to_string(k) + "_Down";
@@ -397,13 +442,12 @@ Histo_Syst::~Histo_Syst()
           for (int l = 0; l < n_variable; l++)
           {
             TH1D *histo_proj = (TH1D *)histo_tf_corrected_down[i][l][j][k]->ProjectionX()->Clone();
-
             histo_proj->SetTitle(variable_conf[l].variable_title);
             histo_proj->SetName(variable_conf[l].variable_title);
             histo_proj->Write();
           } // loop over n_variable
 
-          /* QCD TF Up */
+          // QCD TF Up //
           cout << "[Histo_Syst::~Histo_Syst]: Writing QCD TF Up" << endl;
 
           TString dir_name_up = "QCD_TF_Eta_Bin" + to_string(j) + "_Pt_Bin" + to_string(k) + "_Up";
@@ -436,7 +480,8 @@ Histo_Syst::~Histo_Syst()
         } // loop over bin_pt_tf
       } // loop over bin_eta_tf
 
-      /* QCD Envelop Down */
+      /*
+      // QCD Envelop Down
       cout << "[Histo_Syst::~Histo_Syst]: Writing QCD Envelop Down" << endl;
       TDirectory *dir_qcd_envelop_down = dir_region->mkdir("QCD_Envelop_Down");
       for (int j = 0; j < n_sample_merge_mc; j++)
@@ -462,7 +507,7 @@ Histo_Syst::~Histo_Syst()
         histo_envelop_down[i][j]->Write();
       } // loop over n_variable
 
-      /* QCD Envelop Up */
+      // QCD Envelop Up
       cout << "[Histo_Syst::~Histo_Syst]: Writing QCD Envelop Up" << endl;
       TDirectory *dir_qcd_envelop_up = dir_region->mkdir("QCD_Envelop_Up");
       for (int j = 0; j < n_sample_merge_mc; j++)
@@ -487,6 +532,7 @@ Histo_Syst::~Histo_Syst()
         histo_envelop_up[i][j]->SetName(variable_conf[j].variable_title);
         histo_envelop_up[i][j]->Write();
       } // loop over n_variable
+      */
 
       // Data
       cout << "Data" << endl;
@@ -520,7 +566,7 @@ Histo_Syst::~Histo_Syst()
   } // else if (mode == "Data_Driven")
 
   // PDF error set
-  else
+  else if (mode == "Merge" && chk_bin_optimizer == false)
   {
     for (int i = 0; i < n_region; i++)
     {
@@ -555,79 +601,72 @@ Histo_Syst::~Histo_Syst()
 
     fout->Close();
     delete fout;
-  } // else
+  } // else if (mode == "Merge")
+
+  else if (mode == "Para_Smoothing" && chk_use_ttbb_4f == false && chk_bin_optimizer == false)
+  {
+    TString fout_name = "Vcb_Para_Smoothing_" + era + "_" + channel + "_" + tagger + "_tagger.root";
+    fout = new TFile(fout_name, "Recreate");
+
+    TDirectory *dir_raw = fout->mkdir("Param_Histogram", "Param_Histogram", true);
+    for (int i = 0; i < n_syst; i++)
+    {
+      for (int j = 0; j < n_sample_merge_mc; j++)
+      {
+        for (int k = 0; k < n_variable; k++)
+        {
+          dir_raw->cd();
+          histo_para_smoothing[i][j][k]->Write();
+        }
+      } // loop over n_sample_merge_mc
+    } // loop over n_syst
+
+    for (int i = 0; i < n_region; i++)
+    {
+      TDirectory *dir_region = fout->mkdir(region_name[i], region_name[i], true);
+
+      for (int j = 0; j < n_sample_merge_mc; j++)
+      {
+        for (int k = 0; k < n_variable; k++)
+        {
+          dir_region->cd();
+          histo_2d_smoothing[i][j][k]->Write();
+        }
+      } // loop over n_sample_merge_mc
+    } // loop over n_region
+
+    fout->Close();
+  } // else if (mode == "Para_Smoothing" && chk_use_ttbb_4f == false)
+
+  else if (mode == "Smoothing" && chk_use_ttbb_4f == false && chk_bin_optimizer == false)
+  {
+    for (int i = 0; i < n_region; i++)
+    {
+      TDirectory *dir_region = (TDirectory *)fin->Get(region_name[i]);
+      for (int j = 0; j < n_syst; j++)
+      {
+        if (syst_name[j] == "Nominal")
+          continue;
+
+        TDirectory *dir_syst = dir_region->mkdir(syst_name[j] + "_Smoothed", syst_name[j] + "_Smoothed", true);
+        for (int k = 0; k < n_sample_merge_mc; k++)
+        {
+          TDirectory *dir_sample = dir_syst->mkdir(vec_short_name_mc[k], vec_short_name_mc[k], true);
+          dir_sample->cd();
+
+          histo_mc_smoothing_template[i][j][k]->SetTitle("Template_MVA_Score");
+          histo_mc_smoothing_template[i][j][k]->SetName("Template_MVA_Score");
+          // histo_mc_smoothing_template[i][j][k]->Write(nullptr, TObject::kOverwrite);
+          histo_mc_smoothing_template[i][j][k]->Write();
+        } // loop over n_sample_merge_mc
+      } // loop over n_syst
+    } // loop over n_region
+
+    fin->Close();
+  } // else if (mode == "Smoothing" && chk_use_ttbb_4f == false && chk_bin_optimizer == false)
 
   cout << "[Histo_Syst::~Histo_Syst]: Done" << endl;
 } // Histo_Syst::~Histo_Syst()
-
-//////////
-
-// void Histo_Syst::Apply_Modelling_Patch()
-// {
-//   cout << "[Histo_Syst::Apply_Modelling_Patch]: Init" << endl;
-
-//   for (int i = 0; i < n_abcd_region; i++)
-//   {
-//     for (int j = 0; j < n_region; j++)
-//     {
-//       for (int k = 0; k < n_syst; k++)
-//       {
-//         cout << syst_name[k] << endl;
-
-//         TString variation_name_modelling_patch;
-//         if (syst_name[k].Contains("MuF"))
-//         {
-//           if (syst_name[k].Contains("Down"))
-//             variation_name_modelling_patch = "Scale_Variation_2";
-//           else if (syst_name[k].Contains("Up"))
-//             variation_name_modelling_patch = "Scale_Variation_1";
-//         }
-//         else if (syst_name[k].Contains("MuR"))
-//         {
-//           if (syst_name[k].Contains("Down"))
-//             variation_name_modelling_patch = "Scale_Variation_6";
-//           else if (syst_name[k].Contains("Up"))
-//             variation_name_modelling_patch = "Scale_Variation_3";
-//         }
-//         else if (syst_name[k].Contains("FSR"))
-//         {
-//           if (syst_name[k].Contains("Down"))
-//             variation_name_modelling_patch = "PS_0";
-//           else if (syst_name[k].Contains("Up"))
-//             variation_name_modelling_patch = "PS_1";
-//         }
-//         else if (syst_name[k].Contains("ISR"))
-//         {
-//           if (syst_name[k].Contains("Down"))
-//             variation_name_modelling_patch = "PS_2";
-//           else if (syst_name[k].Contains("Up"))
-//             variation_name_modelling_patch = "PS_3";
-//         }
-//         else if (syst_name[k] == "Top_Pt_Reweight")
-//           variation_name_modelling_patch = "Top_Pt_Reweight";
-//         else if (syst_name[k].Contains("CP5") || syst_name[k].Contains("hdamp") || syst_name[k].Contains("mtop"))
-//           variation_name_modelling_patch = "Baseline";
-//         else
-//           continue;
-
-//         for (int l = 0; l < n_sample_merge_mc; l++)
-//         {
-//           cout << vec_short_name_mc[l] << endl;
-//           TString sample_name_modelling_patch;
-
-//           for (int m = 0; m < n_variable; m++)
-//           {
-//             // histo_mc[i][j][k][l][m]->Scale();
-//           } // loop over n_variable
-//         } // loop over n_sample_merge_mc
-//       } // loop over n_syst
-//     } // loop over n_region
-//   } // loop over n_abcd_region
-
-//   cout << "[Histo_Syst::Apply_Modelling_Patch]: Done" << endl;
-
-//   return;
-// } // void Histo_Syst::Apply_Modelling_Patch()
 
 //////////
 
@@ -750,6 +789,15 @@ void Histo_Syst::Config_Sample()
     vec_short_name_mc.push_back("QCD_Data_Driven");
   }
 
+  // removde unwanted samples for Para_Smoothing
+  if (mode == "Para_Smoothing")
+  {
+    auto it_remove = std::remove_if(vec_short_name_mc.begin(), vec_short_name_mc.end(), [](const TString &s)
+                                    { return !s.Contains("TT"); });
+
+    vec_short_name_mc.erase(it_remove, vec_short_name_mc.end());
+  }
+
   n_sample_merge_mc = vec_short_name_mc.size();
   cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
 
@@ -762,9 +810,28 @@ void Histo_Syst::Config_Syst()
 {
   if (mode == "Cal_TF")
     syst_name = {"Nominal"};
+  else if (mode == "Para_Smoothing")
+    syst_name = {"Nominal",
+                 "CP5_Down", "CP5_Up",
+                 "hdamp_Down", "hdamp_Up"};
+  else if (mode == "Smoothing")
+    syst_name = {"Nominal",
+                 "CP5_Down", "CP5_Up",
+                 "hdamp_Down", "hdamp_Up",
+                 "mtop_171p5", "mtop_173p5"};
+  else if (mode == "Draw_Smoothing")
+    syst_name = {"Nominal",
+                 "CP5_Down", "CP5_Up",
+                 "hdamp_Down", "hdamp_Up",
+                 "mtop_171p5", "mtop_173p5",
+                 "CP5_Down_Smoothed", "CP5_Up_Smoothed",
+                 "hdamp_Down_Smoothed", "hdamp_Up_Smoothed",
+                 "mtop_171p5_Smoothed", "mtop_173p5_Smoothed"};
   else
   {
     if (debug)
+      syst_name = {"Nominal"};
+    else if (chk_bin_optimizer)
       syst_name = {"Nominal"};
     else
     {
@@ -772,7 +839,8 @@ void Histo_Syst::Config_Syst()
                    "Jet_En_Down", "Jet_En_Up",
                    "Jet_Res_Down", "Jet_Res_Up",
                    "UE_Down", "UE_Up",
-                   "PDF_Alternative", "PDF_As_Down", "PDF_As_Up",
+                   // "PDF_Alternative",
+                   "PDF_As_Down", "PDF_As_Up",
                    "Pileup_Down", "Pileup_Up",
                    "PU_Jet_Veto_Down", "PU_Jet_Veto_Up",
                    "Prefire_Down", "Prefire_Up",
@@ -911,13 +979,13 @@ void Histo_Syst::Config_Variable()
     //   bin_pt_tf = {26.0, 30, 35.0, 50, 100, 2000};
 
     if (era == "2016preVFP")
-      bin_pt_tf = {26.0, 35.0, 60, 2000};
+      bin_pt_tf = {26.0, 40.0, 100, 2000};
     else if (era == "2016postVFP")
-      bin_pt_tf = {26.0, 35.0, 60, 2000};
+      bin_pt_tf = {26.0, 40.0, 100, 2000};
     else if (era == "2017")
-      bin_pt_tf = {30, 35.0, 60, 2000};
+      bin_pt_tf = {30, 40.0, 100, 2000};
     else if (era == "2018")
-      bin_pt_tf = {26.0, 35.0, 60, 2000};
+      bin_pt_tf = {26.0, 40.0, 100, 2000};
   }
 
   else if (channel == "El")
@@ -937,13 +1005,13 @@ void Histo_Syst::Config_Variable()
     //   bin_pt_tf = {35.0, 40.0, 45.0, 50.0, 100};
 
     if (era == "2016preVFP")
-      bin_pt_tf = {30, 35, 40, 50.0, 200, 2000};
+      bin_pt_tf = {30, 50, 100.0, 2000};
     else if (era == "2016postVFP")
-      bin_pt_tf = {30, 35, 40, 50.0, 200, 2000};
+      bin_pt_tf = {30, 50, 100.0, 2000};
     else if (era == "2017")
-      bin_pt_tf = {35, 40, 50.0, 200, 2000};
+      bin_pt_tf = {35, 50, 100.0, 2000};
     else if (era == "2018")
-      bin_pt_tf = {35, 40, 50.0, 200, 2000};
+      bin_pt_tf = {35, 50, 100.0, 2000};
   }
 
   if (mode != "Cal_TF" && !chk_bin_optimizer)
@@ -955,83 +1023,140 @@ void Histo_Syst::Config_Variable()
     {
       if (channel == "Mu")
       {
-        // bin_template_mva_score[0] = {0.35, 1};
-        // bin_template_mva_score[1] = {0.35, 0.38, 0.41, 0.45, 0.5, 0.56, 0.65, 0.85};
-        // bin_template_mva_score[2] = {0.85, 0.88, 0.91, 1};
+        if (tagger == "B")
+        {
+          // bin_template_mva_score[0] = {0.6, 0.6125, 0.6225, 0.6325, 0.6425, 0.6525, 0.665, 0.6775, 0.69, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.895, 0.8975, 0.9};
+          // bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.99, 1};
 
-        bin_template_mva_score[0] = {0.35, 0.37, 0.4, 0.43, 0.47, 0.52, 0.58, 0.68, 0.85};
-        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.94, 1};
+          bin_template_mva_score[0] = {0.2, 0.205, 0.21, 0.215, 0.22, 0.2275, 0.235, 0.2425, 0.25, 0.26, 0.27, 0.28, 0.2925, 0.305, 0.32, 0.335, 0.355, 0.3775, 0.4075, 0.445, 0.5, 0.6, 0.6175, 0.63, 0.6425, 0.6575, 0.675, 0.695, 0.72, 0.7525, 0.8};
+          bin_template_mva_score[1] = {0.8, 0.815, 0.8275, 0.85, 0.875, 1};
+        }
+        else if (tagger == "C")
+        {
+          bin_template_mva_score[0] = {0.6, 0.61, 0.6175, 0.625, 0.6325, 0.6425, 0.6525, 0.6625, 0.6725, 0.6825, 0.6925, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.895, 0.8975, 0.9};
+          bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.9875, 0.99, 0.9925, 1};
+        }
       }
       else if (channel == "El")
       {
-        // bin_template_mva_score[0] = {0.35, 1};
-        // bin_template_mva_score[1] = {0.35, 0.42, 0.49, 0.59, 0.85};
-        // bin_template_mva_score[2] = {0.85, 0.89, 1};
+        if (tagger == "B")
+        {
+          // bin_template_mva_score[0] = {0.6, 0.615, 0.63, 0.645, 0.6625, 0.6825, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.8275, 0.83, 0.8325, 0.8375, 0.8425, 0.8475, 0.8525, 0.8575, 0.8625, 0.8675, 0.8725, 0.8775, 0.8825, 0.8875, 0.8925, 0.8975, 0.9};
+          // bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.9775, 0.9825, 0.9875, 1};
 
-        bin_template_mva_score[0] = {0.35, 0.4, 0.45, 0.51, 0.61, 0.85};
-        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.9, 0.92, 1};
+          bin_template_mva_score[0] = {0.2, 0.21, 0.22, 0.23, 0.24, 0.2525, 0.2675, 0.285, 0.305, 0.3275, 0.3575, 0.3975, 0.4625, 0.6, 0.62, 0.6375, 0.6625, 0.6925, 0.7325, 0.8};
+          bin_template_mva_score[1] = {0.8, 0.8275, 0.8625, 1};
+        }
+        else if (tagger == "C")
+        {
+          bin_template_mva_score[0] = {0.6, 0.6225, 0.6375, 0.6525, 0.6675, 0.685, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.8825, 0.885, 0.8875, 0.8925, 0.8975, 0.9};
+          bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.9875, 0.9925, 1};
+        }
       }
     } // if (era == "2016preVFP")
     else if (era == "2016postVFP")
     {
       if (channel == "Mu")
       {
-        // bin_template_mva_score[0] = {0.35, 1};
-        // bin_template_mva_score[1] = {0.35, 0.4, 0.44, 0.49, 0.55, 0.64, 0.85};
-        // bin_template_mva_score[2] = {0.85, 0.88, 0.91, 1};
+        if (tagger == "B")
+        {
+          // bin_template_mva_score[0] = {0.6, 0.6175, 0.6275, 0.6375, 0.65, 0.6625, 0.675, 0.6875, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.8975, 0.9};
+          // bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.9875, 1};
 
-        bin_template_mva_score[0] = {0.35, 0.39, 0.42, 0.46, 0.51, 0.57, 0.66, 0.85};
-        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.93, 1};
+          bin_template_mva_score[0] = {0.2, 0.205, 0.2125, 0.22, 0.2275, 0.235, 0.2425, 0.2525, 0.2625, 0.275, 0.2875, 0.3025, 0.32, 0.34, 0.365, 0.395, 0.4325, 0.49, 0.6, 0.6175, 0.63, 0.645, 0.6625, 0.685, 0.7125, 0.745, 0.8};
+          bin_template_mva_score[1] = {0.8, 0.8175, 0.8425, 0.8725, 1};
+        }
+        else if (tagger == "C")
+        {
+          bin_template_mva_score[0] = {0.6, 0.61, 0.62, 0.63, 0.64, 0.65, 0.6625, 0.675, 0.6875, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.895, 0.8975, 0.9};
+          bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.9875, 0.9925, 1};
+        }
       }
       else if (channel == "El")
       {
-        // bin_template_mva_score[0] = {0.35, 1};
-        // bin_template_mva_score[1] = {0.35, 0.4, 0.47, 0.58, 0.85};
-        // bin_template_mva_score[2] = {0.85, 0.89, 1};
+        if (tagger == "B")
+        {
+          // bin_template_mva_score[0] = {0.6, 0.6225, 0.64, 0.66, 0.68, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.8075, 0.81, 0.8125, 0.8175, 0.8225, 0.8275, 0.8325, 0.8375, 0.8425, 0.8475, 0.8525, 0.8575, 0.8625, 0.8675, 0.8725, 0.8775, 0.8825, 0.8875, 0.8925, 0.8975, 0.9};
+          // bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.9775, 0.9825, 0.9875, 1};
 
-        bin_template_mva_score[0] = {0.35, 0.43, 0.5, 0.6, 0.85};
-        bin_template_mva_score[1] = {0.85, 0.86, 0.88, 0.9, 0.92, 1};
+          bin_template_mva_score[0] = {0.2, 0.215, 0.225, 0.2375, 0.2525, 0.27, 0.29, 0.315, 0.345, 0.3875, 0.4525, 0.6, 0.6225, 0.645, 0.6775, 0.72, 0.8};
+          bin_template_mva_score[1] = {0.8, 0.8225, 0.855, 1};
+        }
+        else if (tagger == "C")
+        {
+          bin_template_mva_score[0] = {0.6, 0.6275, 0.645, 0.6625, 0.6825, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.8425, 0.8475, 0.8525, 0.8575, 0.8625, 0.8675, 0.8725, 0.8775, 0.8825, 0.8875, 0.8925, 0.8975, 0.9};
+          bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.985, 0.99, 1};
+        }
       }
     } // else if (era == "2016postVFP")
     else if (era == "2017")
     {
       if (channel == "Mu")
       {
-        // bin_template_mva_score[0] = {0.35, 0.4, 0.44, 0.51, 1};
-        // bin_template_mva_score[1] = {0.35, 0.37, 0.39, 0.41, 0.43, 0.45, 0.47, 0.49, 0.51, 0.54, 0.57, 0.6, 0.64, 0.69, 0.76, 0.85};
-        // bin_template_mva_score[2] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.94, 1};
-        bin_template_mva_score[0] = {0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.44, 0.46, 0.48, 0.5, 0.52, 0.54, 0.57, 0.6, 0.63, 0.67, 0.72, 0.79, 0.85};
-        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 1};
+        if (tagger == "B")
+        {
+          // bin_template_mva_score[0] = {0.6, 0.605, 0.61, 0.615, 0.62, 0.625, 0.63, 0.635, 0.64, 0.645, 0.65, 0.655, 0.66, 0.665, 0.67, 0.675, 0.68, 0.6875, 0.695, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.895, 0.8975, 0.9};
+          // bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.9875, 0.99, 0.9925, 1};
+
+          bin_template_mva_score[0] = {0.2, 0.2025, 0.205, 0.2075, 0.21, 0.2125, 0.215, 0.2175, 0.22, 0.2225, 0.2275, 0.2325, 0.2375, 0.2425, 0.2475, 0.2525, 0.2575, 0.2625, 0.2675, 0.2725, 0.2775, 0.2825, 0.29, 0.2975, 0.305, 0.3125, 0.32, 0.3275, 0.3375, 0.3475, 0.3575, 0.37, 0.3825, 0.3975, 0.4125, 0.43, 0.45, 0.475, 0.505, 0.545, 0.6, 0.605, 0.61, 0.615, 0.6225, 0.6275, 0.635, 0.6425, 0.6475, 0.655, 0.6625, 0.67, 0.68, 0.69, 0.7, 0.7125, 0.725, 0.7375, 0.755, 0.775, 0.8};
+          bin_template_mva_score[1] = {0.8, 0.8075, 0.815, 0.8225, 0.8325, 0.8425, 0.85, 0.8625, 0.8775, 0.8975, 1};
+        }
+        else if (tagger == "C")
+        {
+          bin_template_mva_score[0] = {0.6, 0.6075, 0.6125, 0.6175, 0.6225, 0.6275, 0.6325, 0.6375, 0.6425, 0.6475, 0.6525, 0.6575, 0.6625, 0.6675, 0.6725, 0.6775, 0.6825, 0.6875, 0.6925, 0.6975, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.895, 0.8975, 0.9};
+          bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.9875, 0.99, 0.9925, 0.995, 1};
+        }
       }
       else if (channel == "El")
       {
-        // bin_template_mva_score[0] = {0.35, 0.4, 0.47, 1};
-        // bin_template_mva_score[1] = {0.35, 0.37, 0.39, 0.41, 0.44, 0.47, 0.5, 0.54, 0.58, 0.64, 0.72, 0.85};
-        // bin_template_mva_score[2] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.91, 0.93, 1};
+        if (tagger == "B")
+        {
+          // bin_template_mva_score[0] = {0.6, 0.6025, 0.605, 0.6075, 0.61, 0.6125, 0.615, 0.6175, 0.62, 0.6225, 0.625, 0.6275, 0.6325, 0.6375, 0.6425, 0.6475, 0.6525, 0.6575, 0.6625, 0.6675, 0.6725, 0.6775, 0.6825, 0.6875, 0.6925, 0.6975, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.895, 0.8975, 0.9};
+          // bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.9875, 0.99, 0.9925, 1};
 
-        bin_template_mva_score[0] = {0.35, 0.37, 0.39, 0.41, 0.43, 0.45, 0.47, 0.5, 0.53, 0.57, 0.61, 0.67, 0.75, 0.85};
-        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.95, 1};
+          bin_template_mva_score[0] = {0.2, 0.2075, 0.2125, 0.2175, 0.2225, 0.2275, 0.2325, 0.2375, 0.2425, 0.25, 0.2575, 0.265, 0.2725, 0.28, 0.29, 0.3, 0.31, 0.3225, 0.335, 0.35, 0.3675, 0.3875, 0.41, 0.4375, 0.4725, 0.5225, 0.6, 0.6125, 0.6225, 0.6325, 0.6425, 0.6525, 0.665, 0.6775, 0.69, 0.705, 0.7225, 0.7425, 0.7675, 0.8};
+          bin_template_mva_score[1] = {0.8, 0.815, 0.825, 0.8375, 0.8525, 0.8625, 0.8875, 1};
+        }
+        else if (tagger == "C")
+        {
+          bin_template_mva_score[0] = {0.6, 0.6075, 0.6125, 0.62, 0.6275, 0.635, 0.6425, 0.65, 0.6575, 0.665, 0.6725, 0.68, 0.6875, 0.695, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.895, 0.8975, 0.9};
+          bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.9875, 0.99, 0.9925, 0.995, 1};
+        }
       }
     } // else if (era == "2017")
     else if (era == "2018")
     {
       if (channel == "Mu")
       {
-        // bin_template_mva_score[0] = {0.35, 0.37, 0.4, 0.43, 0.47, 0.54, 1};
-        // bin_template_mva_score[1] = {0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.48, 0.5, 0.52, 0.54, 0.56, 0.58, 0.6, 0.63, 0.66, 0.69, 0.73, 0.78, 0.85};
-        // bin_template_mva_score[2] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 1};
+        if (tagger == "B")
+        {
+          // bin_template_mva_score[0] = {0.6, 0.6075, 0.6125, 0.6175, 0.6225, 0.6275, 0.6325, 0.6375, 0.6425, 0.6475, 0.6525, 0.6575, 0.665, 0.6725, 0.68, 0.6875, 0.695, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.895, 0.8975, 0.9};
+          // bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.9875, 0.99, 0.9925, 1};
 
-        bin_template_mva_score[0] = {0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.41, 0.42, 0.43, 0.44, 0.45, 0.46, 0.47, 0.48, 0.49, 0.51, 0.53, 0.55, 0.57, 0.59, 0.61, 0.64, 0.67, 0.71, 0.76, 0.82, 0.85};
-        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 1};
+          bin_template_mva_score[0] = {0.2, 0.2025, 0.205, 0.2075, 0.21, 0.2125, 0.215, 0.2175, 0.22, 0.2225, 0.225, 0.2275, 0.23, 0.2325, 0.235, 0.2375, 0.24, 0.2425, 0.245, 0.2475, 0.25, 0.2525, 0.255, 0.2575, 0.26, 0.2625, 0.2675, 0.2725, 0.2775, 0.2825, 0.2875, 0.2925, 0.2975, 0.3025, 0.3075, 0.3125, 0.3175, 0.3225, 0.3275, 0.3325, 0.3375, 0.345, 0.3525, 0.36, 0.3675, 0.375, 0.385, 0.395, 0.405, 0.415, 0.4275, 0.44, 0.455, 0.47, 0.4875, 0.5075, 0.5325, 0.5625, 0.6, 0.605, 0.61, 0.615, 0.62, 0.625, 0.63, 0.635, 0.64, 0.645, 0.65, 0.655, 0.66, 0.665, 0.67, 0.675, 0.68, 0.6875, 0.695, 0.7025, 0.71, 0.7175, 0.725, 0.735, 0.745, 0.7575, 0.77, 0.785, 0.8};
+          bin_template_mva_score[1] = {0.8, 0.8075, 0.8125, 0.8175, 0.8225, 0.8275, 0.835, 0.84, 0.8475, 0.855, 0.8625, 0.87, 0.88, 0.8925, 0.91, 1};
+        }
+        else if (tagger == "C")
+        {
+          bin_template_mva_score[0] = {0.6, 0.6025, 0.605, 0.6075, 0.61, 0.6125, 0.615, 0.6175, 0.62, 0.6225, 0.625, 0.6275, 0.63, 0.6325, 0.635, 0.6375, 0.64, 0.6425, 0.645, 0.6475, 0.65, 0.6525, 0.655, 0.6575, 0.66, 0.6625, 0.665, 0.6675, 0.67, 0.6725, 0.6775, 0.6825, 0.6875, 0.6925, 0.6975, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.895, 0.8975, 0.9};
+          bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.9875, 0.99, 0.9925, 0.995, 1};
+        }
       }
       else if (channel == "El")
       {
-        // bin_template_mva_score[0] = {0.35, 0.38, 0.43, 0.5, 1};
-        // bin_template_mva_score[1] = {0.35, 0.36, 0.38, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.53, 0.56, 0.59, 0.63, 0.68, 0.75, 0.85};
-        // bin_template_mva_score[2] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.93, 1};
+        if (tagger == "B")
+        {
+          // bin_template_mva_score[0] = {0.6, 0.6125, 0.62, 0.6275, 0.635, 0.6425, 0.65, 0.6575, 0.665, 0.6725, 0.6825, 0.6925, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.895, 0.8975, 0.9};
+          // bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.9875, 0.99, 1};
 
-        bin_template_mva_score[0] = {0.35, 0.36, 0.37, 0.38, 0.39, 0.4, 0.42, 0.44, 0.46, 0.48, 0.5, 0.52, 0.55, 0.58, 0.61, 0.65, 0.7, 0.78, 0.85};
-        bin_template_mva_score[1] = {0.85, 0.86, 0.87, 0.88, 0.89, 0.9, 0.91, 0.92, 0.93, 0.94, 0.95, 1};
+          bin_template_mva_score[0] = {0.2, 0.2025, 0.205, 0.2075, 0.21, 0.2125, 0.215, 0.22, 0.225, 0.23, 0.235, 0.24, 0.245, 0.25, 0.255, 0.26, 0.265, 0.27, 0.275, 0.28, 0.2875, 0.295, 0.3025, 0.31, 0.3175, 0.325, 0.335, 0.345, 0.355, 0.3675, 0.38, 0.395, 0.41, 0.43, 0.45, 0.475, 0.505, 0.545, 0.6, 0.605, 0.61, 0.615, 0.6225, 0.6275, 0.635, 0.64, 0.6475, 0.655, 0.6625, 0.6725, 0.6825, 0.69, 0.7, 0.7125, 0.725, 0.74, 0.7575, 0.7775, 0.8};
+          bin_template_mva_score[1] = {0.8, 0.81, 0.8175, 0.825, 0.835, 0.845, 0.855, 0.8675, 0.8825, 0.9025, 1};
+        }
+        else if (tagger == "C")
+        {
+          bin_template_mva_score[0] = {0.6, 0.6075, 0.6125, 0.6175, 0.6225, 0.6275, 0.6325, 0.6375, 0.6425, 0.6475, 0.6525, 0.6575, 0.6625, 0.6675, 0.6725, 0.6775, 0.6825, 0.6875, 0.6925, 0.6975, 0.7, 0.7025, 0.705, 0.7075, 0.71, 0.7125, 0.715, 0.7175, 0.72, 0.7225, 0.725, 0.7275, 0.73, 0.7325, 0.735, 0.7375, 0.74, 0.7425, 0.745, 0.7475, 0.75, 0.7525, 0.755, 0.7575, 0.76, 0.7625, 0.765, 0.7675, 0.77, 0.7725, 0.775, 0.7775, 0.78, 0.7825, 0.785, 0.7875, 0.79, 0.7925, 0.795, 0.7975, 0.8, 0.8025, 0.805, 0.8075, 0.81, 0.8125, 0.815, 0.8175, 0.82, 0.8225, 0.825, 0.8275, 0.83, 0.8325, 0.835, 0.8375, 0.84, 0.8425, 0.845, 0.8475, 0.85, 0.8525, 0.855, 0.8575, 0.86, 0.8625, 0.865, 0.8675, 0.87, 0.8725, 0.875, 0.8775, 0.88, 0.8825, 0.885, 0.8875, 0.89, 0.8925, 0.895, 0.8975, 0.9};
+          bin_template_mva_score[1] = {0.9, 0.9025, 0.905, 0.9075, 0.91, 0.9125, 0.915, 0.9175, 0.92, 0.9225, 0.925, 0.9275, 0.93, 0.9325, 0.935, 0.9375, 0.94, 0.9425, 0.945, 0.9475, 0.95, 0.9525, 0.955, 0.9575, 0.96, 0.9625, 0.965, 0.9675, 0.97, 0.9725, 0.975, 0.9775, 0.98, 0.9825, 0.985, 0.9875, 0.99, 0.9925, 0.995, 1};
+        }
       }
     } // else if (era == "2018")
 
@@ -1046,82 +1171,22 @@ void Histo_Syst::Config_Variable()
     //   bin_template_mva_score[1].push_back(template_score_cut + i * step);
     // bin_template_mva_score[1].push_back(threeb_cr_cut);
 
-    // n_step = (1 - threeb_cr_cut) / step;
+    // float step = 0.01;
+    // int n_step = (1 - threeb_cr_cut) / step;
     // for (int i = 0; i < n_step; i++)
-    //   bin_template_mva_score[2].push_back(threeb_cr_cut + i * step);
-    // bin_template_mva_score[2].push_back(1);
+    //   bin_template_mva_score[1].push_back(threeb_cr_cut + i * step);
+    // bin_template_mva_score[1].push_back(1);
 
-    //   // QCD MC
-    //   if (era == "2016preVFP")
-    //   {
-    //     if (channel == "Mu")
-    //     {
-    //       bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.25, 0.29, 0.35, 0.43, 0.56, 1};
-    //       bin_template_mva_score[1] = {0, 0.03, 0.08, 0.15, 0.22, 0.3, 0.4, 0.53, 0.71, 0.95};
-    //       bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
-    //     }
-    //     else if (channel == "El")
-    //     {
-    //       bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.09, 0.11, 0.13, 0.16, 0.2, 0.25, 0.33, 0.47, 1};
-    //       bin_template_mva_score[1] = {0, 0.1, 0.22, 0.36, 0.58, 0.95};
-    //       bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
-    //     }
-    //   }
-    //   else if (era == "2016postVFP")
-    //   {
-    //     if (channel == "Mu")
-    //     {
-    //       bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.11, 0.13, 0.15, 0.17, 0.2, 0.23, 0.27, 0.32, 0.4, 0.53, 1};
-    //       bin_template_mva_score[1] = {0, 0.04, 0.1, 0.18, 0.26, 0.36, 0.49, 0.67, 0.95};
-    //       bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
-    //     }
-    //     else if (channel == "El")
-    //     {
-    //       bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.09, 0.11, 0.14, 0.18, 0.23, 0.3, 0.43, 1};
-    //       bin_template_mva_score[1] = {0.0, 0.04, 0.16, 0.31, 0.53, 0.95};
-    //       bin_template_mva_score[2] = {0.95, 0.97, 1};
-    //     }
-    //   }
-    //   else if (era == "2017")
-    //   {
-    //     if (channel == "Mu")
-    //     {
-    //       bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.2, 0.22, 0.24, 0.26, 0.28, 0.31, 0.34, 0.38, 0.43, 0.49, 0.57, 0.69, 1};
-    //       bin_template_mva_score[1] = {0.0, 0.01, 0.03, 0.06, 0.1, 0.14, 0.18, 0.22, 0.27, 0.32, 0.38, 0.45, 0.53, 0.62, 0.72, 0.83, 0.95};
-    //       bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 0.99, 1};
-    //     }
-    //     else if (channel == "El")
-    //     {
-    //       bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.15, 0.17, 0.19, 0.22, 0.25, 0.29, 0.34, 0.4, 0.48, 0.61, 1};
-    //       bin_template_mva_score[1] = {0.0, 0.02, 0.05, 0.08, 0.14, 0.21, 0.28, 0.36, 0.46, 0.59, 0.76, 0.95};
-    //       bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 1};
-    //     }
-    //   }
-    //   else if (era == "2018")
-    //   {
-    //     if (channel == "Mu")
-    //     {
-    //       bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.19, 0.2, 0.21, 0.22, 0.23, 0.25, 0.27, 0.29, 0.31, 0.33, 0.36, 0.39, 0.42, 0.46, 0.51, 0.57, 0.64, 0.75, 1};
-    //       bin_template_mva_score[1] = {0.0, 0.01, 0.02, 0.03, 0.05, 0.07, 0.09, 0.11, 0.13, 0.15, 0.17, 0.19, 0.22, 0.25, 0.28, 0.31, 0.34, 0.38, 0.42, 0.46, 0.51, 0.56, 0.62, 0.68, 0.75, 0.82, 0.88, 0.95};
-    //       bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 0.99, 1};
-    //     }
-    //     else if (channel == "El")
-    //     {
-    //       bin_template_mva_score[0] = {0.0, 0.01, 0.02, 0.03, 0.04, 0.05, 0.06, 0.07, 0.08, 0.09, 0.1, 0.11, 0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.19, 0.21, 0.23, 0.25, 0.28, 0.31, 0.35, 0.4, 0.46, 0.54, 0.66, 1};
-    //       bin_template_mva_score[1] = {0.0, 0.01, 0.02, 0.03, 0.05, 0.08, 0.12, 0.16, 0.2, 0.24, 0.29, 0.35, 0.42, 0.5, 0.59, 0.7, 0.82, 0.95};
-    //       bin_template_mva_score[2] = {0.95, 0.96, 0.97, 0.98, 0.99, 1};
-    //     }
-    //   }
-
-    // // Old
-    // bin_template_mva_score[0] = {0, 0.02, 0.04, 0.06, 0.08, 0.1, 0.15, 0.2, 0.3, 0.5, 1};
-    // bin_template_mva_score[1] = {0, 0.02, 0.06, 0.10, 0.15, 0.20, 0.3, threeb_cr_cut};
-    // bin_template_mva_score[2] = {threeb_cr_cut, 0.65, 0.85, 0.90, 0.94, 0.96, 0.98, 1};
-  } // if (!chk_bin_optimizer)
+  } // if (mode != "Cal_TF" && !chk_bin_optimizer)
 
   if (mode == "Cal_TF")
   {
     variable_conf = {{"Lepton_Eta"}};
+  }
+  else if (mode == "Para_Smoothing" || mode == "Smoothing" || mode == "Draw_Smoothing")
+  {
+    variable_conf = {{"N_Jets", 20, 0, 20},
+                     {"Pt_Gen_TT", 50, 0, 1000}};
   }
   else
   {
@@ -1129,51 +1194,103 @@ void Histo_Syst::Config_Variable()
       variable_conf = {{"N_Vertex", 40, 0, 80}};
     else
     {
-      variable_conf = {{"N_Vertex", 40, 0, 80},
-                       {"Lepton_Pt", 50, 0, 400},
-                       {"Lepton_Eta", 30, -3, 3},
-                       {"N_Jets", 20, 0, 20},
-                       {"N_BJets", 10, 0, 10},
-                       {"N_CJets", 15, 0, 15},
-                       {"Pt_Leading_Jet", 50, 0, 400},
-                       {"Pt_Subleading_Jet", 50, 0, 400},
-                       {"Eta_Leading_Jet", 50, -3, 3},
-                       {"Eta_Subleading_jet", 50, -3, 3},
-                       {"BvsC_Leading_Jet", 25, 0, 1},
-                       {"CvsB_Leading_Jet", 25, 0, 1},
-                       {"CvsL_Leading_Jet", 25, 0, 1},
-                       {"BvsC_Subleading_Jet", 25, 0, 1},
-                       {"CvsB_Subleading_Jet", 25, 0, 1},
-                       {"CvsL_Subleading_Jet", 25, 0, 1},
-                       {"Met_Pt", 50, 0, 400},
-                       {"Met_Phi", 40, -4, 4},
-                       {"Best_MVA_Score_Pre", 25, 0, 1},
-                       {"Best_MVA_Score", 25, 0, 1},
-                       {"Had_T", 50, 70, 270},
-                       {"Had_W", 50, 30, 130},
-                       {"Lep_T", 50, 70, 270},
-                       {"Lep_W", 50, 30, 130},
-                       {"BvsC_W_u", 25, 0, 1},
-                       {"CvsB_W_u", 25, 0, 1},
-                       {"CvsL_W_u", 25, 0, 1},
-                       {"BvsC_W_d", 25, 0, 1},
-                       {"CvsB_W_d", 25, 0, 1},
-                       {"CvsL_W_d", 25, 0, 1}};
-
-      if (chk_bin_optimizer)
-        variable_conf.push_back({"Template_MVA_Score", 80, 0.2, 1});
-      else
+      if (!chk_bin_optimizer)
+      {
+        variable_conf = {{"N_Vertex", 40, 0, 80},
+                         {"Lepton_Pt", 50, 0, 400},
+                         {"Lepton_Eta", 30, -3, 3},
+                         {"N_Jets", 20, 0, 20},
+                         {"N_BJets", 10, 0, 10},
+                         {"N_CJets", 15, 0, 15},
+                         {"Pt_Leading_Jet", 50, 0, 400},
+                         {"Pt_Subleading_Jet", 50, 0, 400},
+                         {"Eta_Leading_Jet", 50, -3, 3},
+                         {"Eta_Subleading_jet", 50, -3, 3},
+                         {"BvsC_Leading_Jet", 25, 0, 1},
+                         {"CvsB_Leading_Jet", 25, 0, 1},
+                         {"CvsL_Leading_Jet", 25, 0, 1},
+                         {"BvsC_Subleading_Jet", 25, 0, 1},
+                         {"CvsB_Subleading_Jet", 25, 0, 1},
+                         {"CvsL_Subleading_Jet", 25, 0, 1},
+                         {"Met_Pt", 50, 0, 400},
+                         {"Met_Phi", 40, -4, 4},
+                         {"Best_MVA_Score_Pre", 25, 0, 1},
+                         {"Best_MVA_Score", 25, 0, 1},
+                         {"Had_T", 50, 70, 270},
+                         {"Had_W", 50, 30, 130},
+                         {"Lep_T", 50, 70, 270},
+                         {"Lep_W", 50, 30, 130},
+                         {"BvsC_W_u", 25, 0, 1},
+                         {"CvsB_W_u", 25, 0, 1},
+                         {"CvsL_W_u", 25, 0, 1},
+                         {"BvsC_W_d", 25, 0, 1},
+                         {"CvsB_W_d", 25, 0, 1},
+                         {"CvsL_W_d", 25, 0, 1}};
         variable_conf.push_back({"Template_MVA_Score"});
-
-      variable_conf.push_back({"Total", 1, 0, 1});
+        variable_conf.push_back({"Total", 1, 0, 1});
+        variable_conf.push_back({"Least_DeltaR_BB", 50, 0, 10});
+        variable_conf.push_back({"Least_M_BB", 50, 0, 500});
+      }
+      else
+        variable_conf.push_back({"Template_MVA_Score", 400, 0.0, 1});
     } // else
   } // else
 
   n_variable = variable_conf.size();
-  cout << "Variable Size = " << n_variable << endl;
+  cout << "Variable_Size = " << n_variable << endl;
 
   return;
 } // void Histo_Syst::Config_Variable()
+
+//////////
+
+void Histo_Syst::Config_Vec_Tree_Type()
+{
+  if (mode == "2D")
+  {
+    // syst_tree
+    vec_tree_type = {"Data",
+                     "UEDown", "UEUp",
+                     "JetResDown", "JetResUp",
+                     "JetEnDown", "JetEnUp",
+                     "CP5Down", "CP5Up",
+                     "hdampDown", "hdampUp",
+                     "mtop171p5", "mtop173p5"};
+
+    if (chk_jes_breakdown == true)
+    {
+      vector<TString> vec_tree_type_jes_breakdown = {"JetEnAbsoluteDown", "JetEnAbsoluteUp",
+                                                     "JetEnBBEC1Down", "JetEnBBEC1Up",
+                                                     "JetEnEC2Down", "JetEnEC2Up",
+                                                     "JetEnFlavorQCDDown", "JetEnFlavorQCDUp",
+                                                     "JetEnHFDown", "JetEnHFUp",
+                                                     "JetEnRelativeBalDown", "JetEnRelativeBalUp"};
+
+      vector<TString> vec_tree_type_jes_breakdown_year = {"JetEnAbsolute", "JetEnBBEC1", "JetEnEC2", "JetEnHF", "JetEnRelativeSample"};
+      for (unsigned int i = 0; i < vec_tree_type_jes_breakdown_year.size(); i++)
+      {
+        vec_tree_type_jes_breakdown.push_back(vec_tree_type_jes_breakdown_year[i] + year + "Down");
+        vec_tree_type_jes_breakdown.push_back(vec_tree_type_jes_breakdown_year[i] + year + "Up");
+      }
+
+      vec_tree_type.insert(vec_tree_type.end(), vec_tree_type_jes_breakdown.begin(), vec_tree_type_jes_breakdown.end());
+    } // if (chk_jes_breakdown == true)
+
+    // Central should be the last
+    vec_tree_type.push_back("Central");
+  }
+  else if (mode == "Para_Smoothing")
+  {
+    // vec_tree_type = {"CP5Down", "CP5Up",
+    //                  "hdampDown", "hdampUp",
+    //                  "Central"};
+    vec_tree_type = {"Central"};
+  }
+
+  n_tree_type = vec_tree_type.size();
+
+  return;
+} // void Histo_Syst::Config_Vec_Tree_Type()
 
 //////////
 
@@ -1188,7 +1305,6 @@ void Histo_Syst::Data_Driven()
   {
     for (int j = 0; j < n_syst; j++)
     {
-      // do not consider syst due to TTbb_4f
       // do not consider PDF_Error_Set_* which is so small and bulky
       if (syst_name[j].Contains("PDF_Error_Set_"))
         continue;
@@ -1201,7 +1317,7 @@ void Histo_Syst::Data_Driven()
         // subtract mc
         for (int l = 0; l < n_sample_merge_mc; l++)
         {
-          if (vec_short_name_mc[l] == "QCD_bEn" || vec_short_name_mc[l] == "QCD" || vec_short_name_mc[l].Contains("TTbb") || vec_short_name_mc[l].Contains("bbDPS"))
+          if (vec_short_name_mc[l] == "QCD_bEn" || vec_short_name_mc[l] == "QCD_MuEn")
             continue;
 
           histo_subtracted_data_driven[i][j][k]->Add(histo_mc_dd[0][i][j][l][k], -1);
@@ -1215,13 +1331,11 @@ void Histo_Syst::Data_Driven()
 
   // apply TF
   cout << "[Histo_Syst::Data_Driven]: Applying TF..." << endl;
-
   for (int i = 0; i < n_region; i++)
   {
     // cout << region_name[i] << endl;
     for (int j = 0; j < n_syst; j++)
     {
-      // do not consider syst due to TTbb_4f
       if (syst_name[j].Contains("PDF_Error_Set_"))
         continue;
 
@@ -1253,15 +1367,17 @@ void Histo_Syst::Data_Driven()
               float tf = histo_tf_combine->GetBinContent(m + 1, n + 1);
               float tf_error = histo_tf_combine->GetBinError(m + 1, n + 1);
 
-              if (tf < 0 || 0.2 < tf_error)
+              if (tf < 0)
                 continue;
 
-              // if (content < 0)
-              //   content = 0;
+              // if(0.2 < tf_error)
+              //   continue;
+
+              if (content < 0)
+                content = 0;
 
               histo_tf_corrected[i][j][k]->SetBinContent(l + 1, m + 1, n + 1, content * tf);
-              histo_tf_corrected[i][j][k]->SetBinError(l + 1, m + 1, n + 1, error * tf);
-
+              histo_tf_corrected[i][j][k]->SetBinError(l + 1, m + 1, n + 1, TMath::Sqrt(TMath::Power(error * tf, 2)));
             } // loop over bin_eta_tf
           } // loop over bin_pt_tf
         } // loop over n_bin
@@ -1269,8 +1385,8 @@ void Histo_Syst::Data_Driven()
     } // loop over n_syst
   } // loop over n_region
 
-  // TF up/down
-  cout << "[Histo_Syst::Data_Driven]: TF up/down..." << endl;
+  // TF down/up
+  cout << "[Histo_Syst::Data_Driven]: TF down/up..." << endl;
 
   for (int i = 0; i < n_region; i++)
   {
@@ -1290,8 +1406,8 @@ void Histo_Syst::Data_Driven()
       {
         for (int l = 0; l < bin_pt_tf.size() - 1; l++)
         {
-          histo_tf_corrected_up[i][j][k][l] = (TH3D *)histo_tf_corrected[i][nominal_index][j]->Clone();
           histo_tf_corrected_down[i][j][k][l] = (TH3D *)histo_tf_corrected[i][nominal_index][j]->Clone();
+          histo_tf_corrected_up[i][j][k][l] = (TH3D *)histo_tf_corrected[i][nominal_index][j]->Clone();
         } // loop over bin_pt_tf
       } // loop over tf_eta_bin
 
@@ -1311,19 +1427,179 @@ void Histo_Syst::Data_Driven()
             float tf = histo_tf_combine->GetBinContent(l + 1, m + 1);
             float tf_error = histo_tf_combine->GetBinError(l + 1, m + 1);
 
-            // tf bin by bin up/down
-            float tf_up = tf + tf_error;
-            histo_tf_corrected_up[i][j][l][m]->SetBinContent(k + 1, l + 1, m + 1, content * tf_up);
-            histo_tf_corrected_up[i][j][l][m]->SetBinError(k + 1, l + 1, m + 1, error * tf_up);
-
+            // tf bin by bin down / up
             float tf_down = tf - tf_error;
             histo_tf_corrected_down[i][j][l][m]->SetBinContent(k + 1, l + 1, m + 1, content * tf_down);
-            histo_tf_corrected_down[i][j][l][m]->SetBinError(k + 1, l + 1, m + 1, error * tf_down);
+            histo_tf_corrected_down[i][j][l][m]->SetBinError(k + 1, l + 1, m + 1, TMath::Sqrt(TMath::Power(error * tf_down, 2)));
+
+            float tf_up = tf + tf_error;
+            histo_tf_corrected_up[i][j][l][m]->SetBinContent(k + 1, l + 1, m + 1, content * tf_up);
+            histo_tf_corrected_up[i][j][l][m]->SetBinError(k + 1, l + 1, m + 1, TMath::Sqrt(TMath::Power(error * tf_up, 2)));
           } // loop over bin_pt_tf
         } // loop over tf_eta_bin
       } // loop over n_bin
     } // loop over n_variable
   } // loop over n_region
+
+  // renormalization to QCD_bEn
+  cout << "[Histo_Syst::Data_Driven]: Normalizing with respect to QCD_bEn..." << endl;
+
+  auto it_sample = std::find(vec_short_name_mc.begin(), vec_short_name_mc.end(), "QCD_bEn");
+  int qcd_ben_index = std::distance(vec_short_name_mc.begin(), it_sample);
+
+  // yield of QCD_bEn in D region
+  float yield_qcd_ben = 0;
+  for (int i = 0; i < n_region; i++)
+    yield_qcd_ben += histo_mc_dd[1][i][nominal_index][qcd_ben_index][0]->Integral();
+
+  // yield of data driven in D region
+  float yield_data_driven = 0;
+  for (int i = 0; i < n_region; i++)
+    yield_data_driven += histo_tf_corrected[i][nominal_index][0]->Integral();
+  // yield_data_driven += histo_subtracted_data_driven[i][nominal_index][0]->Integral();
+
+  float norm_factor = yield_qcd_ben / yield_data_driven;
+  cout << "[Histo_Syst::Data_Driven]: yield_qcd_ben = " << yield_qcd_ben << ", yield_data_driven = " << yield_data_driven << ", norm_factor = " << norm_factor << endl;
+
+  for (int i = 0; i < n_region; i++)
+  {
+    for (int j = 0; j < n_syst; j++)
+    {
+      if (syst_name[j].Contains("PDF_Error_Set_"))
+        continue;
+
+      for (int k = 0; k < n_variable; k++)
+      {
+        // mc variations are not propagated to QCD data driven
+        histo_tf_corrected[i][j][k]->Scale(norm_factor);
+        // histo_subtracted_data_driven[i][0][k]->Scale(norm_factor);
+        // histo_tf_corrected[i][j][k] = (TH3D *)histo_subtracted_data_driven[i][0][k]->Clone();
+
+        if (j == nominal_index)
+        {
+          for (int l = 0; l < bin_eta_tf.size() - 1; l++)
+          {
+            for (int m = 0; m < bin_pt_tf.size() - 1; m++)
+            {
+              histo_tf_corrected_down[i][k][l][m]->Scale(norm_factor);
+              histo_tf_corrected_up[i][k][l][m]->Scale(norm_factor);
+            }
+          }
+        } // if (j == nominal_index)
+      } // loop over n_variable
+    } // loop over n_syst
+  } // loop over n_region
+
+  // // apply TF
+  // cout << "[Histo_Syst::Data_Driven]: Applying TF..." << endl;
+
+  // for (int i = 0; i < n_region; i++)
+  // {
+  //   // cout << region_name[i] << endl;
+  //   for (int j = 0; j < n_syst; j++)
+  //   {
+  //     //     if (syst_name[j].Contains("PDF_Error_Set_"))
+  //       continue;
+
+  //     // cout << syst_name[j] << endl;
+  //     for (int k = 0; k < n_variable; k++)
+  //     {
+  //       // cout << variable_conf[k].variable_title << endl;
+
+  //       int n_bin;
+  //       if (variable_conf[k].chk_equal_interval == false)
+  //         n_bin = bin_template_mva_score[i].size() - 1;
+  //       else
+  //         n_bin = variable_conf[k].n_bin;
+
+  //       for (int l = 0; l < n_bin; l++)
+  //       {
+  //         // cout << "l = " << l << endl;
+
+  //         for (int m = 0; m < bin_eta_tf.size() - 1; m++)
+  //         {
+  //           for (int n = 0; n < bin_pt_tf.size() - 1; n++)
+  //           {
+  //             // cout << "m = " << m << ", n = " << n << endl;
+
+  //             // mc variations are not propagated to QCD data driven
+  //             float content = histo_subtracted_data_driven[i][nominal_index][k]->GetBinContent(l + 1, m + 1, n + 1);
+  //             float error = histo_subtracted_data_driven[i][nominal_index][k]->GetBinError(l + 1, m + 1, n + 1);
+
+  //             float tf = histo_tf_combine->GetBinContent(m + 1, n + 1);
+  //             float tf_error = histo_tf_combine->GetBinError(m + 1, n + 1);
+
+  //             if (tf < 0 || 0.2 < tf_error)
+  //               continue;
+
+  //             // if (content < 0)
+  //             //   content = 0;
+
+  //             histo_tf_corrected[i][j][k]->SetBinContent(l + 1, m + 1, n + 1, content * tf);
+  //             histo_tf_corrected[i][j][k]->SetBinError(l + 1, m + 1, n + 1, error * tf);
+
+  //           } // loop over bin_eta_tf
+  //         } // loop over bin_pt_tf
+  //       } // loop over n_bin
+  //     } // loop over n_variable
+  //   } // loop over n_syst
+  // } // loop over n_region
+
+  // // TF up/down
+  // cout << "[Histo_Syst::Data_Driven]: TF up/down..." << endl;
+
+  // for (int i = 0; i < n_region; i++)
+  // {
+  //   // cout << region_name[i] << endl;
+
+  //   for (int j = 0; j < n_variable; j++)
+  //   {
+  //     // cout << variable_conf[j].variable_title << endl;
+
+  //     int n_bin;
+  //     if (variable_conf[j].chk_equal_interval == false)
+  //       n_bin = bin_template_mva_score[i].size() - 1;
+  //     else
+  //       n_bin = variable_conf[j].n_bin;
+
+  //     for (int k = 0; k < bin_eta_tf.size() - 1; k++)
+  //     {
+  //       for (int l = 0; l < bin_pt_tf.size() - 1; l++)
+  //       {
+  //         histo_tf_corrected_up[i][j][k][l] = (TH3D *)histo_tf_corrected[i][nominal_index][j]->Clone();
+  //         histo_tf_corrected_down[i][j][k][l] = (TH3D *)histo_tf_corrected[i][nominal_index][j]->Clone();
+  //       } // loop over bin_pt_tf
+  //     } // loop over tf_eta_bin
+
+  //     for (int k = 0; k < n_bin; k++)
+  //     {
+  //       // cout << "k = " << k << endl;
+
+  //       for (int l = 0; l < bin_eta_tf.size() - 1; l++)
+  //       {
+  //         for (int m = 0; m < bin_pt_tf.size() - 1; m++)
+  //         {
+  //           // cout << "l = " << l << ", m = " << m << endl;
+
+  //           float content = histo_subtracted_data_driven[i][nominal_index][j]->GetBinContent(k + 1, l + 1, m + 1);
+  //           float error = histo_subtracted_data_driven[i][nominal_index][j]->GetBinError(k + 1, l + 1, m + 1);
+
+  //           float tf = histo_tf_combine->GetBinContent(l + 1, m + 1);
+  //           float tf_error = histo_tf_combine->GetBinError(l + 1, m + 1);
+
+  //           // tf bin by bin up/down
+  //           float tf_up = tf + tf_error;
+  //           histo_tf_corrected_up[i][j][l][m]->SetBinContent(k + 1, l + 1, m + 1, content * tf_up);
+  //           histo_tf_corrected_up[i][j][l][m]->SetBinError(k + 1, l + 1, m + 1, error * tf_up);
+
+  //           float tf_down = tf - tf_error;
+  //           histo_tf_corrected_down[i][j][l][m]->SetBinContent(k + 1, l + 1, m + 1, content * tf_down);
+  //           histo_tf_corrected_down[i][j][l][m]->SetBinError(k + 1, l + 1, m + 1, error * tf_down);
+  //         } // loop over bin_pt_tf
+  //       } // loop over tf_eta_bin
+  //     } // loop over n_bin
+  //   } // loop over n_variable
+  // } // loop over n_region
 
   /* Envelop */
   cout << "[Histo_Syst::Data_Driven]: Taking Syst Envelop..." << endl;
@@ -1391,6 +1667,158 @@ void Histo_Syst::Data_Driven()
 
 //////////
 
+void Histo_Syst::Draw_Smoothing()
+{
+  cout << "[Histo_Syst::Draw_Smoothing]: Init" << endl;
+
+  gStyle->SetOptStat(0);
+
+  vector<TString> sample_to_draw = {"TTLJ_45",
+                                    "TTLJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
+                                    "TTLJ_4", "TTLJ_CC_4", "TTLJ_BB_4",
+                                    "TTLL", "TTLL_CC", "TTLL_BB"};
+
+  auto it = std::find(syst_name.begin(), syst_name.end(), "Nominal");
+  int nominal_index = std::distance(syst_name.begin(), it);
+
+  for (int i = 0; i < n_syst; i++)
+  {
+    if (syst_name[i] == "Nominal" || syst_name[i].Contains("Smoothed"))
+      continue;
+
+    for (int j = 0; j < n_sample_merge_mc; j++)
+    {
+      if (std::find(sample_to_draw.begin(), sample_to_draw.end(), vec_short_name_mc[j]) == sample_to_draw.end())
+        continue;
+
+      TString type;
+      int type_index;
+      if (syst_name[i].Contains("CP5"))
+      {
+        type = "N_Jets";
+        type_index = 0;
+      }
+      else if (syst_name[i].Contains("hdamp"))
+      {
+        type = "Pt_Gen_TT";
+        type_index = 1;
+      }
+
+      TString canvas_name = "Smoothing_" + syst_name[i] + "_" + type + "_" + vec_short_name_mc[j] + "_" + era + "_" + channel;
+      TCanvas *canvas = new TCanvas(canvas_name, canvas_name, 800, 500);
+      if (syst_name[i].Contains("mtop"))
+        canvas->Divide(2, 1);
+      else
+        canvas->Divide(3, 1);
+      canvas->Draw();
+
+      // parametrization
+      if (!syst_name[i].Contains("mtop"))
+      {
+        canvas->cd(1);
+
+        histo_para_smoothing[i][j][type_index]->SetLineColor(kBlue);
+
+        histo_para_smoothing[i][j][type_index]->SetTitle("Parametrization for Smoothing " + syst_name[i]);
+        histo_para_smoothing[i][j][type_index]->GetXaxis()->SetTitle(type);
+        histo_para_smoothing[i][j][type_index]->GetYaxis()->SetRangeUser(0.0, 2);
+
+        histo_para_smoothing[i][j][type_index]->Draw();
+      } // if (!syst_name[i].Contains("mtop"))
+
+      // compare histos
+      TPad *pad_absol[n_region];
+      TPad *pad_ratio[n_region];
+
+      for (int k = 0; k < n_region; k++)
+      {
+        pad_absol[k] = new TPad(Form("Absolute_%d", k), Form("Absolute_%d", k), 0, 0.3, 1, 1);
+
+        if (syst_name[i].Contains("mtop"))
+          canvas->cd(k + 1);
+        else
+          canvas->cd(k + 2);
+
+        pad_absol[k]->Draw();
+        pad_absol[k]->cd();
+
+        histo_mc_smoothing_template[k][i][j]->SetLineColor(kRed);
+        histo_mc_smoothing_template[k][i][j]->SetTitle(vec_short_name_mc[j] + " " + region_name[k]);
+        // if (k == 0)
+        //   histo_mc_smoothing_template[k][i][j]->GetYaxis()->SetTitle(vec_short_name_mc[j]);
+        histo_mc_smoothing_template[k][i][j]->GetXaxis()->SetTitle("Template MVA Score");
+        float max = histo_mc_smoothing_template[k][i][j]->GetMaximum();
+        histo_mc_smoothing_template[k][i][j]->GetYaxis()->SetRangeUser(0, max * 1.2);
+        histo_mc_smoothing_template[k][i][j]->SetStats(0);
+        histo_mc_smoothing_template[k][i][j]->Draw();
+
+        // nominal
+        histo_mc_smoothing_template[k][nominal_index][j]->SetLineColor(kBlue);
+        histo_mc_smoothing_template[k][nominal_index][j]->SetStats(0);
+        histo_mc_smoothing_template[k][nominal_index][j]->Draw("SAME");
+
+        // smoothed
+        auto it = std::find(syst_name.begin(), syst_name.end(), syst_name[i] + "_Smoothed");
+        int smoothed_index = std::distance(syst_name.begin(), it);
+
+        histo_mc_smoothing_template[k][smoothed_index][j]->SetLineColor(kGreen);
+        histo_mc_smoothing_template[k][smoothed_index][j]->SetStats(0);
+        histo_mc_smoothing_template[k][smoothed_index][j]->Draw("SAME");
+
+        if (k == 1)
+        {
+          TLegend *tl;
+          if (vec_short_name_mc[j].Contains("45"))
+            tl = new TLegend(0.19, 0.11, 0.49, 0.5);
+          else
+            tl = new TLegend(0.59, 0.59, 0.89, 0.89);
+          tl->SetNColumns(1);
+          tl->SetBorderSize(0);
+          tl->SetTextSize(0.045);
+          tl->AddEntry(histo_mc_smoothing_template[k][i][j], "Direct", "l");
+          tl->AddEntry(histo_mc_smoothing_template[k][nominal_index][j], "Nominal", "l");
+          tl->AddEntry(histo_mc_smoothing_template[k][smoothed_index][j], "Smoothed", "l");
+          tl->Draw("SAME");
+        }
+
+        // ratio
+        pad_ratio[k] = new TPad(Form("Ratio_%d", k), Form("Ratio_%d", k), 0, 0, 1, 0.3);
+
+        if (syst_name[i].Contains("mtop"))
+          canvas->cd(k + 1);
+        else
+          canvas->cd(k + 2);
+
+        pad_ratio[k]->Draw();
+        pad_ratio[k]->cd();
+
+        TH1D *histo_ratio = (TH1D *)histo_mc_smoothing_template[k][i][j]->Clone(Form("Ratio_Direct_%d", k));
+        histo_ratio->Divide(histo_mc_smoothing_template[k][nominal_index][j]);
+        histo_ratio->SetLineColor(kRed);
+        histo_ratio->SetTitle("");
+        histo_ratio->GetXaxis()->SetTitle("Template MVA Score");
+        histo_ratio->GetYaxis()->SetTitle("/Nominal");
+        histo_ratio->GetYaxis()->SetRangeUser(0.5, 1.5);
+        histo_ratio->Draw();
+
+        TH1D *histo_ratio_smoothed = (TH1D *)histo_mc_smoothing_template[k][smoothed_index][j]->Clone(Form("Ratio_Smoothed_%d", k));
+        histo_ratio_smoothed->Divide(histo_mc_smoothing_template[k][nominal_index][j]);
+        histo_ratio_smoothed->SetLineColor(kGreen);
+        histo_ratio_smoothed->Draw("SAME");
+      } // loop over n_region, 2
+
+      canvas->Print(canvas_name + ".png", ".png");
+
+    } // for (int j = 0; j < n_sample_merge_mc; j++)
+  } // for (int i = 0; i < n_syst; i++)
+
+  cout << "[Histo_Syst::Draw_Smoothing]: Done" << endl;
+
+  return;
+} // void Histo_Syst::Draw_Smoothing()
+
+//////////
+
 void Histo_Syst::Draw_TF()
 {
   cout << "[Histo_Syst::Draw_TF]: Init" << endl;
@@ -1425,8 +1853,11 @@ void Histo_Syst::Draw_TF()
     // histo_tf[i]->Draw("colz texte");
     TH1D *histo_proj_data_driven = (TH1D *)histo_tf[i]->ProjectionY(region_name[i] + "Data_Driven")->Clone();
     // histo_proj->SetTitle("TF Data Driven");
+    histo_proj_data_driven->SetTitle("");
     histo_proj_data_driven->GetXaxis()->SetTitle("Lepton P_{T}");
     histo_proj_data_driven->GetYaxis()->SetTitle("TF");
+    histo_proj_data_driven->SetLineColor(kBlue);
+    histo_proj_data_driven->SetMarkerColor(kBlue);
     histo_proj_data_driven->Draw();
 
     // canvas[i]->cd(2);
@@ -1436,15 +1867,20 @@ void Histo_Syst::Draw_TF()
       qcd_mc_name = "TF QCD bEn MC Sample";
     else
       qcd_mc_name = "TF QCD MC Sample";
+
+    // histo_tf_qcd_mc[i]->SetTitle(qcd_mc_name);
+    // histo_tf_qcd_mc[i]->GetXaxis()->SetTitle("Lepton #eta");
+    // histo_tf_qcd_mc[i]->GetYaxis()->SetTitle("Lepton P_{T}");
+    // histo_tf_qcd_mc[i]->Draw("colz texte");
+
     TH1D *histo_proj_qcd_mc = (TH1D *)histo_tf_qcd_mc[i]->ProjectionY(region_name[i] + qcd_mc_name)->Clone();
+    histo_proj_qcd_mc->SetLineColor(kRed);
+    histo_proj_qcd_mc->SetMarkerColor(kRed);
+    histo_proj_qcd_mc->Draw("SAME");
 
-    histo_tf_qcd_mc[i]->SetTitle(qcd_mc_name);
-    histo_tf_qcd_mc[i]->GetXaxis()->SetTitle("Lepton #eta");
-    histo_tf_qcd_mc[i]->GetYaxis()->SetTitle("Lepton P_{T}");
-    histo_tf_qcd_mc[i]->Draw("colz texte");
-
-    // tl[i] = new TLegend(0.7, 0.7, 0.9, 0.9);
+    tl[i] = new TLegend(0.7, 0.7, 0.9, 0.9);
     // tl[i]->AddEntry(histo_tf[i], "TF", "lep");
+    tl[i]->AddEntry(histo_proj_data_driven, "TF Data Driven", "lep");
 
     // TString qcd_mc_name;
     // if (chk_qcd_ben)
@@ -1452,7 +1888,24 @@ void Histo_Syst::Draw_TF()
     // else
     //   qcd_mc_name = "TF QCD MC Sample";
     // tl[i]->AddEntry(histo_tf_qcd_mc[i], qcd_mc_name, "lep");
-    // tl[i]->Draw("SAME");
+
+    tl[i]->AddEntry(histo_proj_qcd_mc, qcd_mc_name, "lep");
+    tl[i]->Draw("SAME");
+
+    float lumi;
+    if (era == "2016preVFP")
+      lumi = lumi_2016a;
+    else if (era == "2016postVFP")
+      lumi = lumi_2016b;
+    else if (era == "2017")
+      lumi = lumi_2017;
+    else if (era == "2018")
+      lumi = lumi_2018;
+
+    TLatex *latex = new TLatex();
+    latex->SetTextSize(0.04);
+    latex->DrawLatexNDC(0.1, 0.91, "CMS #bf{work in progress}");
+    latex->DrawLatexNDC(0.785, 0.91, Form("%s, %.2f fb^{-1}", channel.Data(), lumi));
 
     TString canvas_name = "Transfer_Function_" + region_name[i] + "_" + era + "_" + channel + ".png";
     canvas[i]->Print(canvas_name, "png");
@@ -1462,6 +1915,13 @@ void Histo_Syst::Draw_TF()
 
   return;
 } // void Histo_Syst::Draw_TF()
+
+//////////
+
+int Histo_Syst::Get_Region_Index(const TString &region)
+{
+  return find(region_name.begin(), region_name.end(), region) - region_name.begin();
+} // Region_Index Histo_Syst::Get_Region_Index(const TString& region)
 
 //////////
 
@@ -1488,6 +1948,8 @@ void Histo_Syst::Fill_Histo_Data()
   {
     if (debug)
       dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][0])->Fill(event.n_pv, event.lepton_eta, event.lepton_pt, 1.);
+    else if (chk_bin_optimizer)
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][0])->Fill(event.template_score, event.lepton_eta, event.lepton_pt, 1);
     else
     {
       dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][0])->Fill(event.n_pv, event.lepton_eta, event.lepton_pt, 1.);
@@ -1533,6 +1995,8 @@ void Histo_Syst::Fill_Histo_Data()
       // for C-tag SF debug
       dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][31])->Fill(0.5, event.lepton_eta, event.lepton_pt, 1.);
 
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][32])->Fill(event.least_dr_bb, event.lepton_eta, event.lepton_pt, event.weight);
+      dynamic_cast<TH3D *>(histo_data[abcd_region_index - 2][region_index][33])->Fill(event.least_m_bb, event.lepton_eta, event.lepton_pt, event.weight);
     } // else
   } // else
 
@@ -1545,12 +2009,16 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &sample
 {
   // int sample_index = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name) - vec_short_name_mc.begin();
   int abcd_region_index = Set_ABCD_Region();
+
   int region_index = Set_Region();
   if (region_index < 0)
     return;
 
   // to save time
   if (mode == "2D" && (abcd_region_name[abcd_region_index] == "A" || abcd_region_name[abcd_region_index] == "B"))
+    return;
+
+  if (mode == "Para_Smoothing" && abcd_region_name[abcd_region_index] != "D")
     return;
 
   bool chk_discarded = false;
@@ -1561,13 +2029,14 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &sample
   TString histo_name_rf = Histo_Name_RF(sample_name);
 
   float weight_ckm = Reweight_CKM(sample_name);
-  float weight_tthf = Reweight_TTHF(sample_name_short);
+  // float weight_tthf = Reweight_TTHF(sample_name_short);
+  float weight_tthf = 1;
 
   // cout << "test " << sample_name << " " << sample_index << " " << histo_name_rf << endl;
 
   for (int i = 0; i < n_syst; i++)
   {
-    TString syst_type = syst_name[i];
+    const TString &syst_type = syst_name[i];
 
     // for central tree, don't consider the following syst
     if (tree_type == "Central")
@@ -1579,7 +2048,6 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &sample
           syst_type == "CP5_Down" || syst_type == "CP5_Up" ||
           syst_type == "hdamp_Down" || syst_type == "hdamp_Up" ||
           syst_type == "mtop_171p5" || syst_type == "mtop_173p5" ||
-          syst_type == "TTbb_4f" ||
           syst_type.Contains("Jet_En"))
         continue;
     }
@@ -1821,7 +2289,7 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &sample
         event.weight *= event.weight_b_tag_lfstats2_up;
         b_tagging_rf_type = syst_type;
       }
-      // fully correlated c-tagging scale factors
+      // fully correlated b-tagging scale factors
       else if (syst_type == "Jet_En_Down")
       {
         event.weight *= event.weight_b_tag_jes_down;
@@ -1835,8 +2303,13 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &sample
       // JES Breakdown
       else if (syst_type.Contains("Jet_En_"))
       {
-        cerr << "Will be written later" << endl;
-        exit(1);
+        if (syst_type.Contains("Down"))
+          event.weight *= event.weight_b_tag_jes_down;
+        else if (syst_type.Contains("Up"))
+          event.weight *= event.weight_b_tag_jes_up;
+
+        b_tagging_rf_type = syst_type;
+        b_tagging_rf_type.ReplaceAll("Jet_En", "B_Tag_JES");
       }
       else
       {
@@ -2039,10 +2512,23 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &sample
     {
       dynamic_cast<TH2D *>(histo_mc[abcd_region_index][region_index][i][histo_index][0])->Fill(event.lepton_eta, event.lepton_pt, event.weight);
     }
-    else
+    else if (mode == "Para_Smoothing")
+    {
+      histo_para_smoothing[i][histo_index][0]->Fill(event.n_jets, event.weight);
+      histo_para_smoothing[i][histo_index][1]->Fill(event.pt_gen_tt, event.weight);
+
+      if (syst_name[i] == "Nominal")
+      {
+        histo_2d_smoothing[region_index][histo_index][0]->Fill(event.template_score, event.n_jets, event.weight);
+        histo_2d_smoothing[region_index][histo_index][1]->Fill(event.template_score, event.pt_gen_tt, event.weight);
+      }
+    }
+    else if (mode == "2D")
     {
       if (debug)
         dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][0])->Fill(event.n_pv, event.lepton_eta, event.lepton_pt, event.weight);
+      else if (chk_bin_optimizer)
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][0])->Fill(event.template_score, event.lepton_eta, event.lepton_pt, event.weight);
       else
       {
         dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][0])->Fill(event.n_pv, event.lepton_eta, event.lepton_pt, event.weight);
@@ -2079,6 +2565,10 @@ void Histo_Syst::Fill_Histo_MC(const TString &sample_name, const TString &sample
 
         // for C-tag SF debug
         dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][31])->Fill(0.5, event.lepton_eta, event.lepton_pt, event.weight);
+
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][32])->Fill(event.least_dr_bb, event.lepton_eta, event.lepton_pt, event.weight);
+        dynamic_cast<TH3D *>(histo_mc[abcd_region_index - 2][region_index][i][histo_index][33])->Fill(event.least_m_bb, event.lepton_eta, event.lepton_pt, event.weight);
+
       } // else
     } // else
   } // loop over n_syst
@@ -2207,6 +2697,45 @@ int Histo_Syst::Histo_Index(const TString &sample_name, bool &chk_discarded)
 
 //////////
 
+TString Histo_Syst::Histo_Name_Modelling_Patch(const TString &sample_name)
+{
+  if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
+  {
+    TString histo_name_modelling_patch = sample_name;
+
+    bool chk_b = false;
+    bool chk_c = false;
+
+    if (chk_include_pseudo_additional)
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 56)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 46)
+        chk_c = true;
+    }
+    else
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 55)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 45)
+        chk_c = true;
+    }
+
+    if (chk_b)
+      histo_name_modelling_patch += "_BB";
+    else if (chk_c)
+      histo_name_modelling_patch += "_CC";
+
+    return histo_name_modelling_patch;
+  }
+  else
+    return sample_name;
+
+  return "-1";
+} // TString Histo_Syst::Histo_Name_Modelling_Patch(const TString& sample_name
+
+//////////
+
 TString Histo_Syst::Histo_Name_RF(const TString &sample_name)
 {
   TString histo_name_rf;
@@ -2273,13 +2802,6 @@ TString Histo_Syst::Histo_Name_RF(const TString &sample_name)
 
   return histo_name_rf;
 } // TString Histo_Syst::Histo_name_RF(const TString &sample_name)
-
-//////////
-
-int Histo_Syst::Get_Region_Index(const TString &region)
-{
-  return find(region_name.begin(), region_name.end(), region) - region_name.begin();
-} // Region_Index Histo_Syst::Get_Region_Index(const TString& region)
 
 //////////
 
@@ -2541,6 +3063,174 @@ void Histo_Syst::Init_Histo_Data_Driven()
 
 //////////
 
+void Histo_Syst::Init_Histo_Draw_Smoothing()
+{
+  cout << "[Histo_Syst::Init_Histo_Draw_Smoothing]: Init" << endl;
+
+  TString fin_name = path_base + "/Workplace/Histo_Syst/Vcb_Para_Smoothing_" + era + "_" + channel + "_" + tagger + "_tagger.root";
+  fin_para_smoothing = new TFile(fin_name);
+
+  // this part is risky since n_syst here and ROOT file is different
+  // But let's leave it as it is for now to save time
+  histo_para_smoothing = new TH1D ***[n_syst];
+  for (int i = 0; i < n_syst; i++)
+  {
+    // again, this part is risky since n_sample_merge_mc here and ROOT file is different
+    // But let's leave it as it is for now to save time
+    histo_para_smoothing[i] = new TH1D **[n_sample_merge_mc];
+    for (int j = 0; j < n_sample_merge_mc; j++)
+    {
+      histo_para_smoothing[i][j] = new TH1D *[n_variable];
+      for (int k = 0; k < n_variable; k++)
+      {
+        TString histo_name = "Param_Histogram/" + syst_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
+        histo_para_smoothing[i][j][k] = (TH1D *)fin_para_smoothing->Get(histo_name);
+      } // loop over n_variable
+    } // loop over n_sample_merge_mc
+  } // loop over n_syst
+
+  fin_name = path_base + "/Workplace/Histo_Syst/Vcb_Histos_" + era + "_" + channel + "_" + tagger + "_tagger.root";
+  fin = new TFile(fin_name);
+
+  histo_mc_smoothing_template = new TH1D ***[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_mc_smoothing_template[i] = new TH1D **[n_syst];
+    for (int j = 0; j < n_syst; j++)
+    {
+      histo_mc_smoothing_template[i][j] = new TH1D *[n_sample_merge_mc];
+      for (int k = 0; k < n_sample_merge_mc; k++)
+      {
+        TString histo_name = region_name[i] + "/" + syst_name[j] + "/" + vec_short_name_mc[k] + "/Template_MVA_Score";
+        histo_mc_smoothing_template[i][j][k] = (TH1D *)fin->Get(histo_name);
+      } // loop over n_sample_merge_mc
+    } // loop over n_syst
+  } // loop over n_region
+
+  cout << "[Histo_Syst::Init_Histo_Draw_Smoothing]: Done" << endl;
+
+  return;
+} //  void Histo_Syst::Init_Histo_Draw_Smoothing()
+
+//////////
+
+void Histo_Syst::Init_Histo_Para_Smoothing()
+{
+  cout << "[Histo_Syst::Init_Histo_Para_Smoothing]: Init" << endl;
+
+  histo_para_smoothing = new TH1D ***[n_syst];
+  for (int i = 0; i < n_syst; i++)
+  {
+    histo_para_smoothing[i] = new TH1D **[n_sample_merge_mc];
+
+    for (int j = 0; j < n_sample_merge_mc; j++)
+    {
+      histo_para_smoothing[i][j] = new TH1D *[n_variable];
+      for (int k = 0; k < n_variable; k++)
+      {
+        TString histo_name = syst_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
+        // cout << histo_name << endl;
+        histo_para_smoothing[i][j][k] = new TH1D(histo_name, variable_conf[k].variable_title, variable_conf[k].vec_bin.size() - 1, variable_conf[k].vec_bin.data());
+      } // loop over n_variable
+    } // loop over n_sample_merge_mc
+  } // loop over n_syst
+
+  histo_2d_smoothing = new TH2D ***[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_2d_smoothing[i] = new TH2D **[n_sample_merge_mc];
+    for (int j = 0; j < n_sample_merge_mc; j++)
+    {
+      histo_2d_smoothing[i][j] = new TH2D *[n_variable];
+      for (int k = 0; k < n_variable; k++)
+      {
+        TString histo_name = region_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
+        cout << histo_name << endl;
+        cout << variable_conf[k].vec_bin.size() - 1 << endl;
+        cout << bin_template_mva_score[i].size() - 1 << endl;
+
+        histo_2d_smoothing[i][j][k] = new TH2D(histo_name, variable_conf[k].variable_title, bin_template_mva_score[i].size() - 1, bin_template_mva_score[i].data(), variable_conf[k].vec_bin.size() - 1, variable_conf[k].vec_bin.data());
+      } // loop over n_variable
+    } // loop over n_sample_merge_mc
+  } // loop over n_region
+
+  cout << "[Histo_Syst::Init_Histo_Para_Smoothing]: Done" << endl;
+
+  return;
+} // void Histo_Syst::Init_Histo_Para_Smoothing()
+
+//////////
+
+void Histo_Syst::Init_Histo_Smoothing()
+{
+  cout << "[Histo_Syst::Init_Histo_Smoothing]: Init" << endl;
+
+  TString fin_name = path_base + "/Workplace/Histo_Syst/Vcb_Histos_" + era + "_" + channel + "_" + tagger + "_tagger.root";
+  fin = new TFile(fin_name, "UPDATE");
+
+  histo_mc_smoothing_template = new TH1D ***[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_mc_smoothing_template[i] = new TH1D **[n_syst];
+
+    for (int j = 0; j < n_syst; j++)
+    {
+      histo_mc_smoothing_template[i][j] = new TH1D *[n_sample_merge_mc];
+
+      for (int k = 0; k < n_sample_merge_mc; k++)
+      {
+        TString histo_name = region_name[i] + "/" + syst_name[j] + "/" + vec_short_name_mc[k] + "/Template_MVA_Score";
+        histo_mc_smoothing_template[i][j][k] = (TH1D *)fin->Get(histo_name);
+      } // loop over n_sample_merge_mc
+    } // loop over n_syst
+  } // loop over n_region
+
+  fin_name = path_base + "/Workplace/Histo_Syst/Vcb_Para_Smoothing_" + era + "_" + channel + "_" + tagger + "_tagger.root";
+  fin_para_smoothing = new TFile(fin_name);
+
+  // this part is risky since n_syst here and ROOT file is different
+  // But let's leave it as it is for now to save time
+  histo_para_smoothing = new TH1D ***[n_syst];
+  for (int i = 0; i < n_syst; i++)
+  {
+
+    // again, this part is risky since n_sample_merge_mc here and ROOT file is different
+    // But let's leave it as it is for now to save time
+    histo_para_smoothing[i] = new TH1D **[n_sample_merge_mc];
+    for (int j = 0; j < n_sample_merge_mc; j++)
+    {
+      histo_para_smoothing[i][j] = new TH1D *[n_variable];
+
+      for (int k = 0; k < n_variable; k++)
+      {
+        TString histo_name = "Param_Histogram/" + syst_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
+        histo_para_smoothing[i][j][k] = (TH1D *)fin_para_smoothing->Get(histo_name);
+      } // loop over n_variable
+    } // loop over n_sample_merge_mc
+  } // loop over n_syst
+
+  histo_2d_smoothing = new TH2D ***[n_region];
+  for (int i = 0; i < n_region; i++)
+  {
+    histo_2d_smoothing[i] = new TH2D **[n_sample_merge_mc];
+    for (int j = 0; j < n_sample_merge_mc; j++)
+    {
+      histo_2d_smoothing[i][j] = new TH2D *[n_variable];
+      for (int k = 0; k < n_variable; k++)
+      {
+        TString histo_name = region_name[i] + "/" + region_name[i] + "_" + vec_short_name_mc[j] + "_" + variable_conf[k].variable_title;
+        histo_2d_smoothing[i][j][k] = (TH2D *)fin_para_smoothing->Get(+histo_name);
+      } // loop over n_variable
+    } // loop over n_sample_merge_mc
+  } // loop over n_region
+
+  cout << "[Histo_Syst::Init_Histo_Smoothing]: Done" << endl;
+
+  return;
+} // void Histo_Syst::Init_Histo_Smoothing()
+
+//////////
+
 void Histo_Syst::Init_Histo_TF()
 {
   // histo for MC
@@ -2742,6 +3432,35 @@ void Histo_Syst::Merge_PDF_Error_Set()
 
 //////////
 
+void Histo_Syst::Ratio_Para_Smoothing()
+{
+  cout << "[Histo_Syst::Ratio_Para_Smoothing]: Init" << endl;
+
+  auto it = std::find(syst_name.begin(), syst_name.end(), "Nominal");
+  int nominal_index = std::distance(syst_name.begin(), it);
+
+  // take ratio to nominal
+  for (int i = 0; i < n_syst; i++)
+  {
+    if (i == nominal_index)
+      continue;
+
+    for (int j = 0; j < n_sample_merge_mc; j++)
+    {
+      for (int k = 0; k < n_variable; k++)
+      {
+        histo_para_smoothing[i][j][k]->Divide(histo_para_smoothing[nominal_index][j][k]);
+      } // loop over n_variable
+    } // loop over n_sample_merge_mc
+  } // loop over n_syst
+
+  cout << "[Histo_Syst::Ratio_Para_Smoothing]: Done" << endl;
+
+  return;
+} // void Histo_Syst::Ratio_Para_Smoothing()
+
+//////////
+
 void Histo_Syst::Read_Tree()
 {
   cout << "[Histo_Syst::Read_Tree]: Start to read trees" << endl;
@@ -2793,20 +3512,8 @@ void Histo_Syst::Read_Tree()
 
       cout << "N_Entries:" << n_entries << " N_Split:" << n_split << " Index_Split:" << index_split << " Step:" << step << " Init:" << init << " End:" << end << endl;
 
-      // cout << "test " << sample_name_short << " " << modelling_patch_baseline << endl;
-
-      float modelling_patch_baseline = modelling_patch.Get_Modelling_Patch(sample_name_short, "Baseline");
-      float modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_short, "Top_Pt_Reweight");
-      float modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_1");
-      float modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_2");
-      float modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_3");
-      float modelling_patch_scale_variation_4 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_4");
-      float modelling_patch_scale_variation_6 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_6");
-      float modelling_patch_scale_variation_8 = modelling_patch.Get_Modelling_Patch(sample_name_short, "Scale_Variation_8");
-      float modelling_patch_ps_0 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_0");
-      float modelling_patch_ps_1 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_1");
-      float modelling_patch_ps_2 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_2");
-      float modelling_patch_ps_3 = modelling_patch.Get_Modelling_Patch(sample_name_short, "PS_3");
+      sample_name_modelling_patch = "sample_name_modelling_patch";
+      sample_name_modelling_patch_prev = "sample_name_modelling_patch_prev";
 
       for (Long64_t i = init; i < end; i++)
       {
@@ -2821,6 +3528,7 @@ void Histo_Syst::Read_Tree()
 
         // event.template_score = TMath::Exp(event.template_score);
         event.template_score = event.Multi_To_One();
+        // cout << "test " << event.template_score << endl;
 
         // quick and dirty method to fix index ordering issue
         event.Swap_Scale_Variation(sample_name_short);
@@ -2830,7 +3538,7 @@ void Histo_Syst::Read_Tree()
         //   continue;
 
         // event veto
-        if (5 < TMath::Abs(event.weight_pdf_alternative - 1))
+        if (5 < TMath::Abs(event.weight_pdf_alternative - 1) && tree_type == "Central")
         {
           cout << "strange weight_pdf_alternative is detected. " << tree_type << ", " << i << ", weight_pdf_alternative = " << event.weight_pdf_alternative << endl;
 
@@ -2854,31 +3562,64 @@ void Histo_Syst::Read_Tree()
 
         if (chk_bin_optimizer)
         {
-          if (event.template_score < 0.2)
+          if (event.template_score < 0.1)
             continue;
         }
         else
         {
-          if (mode == "2D" && event.template_score < template_score_cut)
+          if (mode == "2D" && event.template_score < bin_template_mva_score[0][0])
             continue;
         }
 
-        if (sample_name_short.Contains("CP5") || sample_name_short.Contains("hdamp") || sample_name_short.Contains("mtop"))
-          event.weight_baseline *= modelling_patch_baseline;
-        else
+        sample_name_modelling_patch = Histo_Name_Modelling_Patch(sample_name_short);
+
+        // to save time
+        // only fetch when the sample changes
+        if (sample_name_modelling_patch != sample_name_modelling_patch_prev)
         {
-          event.weight_top_pt *= modelling_patch_top_pt_reweight;
-          event.weight_scale_variation_1 *= modelling_patch_scale_variation_1;
-          event.weight_scale_variation_2 *= modelling_patch_scale_variation_2;
-          event.weight_scale_variation_3 *= modelling_patch_scale_variation_3;
-          event.weight_scale_variation_4 *= modelling_patch_scale_variation_4;
-          event.weight_scale_variation_6 *= modelling_patch_scale_variation_6;
-          event.weight_scale_variation_8 *= modelling_patch_scale_variation_8;
-          event.weight_ps[0] *= modelling_patch_ps_0;
-          event.weight_ps[1] *= modelling_patch_ps_1;
-          event.weight_ps[2] *= modelling_patch_ps_2;
-          event.weight_ps[3] *= modelling_patch_ps_3;
+          // modelling_patch_baseline = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Baseline");
+          // modelling_patch_pdf_alternative = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PDF_Alternative");
+          for (int i = 0; i < 100; i++)
+            modelling_patch_pdf_error_set[i] = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PDF_Error_Set_" + to_string(i));
+          modelling_patch_pdf_as_down = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PDF_As_Down");
+          modelling_patch_pdf_as_up = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PDF_As_Up");
+          modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Top_Pt_Reweight");
+          modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_1");
+          modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_2");
+          modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_3");
+          modelling_patch_scale_variation_4 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_4");
+          modelling_patch_scale_variation_6 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_6");
+          modelling_patch_scale_variation_8 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_8");
+          modelling_patch_ps_0 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_0");
+          modelling_patch_ps_1 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_1");
+          modelling_patch_ps_2 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_2");
+          modelling_patch_ps_3 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_3");
+
+          sample_name_modelling_patch_prev = sample_name_modelling_patch;
         }
+
+        // if (sample_name_short.Contains("CP5") || sample_name_short.Contains("hdamp") || sample_name_short.Contains("mtop"))
+        //   // event.weight_baseline = modelling_patch_baseline;
+        //   event.weight_baseline = 1;
+        // else
+        // {
+        // event.weight_pdf_alternative *= modelling_patch_pdf_alternative;
+        for (int j = 0; j < 100; j++)
+          event.weight_pdf_error_set[j] *= modelling_patch_pdf_error_set[j];
+        event.weight_pdf_as_down *= modelling_patch_pdf_as_down;
+        event.weight_pdf_as_up *= modelling_patch_pdf_as_up;
+        event.weight_top_pt *= modelling_patch_top_pt_reweight;
+        event.weight_scale_variation_1 *= modelling_patch_scale_variation_1;
+        event.weight_scale_variation_2 *= modelling_patch_scale_variation_2;
+        event.weight_scale_variation_3 *= modelling_patch_scale_variation_3;
+        event.weight_scale_variation_4 *= modelling_patch_scale_variation_4;
+        event.weight_scale_variation_6 *= modelling_patch_scale_variation_6;
+        event.weight_scale_variation_8 *= modelling_patch_scale_variation_8;
+        event.weight_ps[0] *= modelling_patch_ps_0;
+        event.weight_ps[1] *= modelling_patch_ps_1;
+        event.weight_ps[2] *= modelling_patch_ps_2;
+        event.weight_ps[3] *= modelling_patch_ps_3;
+        //}
 
         Fill_Histo_MC(sample_name, sample_name_short, tree_type);
         // if (syst_fix == "None") Fill_Histo_Weight(region_index, sample_index);
@@ -2902,7 +3643,6 @@ void Histo_Syst::Read_Tree()
         cout << "Processing... " << i << "/" << n_entries << "." << endl;
 
       event.Clear();
-
       it->second->GetEntry(i);
 
       // event.template_score = TMath::Exp(event.template_score);
@@ -2925,12 +3665,12 @@ void Histo_Syst::Read_Tree()
 
       if (chk_bin_optimizer)
       {
-        if (event.template_score < 0.2)
+        if (event.template_score < 0.1)
           continue;
       }
       else
       {
-        if (mode == "2D" && event.template_score < template_score_cut)
+        if (mode == "2D" && event.template_score < bin_template_mva_score[0][0])
           continue;
       }
 
@@ -2986,6 +3726,9 @@ void Histo_Syst::Register_Sample()
   {
     map<TString, TTree *> map_tree_mc;
     vec_map_tree_mc.push_back(map_tree_mc);
+
+    map<TString, TTree *> map_template_tree_mc;
+    vec_map_template_tree_mc.push_back(map_template_tree_mc);
   }
 
   if (samples.map_mc.size() != samples.map_short_name_mc.size() || samples.map_data.size() != samples.map_short_name_data.size())
@@ -2996,16 +3739,32 @@ void Histo_Syst::Register_Sample()
 
   for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
   {
-    cout << it->first << endl;
+    // if (mode != "Check")
+    cout << it->second << endl;
+
+    // if (it->second.Contains("WJets"))
+    //   continue;
 
     TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
     TString result_path;
-    if (tagger == "B")
-      result_path = path_sample_base + era + "/Vcb_BTag/";
-    else if (tagger == "C")
-      result_path = path_sample_base + era + "/Vcb_CTag/";
+
+    if (use_spanet)
+    {
+      if (tagger == "B")
+        result_path = path_sample_base + era + "/Vcb_BTag_SPANet/";
+      else if (tagger == "C")
+        result_path = path_sample_base + era + "/Vcb_CTag_SPANet/";
+    }
+    else
+    {
+      if (tagger == "B")
+        result_path = path_sample_base + era + "/Vcb_BTag/";
+      else if (tagger == "C")
+        result_path = path_sample_base + era + "/Vcb_CTag/";
+    }
 
     map_fin_mc[it->first] = new TFile(result_path + "Central_Syst/" + it->second);
+    map_fin_template_mc[it->first] = new TFile(result_path + "Central_Syst/11Class/" + it->second);
 
     for (unsigned int i = 0; i < vec_tree_type.size(); i++)
     {
@@ -3018,6 +3777,15 @@ void Histo_Syst::Register_Sample()
         continue;
 
       vec_map_tree_mc[i][it->first] = (TTree *)map_fin_mc[it->first]->Get(channel + "/" + tree_type + "/Result_Tree");
+      vec_map_template_tree_mc[i][it->first] = (TTree *)map_fin_template_mc[it->first]->Get(channel + "/" + tree_type + "/Result_Tree");
+
+      if (mode == "Check" && (vec_map_tree_mc[i][it->first] == nullptr || vec_map_template_tree_mc[i][it->first] == nullptr))
+      {
+        cout << "File Corrupted. Check it! " << it->second << endl;
+        break;
+      }
+
+      vec_map_tree_mc[i][it->first]->AddFriend(vec_map_template_tree_mc[i][it->first]);
 
       bool chk_all = false;
       if (tree_type == "Central")
@@ -3037,6 +3805,13 @@ void Histo_Syst::Register_Sample()
         find(vec_tree_type.begin(), vec_tree_type.end(), "mtop173p5") != vec_tree_type.end())
     {
       map_tree_mc_central[it->first] = (TTree *)map_fin_mc[it->first]->Get(channel + "/Central/Result_Tree");
+      map_template_tree_mc_central[it->first] = (TTree *)map_fin_template_mc[it->first]->Get(channel + "/Central/Result_Tree");
+
+      if (mode == "Check" && (map_tree_mc_central[it->first] == nullptr || map_template_tree_mc_central[it->first] == nullptr))
+        continue;
+
+      map_tree_mc_central[it->first]->AddFriend(map_template_tree_mc_central[it->first]);
+
       event.Setup_Tree(map_tree_mc_central[it->first], StringToSyst("Central"), false);
     }
   } // for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
@@ -3048,22 +3823,22 @@ void Histo_Syst::Register_Sample()
   }
 
   if (find(vec_tree_type.begin(), vec_tree_type.end(), "CP5Down") != vec_tree_type.end())
-    Register_Top_Syst(map_fin_mc_cp5_down, map_tree_mc_cp5_down, "CP5Down");
+    Register_Top_Syst(map_fin_mc_cp5_down, map_fin_template_mc_cp5_down, map_tree_mc_cp5_down, map_template_tree_mc_cp5_down, "CP5Down");
 
   if (find(vec_tree_type.begin(), vec_tree_type.end(), "CP5Up") != vec_tree_type.end())
-    Register_Top_Syst(map_fin_mc_cp5_up, map_tree_mc_cp5_up, "CP5Up");
+    Register_Top_Syst(map_fin_mc_cp5_up, map_fin_template_mc_cp5_up, map_tree_mc_cp5_up, map_template_tree_mc_cp5_up, "CP5Up");
 
   if (find(vec_tree_type.begin(), vec_tree_type.end(), "hdampDown") != vec_tree_type.end())
-    Register_Top_Syst(map_fin_mc_hdamp_down, map_tree_mc_hdamp_down, "hdampDown");
+    Register_Top_Syst(map_fin_mc_hdamp_down, map_fin_template_mc_hdamp_down, map_tree_mc_hdamp_down, map_template_tree_mc_hdamp_down, "hdampDown");
 
   if (find(vec_tree_type.begin(), vec_tree_type.end(), "hdampUp") != vec_tree_type.end())
-    Register_Top_Syst(map_fin_mc_hdamp_up, map_tree_mc_hdamp_up, "hdampUp");
+    Register_Top_Syst(map_fin_mc_hdamp_up, map_fin_template_mc_hdamp_up, map_tree_mc_hdamp_up, map_template_tree_mc_hdamp_up, "hdampUp");
 
   if (find(vec_tree_type.begin(), vec_tree_type.end(), "mtop171p5") != vec_tree_type.end())
-    Register_Top_Syst(map_fin_mc_mtop_171p5, map_tree_mc_mtop_171p5, "mtop171p5");
+    Register_Top_Syst(map_fin_mc_mtop_171p5, map_fin_template_mc_mtop_171p5, map_tree_mc_mtop_171p5, map_template_tree_mc_mtop_171p5, "mtop171p5");
 
   if (find(vec_tree_type.begin(), vec_tree_type.end(), "mtop173p5") != vec_tree_type.end())
-    Register_Top_Syst(map_fin_mc_mtop_173p5, map_tree_mc_mtop_173p5, "mtop173p5");
+    Register_Top_Syst(map_fin_mc_mtop_173p5, map_fin_template_mc_mtop_173p5, map_tree_mc_mtop_173p5, map_template_tree_mc_mtop_173p5, "mtop173p5");
 
   // if (find(vec_tree_type.begin(), vec_tree_type.end(), "TTbb4f") != vec_tree_type.end())
   //   Register_Top_Syst(map_fin_mc_tt_4f, map_tree_mc_tt_4f, "TTbb4f");
@@ -3142,20 +3917,43 @@ void Histo_Syst::Register_Sample()
   {
     TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
     TString result_path;
-    if (tagger == "B")
-      result_path = path_sample_base + era + "/Vcb_BTag/DATA/";
-    else if (tagger == "C")
-      result_path = path_sample_base + era + "/Vcb_CTag/DATA/";
+
+    if (use_spanet)
+    {
+      if (tagger == "B")
+        result_path = path_sample_base + era + "/Vcb_BTag_SPANet/DATA/";
+      else if (tagger == "C")
+        result_path = path_sample_base + era + "/Vcb_CTag_SPANet/DATA/";
+    }
+    else
+    {
+      if (tagger == "B")
+        result_path = path_sample_base + era + "/Vcb_BTag/DATA/";
+      else if (tagger == "C")
+        result_path = path_sample_base + era + "/Vcb_CTag/DATA/";
+    }
 
     for (auto it = samples.map_data.begin(); it != samples.map_data.end(); it++)
     {
-      cout << it->first << endl;
+      // if (mode != "Check")
+      cout << it->second << endl;
 
       if (it == samples.map_data.begin())
         data_short_name = samples.map_short_name_data[it->first];
 
       map_fin_data[it->first] = new TFile(result_path + it->second);
+      map_fin_template_data[it->first] = new TFile(result_path + "11Class/" + it->second);
+
       map_tree_data[it->first] = (TTree *)map_fin_data[it->first]->Get(channel + "/Central/Result_Tree");
+      map_template_tree_data[it->first] = (TTree *)map_fin_template_data[it->first]->Get(channel + "/Central/Result_Tree");
+
+      if (mode == "Check" && (map_tree_data[it->first] == nullptr || map_template_tree_data[it->first] == nullptr))
+      {
+        cout << "File Corrupted. Check it! " << it->second << endl;
+        continue;
+      }
+
+      map_tree_data[it->first]->AddFriend(map_template_tree_data[it->first]);
 
       event.Setup_Tree(map_tree_data[it->first], Syst::Central, false);
     }
@@ -3163,6 +3961,104 @@ void Histo_Syst::Register_Sample()
 
   cout << "[Histo_Syst::Register_Sample]: Done" << endl;
 } // void Histo_Syst::Register_Sample()
+
+//////////
+
+void Histo_Syst::Register_Sample_Para_Smoothing()
+{
+  cout << "[Histo_Syst::Register_Sample_Para_Smoothing]: Init" << endl;
+
+  // fix tree
+  n_split = 1;
+  index_split = 0;
+
+  for (unsigned int i = 0; i < vec_tree_type.size(); i++)
+  {
+    map<TString, TTree *> map_tree_mc;
+    vec_map_tree_mc.push_back(map_tree_mc);
+
+    map<TString, TTree *> map_template_tree_mc;
+    vec_map_template_tree_mc.push_back(map_template_tree_mc);
+  }
+
+  if (samples.map_mc.size() != samples.map_short_name_mc.size() || samples.map_data.size() != samples.map_short_name_data.size())
+  {
+    cout << "size of samples::maps is not matched. Check it first." << endl;
+    exit(EXIT_FAILURE);
+  }
+
+  for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
+  {
+    if (!it->second.Contains("TT"))
+      continue;
+
+    if (it->second.Contains("TTbb") || it->second.Contains("bbDPS"))
+      continue;
+
+    cout << it->second << endl;
+
+    TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
+    TString result_path;
+
+    if (use_spanet)
+    {
+      if (tagger == "B")
+        result_path = path_sample_base + era + "/Vcb_BTag_SPANet/";
+      else if (tagger == "C")
+        result_path = path_sample_base + era + "/Vcb_CTag_SPANet/";
+    }
+    else
+    {
+      if (tagger == "B")
+        result_path = path_sample_base + era + "/Vcb_BTag/";
+      else if (tagger == "C")
+        result_path = path_sample_base + era + "/Vcb_CTag/";
+    }
+
+    map_fin_mc[it->first] = new TFile(result_path + "Central_Syst/" + it->second);
+    map_fin_template_mc[it->first] = new TFile(result_path + "Central_Syst/11Class/" + it->second);
+
+    for (unsigned int i = 0; i < vec_tree_type.size(); i++)
+    {
+      TString tree_type = vec_tree_type[i];
+
+      if (tree_type == "Data")
+        continue;
+
+      if (tree_type.Contains("CP5") || tree_type.Contains("hdamp") || tree_type.Contains("mtop"))
+        continue;
+
+      vec_map_tree_mc[i][it->first] = (TTree *)map_fin_mc[it->first]->Get(channel + "/" + tree_type + "/Result_Tree");
+      vec_map_template_tree_mc[i][it->first] = (TTree *)map_fin_template_mc[it->first]->Get(channel + "/" + tree_type + "/Result_Tree");
+
+      vec_map_tree_mc[i][it->first]->AddFriend(vec_map_template_tree_mc[i][it->first]);
+
+      event.Setup_Tree(vec_map_tree_mc[i][it->first], StringToSyst(tree_type), false);
+    } //  for (unsigned int i = 0; i < vec_tree_type.size(); i++)
+  } // for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
+
+  for (unsigned int i = 0; i < vec_tree_type.size(); i++)
+  {
+    TString tree_type = vec_tree_type[i];
+    map_map_tree_mc[tree_type] = &vec_map_tree_mc[i];
+  }
+
+  if (find(vec_tree_type.begin(), vec_tree_type.end(), "CP5Down") != vec_tree_type.end())
+    Register_Top_Syst(map_fin_mc_cp5_down, map_fin_template_mc_cp5_down, map_tree_mc_cp5_down, map_template_tree_mc_cp5_down, "CP5Down");
+
+  if (find(vec_tree_type.begin(), vec_tree_type.end(), "CP5Up") != vec_tree_type.end())
+    Register_Top_Syst(map_fin_mc_cp5_up, map_fin_template_mc_cp5_up, map_tree_mc_cp5_up, map_template_tree_mc_cp5_up, "CP5Up");
+
+  if (find(vec_tree_type.begin(), vec_tree_type.end(), "hdampDown") != vec_tree_type.end())
+    Register_Top_Syst(map_fin_mc_hdamp_down, map_fin_template_mc_hdamp_down, map_tree_mc_hdamp_down, map_template_tree_mc_hdamp_down, "hdampDown");
+
+  if (find(vec_tree_type.begin(), vec_tree_type.end(), "hdampUp") != vec_tree_type.end())
+    Register_Top_Syst(map_fin_mc_hdamp_up, map_fin_template_mc_hdamp_up, map_tree_mc_hdamp_up, map_template_tree_mc_hdamp_up, "hdampUp");
+
+  cout << "[Histo_Syst::Register_Sample_Para_Smoothing]: Done" << endl;
+
+  return;
+} // void Histo_Syst::Register_Sample_Para_Smoothing()
 
 //////////
 
@@ -3205,62 +4101,92 @@ void Histo_Syst::Register_Sample_TF()
 
 //////////
 
-void Histo_Syst::Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TString, TTree *> &map_tree_syst, const TString &type)
+void Histo_Syst::Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TString, TFile *> &map_fin_template_syst, map<TString, TTree *> &map_tree_syst, map<TString, TTree *> &map_template_tree_syst, const TString &type)
 {
   cout << "[Histo_Syst::Register_Top_Syst]:" << type << endl;
 
   TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
   TString result_path;
-  if (tagger == "B")
-    result_path = path_sample_base + era + "/Vcb_BTag/Top_Syst/";
-  else if (tagger == "C")
-    result_path = path_sample_base + era + "/Vcb_CTag/Top_Syst/";
-
-  if (type != "TTbb4f")
+  if (use_spanet)
   {
-    map_tree_syst = map_tree_mc_central;
+    if (tagger == "B")
+      result_path = path_sample_base + era + "/Vcb_BTag_SPANet/Top_Syst/";
+    else if (tagger == "C")
+      result_path = path_sample_base + era + "/Vcb_CTag_SPANet/Top_Syst/";
+  }
+  else
+  {
+    if (tagger == "B")
+      result_path = path_sample_base + era + "/Vcb_BTag/Top_Syst/";
+    else if (tagger == "C")
+      result_path = path_sample_base + era + "/Vcb_CTag/Top_Syst/";
+  }
 
-    map_tree_syst.erase("TTLJ");
-    map_tree_syst.erase("TTLL");
-    map_tree_syst.erase("TTLJ_WtoCB");
+  map_tree_syst = map_tree_mc_central;
 
-    cout << "TTLJ" << endl;
-    map_fin_syst["TTLJ_" + type] = new TFile(result_path + samples.map_top_syst["TTLJ_" + type]);
-    map_tree_syst["TTLJ_" + type] = (TTree *)map_fin_syst["TTLJ_" + type]->Get(channel + "/Central/Result_Tree");
+  map_tree_syst.erase("TTLJ");
+  map_tree_syst.erase("TTLL");
+  map_tree_syst.erase("TTLJ_WtoCB");
+
+  cout << "TTLJ" << endl;
+  map_fin_syst["TTLJ_" + type] = new TFile(result_path + samples.map_top_syst["TTLJ_" + type]);
+  map_fin_template_syst["TTLJ_" + type] = new TFile(result_path + "11Class/" + samples.map_top_syst["TTLJ_" + type]);
+
+  map_tree_syst["TTLJ_" + type] = (TTree *)map_fin_syst["TTLJ_" + type]->Get(channel + "/Central/Result_Tree");
+  map_template_tree_syst["TTLJ_" + type] = (TTree *)map_fin_template_syst["TTLJ_" + type]->Get(channel + "/Central/Result_Tree");
+
+  if (map_tree_syst["TTLJ_" + type] != nullptr || map_template_tree_syst["TTLJ_" + type] != nullptr)
+  {
+    map_tree_syst["TTLJ_" + type]->AddFriend(map_template_tree_syst["TTLJ_" + type]);
     event.Setup_Tree(map_tree_syst["TTLJ_" + type], Syst::Central);
+  }
+  else
+  {
+    if (mode == "Check")
+      cout << "File Corrupted. Check it! " << samples.map_top_syst["TTLJ_" + type] << endl;
+    else
+      exit(1);
+  }
 
-    cout << "TTLL" << endl;
-    map_fin_syst["TTLL_" + type] = new TFile(result_path + samples.map_top_syst["TTLL_" + type]);
-    map_tree_syst["TTLL_" + type] = (TTree *)map_fin_syst["TTLL_" + type]->Get(channel + "/Central/Result_Tree");
+  cout << "TTLL" << endl;
+  map_fin_syst["TTLL_" + type] = new TFile(result_path + samples.map_top_syst["TTLL_" + type]);
+  map_fin_template_syst["TTLL_" + type] = new TFile(result_path + "11Class/" + samples.map_top_syst["TTLL_" + type]);
+
+  map_tree_syst["TTLL_" + type] = (TTree *)map_fin_syst["TTLL_" + type]->Get(channel + "/Central/Result_Tree");
+  map_template_tree_syst["TTLL_" + type] = (TTree *)map_fin_template_syst["TTLL_" + type]->Get(channel + "/Central/Result_Tree");
+
+  if (map_tree_syst["TTLL_" + type] != nullptr)
+  {
+    map_tree_syst["TTLL_" + type]->AddFriend(map_template_tree_syst["TTLL_" + type]);
     event.Setup_Tree(map_tree_syst["TTLL_" + type], Syst::Central);
+  }
+  else
+  {
+    if (mode == "Check")
+      cout << "File Corrupted. Check it! " << samples.map_top_syst["TTLL_" + type] << endl;
+    else
+      exit(1);
+  }
 
-    cout << "TTLJ_WtoCB" << endl;
-    map_fin_syst["TTLJ_WtoCB_" + type] = new TFile(result_path + samples.map_top_syst["TTLJ_WtoCB_" + type]);
-    map_tree_syst["TTLJ_WtoCB_" + type] = (TTree *)map_fin_syst["TTLJ_WtoCB_" + type]->Get(channel + "/Central/Result_Tree");
+  cout << "TTLJ_WtoCB" << endl;
+  map_fin_syst["TTLJ_WtoCB_" + type] = new TFile(result_path + samples.map_top_syst["TTLJ_WtoCB_" + type]);
+  map_fin_template_syst["TTLJ_WtoCB_" + type] = new TFile(result_path + "11Class/" + samples.map_top_syst["TTLJ_WtoCB_" + type]);
+
+  map_tree_syst["TTLJ_WtoCB_" + type] = (TTree *)map_fin_syst["TTLJ_WtoCB_" + type]->Get(channel + "/Central/Result_Tree");
+  map_template_tree_syst["TTLJ_WtoCB_" + type] = (TTree *)map_fin_template_syst["TTLJ_WtoCB_" + type]->Get(channel + "/Central/Result_Tree");
+
+  if (map_tree_syst["TTLJ_WtoCB_" + type] != nullptr)
+  {
+    map_tree_syst["TTLJ_WtoCB_" + type]->AddFriend(map_template_tree_syst["TTLJ_WtoCB_" + type]);
     event.Setup_Tree(map_tree_syst["TTLJ_WtoCB_" + type], Syst::Central);
   }
-  // else
-  // {
-  //   cout << "TTLJ_TTbb_4f" << endl;
-  //   map_fin_syst["TTLJ_TTbb_4f"] = new TFile(result_path + samples.map_top_syst["TTLJ_TTbb_4f"]);
-  //   map_tree_syst["TTLJ_TTbb_4f"] = (TTree *)map_fin_syst["TTLJ_TTbb_4f"]->Get(channel + "/Central/Result_Tree");
-  //   event.Setup_Tree(map_tree_syst["TTLJ_TTbb_4f"], Syst::Central);
-
-  //   cout << "TTLJ_bbDPS" << endl;
-  //   map_fin_syst["TTLJ_bbDPS"] = new TFile(result_path + samples.map_top_syst["TTLJ_bbDPS"]);
-  //   map_tree_syst["TTLJ_bbDPS"] = (TTree *)map_fin_syst["TTLJ_bbDPS"]->Get(channel + "/Central/Result_Tree");
-  //   event.Setup_Tree(map_tree_syst["TTLJ_bbDPS"], Syst::Central);
-
-  //   cout << "TTLL_TTbb_4f" << endl;
-  //   map_fin_syst["TTLL_TTbb_4f"] = new TFile(result_path + samples.map_top_syst["TTLL_TTbb_4f"]);
-  //   map_tree_syst["TTLL_TTbb_4f"] = (TTree *)map_fin_syst["TTLL_TTbb_4f"]->Get(channel + "/Central/Result_Tree");
-  //   event.Setup_Tree(map_tree_syst["TTLL_TTbb_4f"], Syst::Central);
-
-  //   cout << "TTLL_bbDPS" << endl;
-  //   map_fin_syst["TTLL_bbDPS"] = new TFile(result_path + samples.map_top_syst["TTLL_bbDPS"]);
-  //   map_tree_syst["TTLL_bbDPS"] = (TTree *)map_fin_syst["TTLL_bbDPS"]->Get(channel + "/Central/Result_Tree");
-  //   event.Setup_Tree(map_tree_syst["TTLL_bbDPS"], Syst::Central);
-  // }
+  else
+  {
+    if (mode == "Check")
+      cout << "File Corrupted. Check it! " << samples.map_top_syst["TTLJ_WtoCB_" + type] << endl;
+    else
+      exit(1);
+  }
 
   map_map_tree_mc[type] = &map_tree_syst;
 
@@ -3499,7 +4425,7 @@ int Histo_Syst::Set_Region()
       //     return 2;
       // }
 
-      if (event.template_score < threeb_cr_cut)
+      if (event.template_score < bin_template_mva_score[1][0])
         return 0;
       else
         return 1;
@@ -3509,5 +4435,94 @@ int Histo_Syst::Set_Region()
   return -1;
 
 } // void Histo_Syst::Set_Region()
+
+//////////
+
+void Histo_Syst::Smoothing()
+{
+  cout << "[Histo_Syst::Smoothing]: Init" << endl;
+
+  auto it = find(syst_name.begin(), syst_name.end(), "Nominal");
+  int nominal_index = distance(syst_name.begin(), it);
+
+  for (int i = 0; i < n_region; i++)
+  {
+    for (int j = 0; j < n_syst; j++)
+    {
+      if (syst_name[j] == "Nominal")
+        continue;
+
+      if (!syst_name[j].Contains("CP5") && !syst_name[j].Contains("hdamp") && !syst_name[j].Contains("mtop"))
+        continue;
+
+      for (int k = 0; k < n_sample_merge_mc; k++)
+      {
+        TString sample_name = vec_short_name_mc[k];
+
+        if (sample_name.Contains("TT"))
+        {
+          if (syst_name[j].Contains("CP5") || syst_name[j].Contains("hdamp"))
+            Smoothing(i, j, k);
+
+          else if (syst_name[j].Contains("mtop"))
+          {
+            cout << syst_name[j] << " " << sample_name << endl;
+            Smoothing(histo_mc_smoothing_template[i][nominal_index][k], histo_mc_smoothing_template[i][j][k]);
+          }
+        } // if (sample_name.Contains("TT"))
+
+      } // loop over n_sample_merge_mc
+    } // loop over n_syst
+  } // loop over n_region
+
+  cout << "[Histo_Syst::Smoothing]: Done" << endl;
+
+  return;
+} // void Histo_Syst::Smoothing()
+
+//////////
+
+// for CP5 and hdamp, parameterized smoothing
+void Histo_Syst::Smoothing(const int region_index, const int syst_index, const int sample_index)
+{
+  TString parameter;
+  if (syst_name[syst_index].Contains("CP5"))
+    parameter = "N_Jets";
+  else if (syst_name[syst_index].Contains("hdamp"))
+    parameter = "Pt_Gen_TT";
+
+  auto it_variable = find_if(variable_conf.begin(), variable_conf.end(), [&parameter](const Histo_Conf &conf)
+                             { return conf.variable_title == parameter; });
+  int variable_index = distance(variable_conf.begin(), it_variable);
+
+  for (int i = 0; i < histo_2d_smoothing[region_index][sample_index][variable_index]->GetNbinsX(); i++)
+  {
+    float sum_bin_content = 0;
+    for (int j = 0; j < histo_2d_smoothing[region_index][sample_index][variable_index]->GetNbinsY(); j++)
+    {
+      float content_nominal = histo_2d_smoothing[region_index][sample_index][variable_index]->GetBinContent(i + 1, j + 1);
+      float ratio_syst = histo_para_smoothing[syst_index][sample_index][variable_index]->GetBinContent(j + 1);
+      sum_bin_content += content_nominal * ratio_syst;
+    } // loop over y index
+
+    histo_mc_smoothing_template[region_index][syst_index][sample_index]->SetBinContent(i + 1, sum_bin_content);
+  } // loop over x index
+
+  return;
+} // void Histo_Syst::Smoothing(const int region_index, const int syst_index, const int sample_index, const TString &parameter)
+
+//////////
+
+// for mtop, simple smoothing
+void Histo_Syst::Smoothing(TH1D *histo_nominal, TH1D *histo_syst)
+{
+  cout << "[Histo_Syst::Smoothing]: Smoothing for mtop" << endl;
+
+  histo_syst->Add(histo_nominal, -1);
+  histo_syst->Smooth();
+  histo_syst->Add(histo_nominal);
+
+  return;
+} // void Histo_Syst::Smoothing(TH1F* histo_nominal, TH1F* histo_syst)
 
 //////////

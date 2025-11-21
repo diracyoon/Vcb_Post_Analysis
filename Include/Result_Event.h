@@ -22,7 +22,7 @@ class Result_Event : public W_Event
   friend class Compare_TTbb;
 
 public:
-  Result_Event(const TString &a_era = "2017", const TString &a_channel = "Mu", const TString &a_analyser = "Vcb", const TString &a_tagger = "C", const TString &a_swap_mode = "Permutation_MVA");
+  Result_Event(const TString &a_era = "2017", const TString &a_channel = "Mu", const TString &a_analyser = "Vcb", const TString &a_tagger = "C", const bool &a_use_spanet = false, const TString &a_swap_mode = "Permutation_MVA");
   virtual ~Result_Event();
 
   void Clear();
@@ -34,6 +34,11 @@ public:
 protected:
   TString analyser;
   TString tagger;
+  bool use_spanet;
+  bool use_class_5;
+  bool use_class_7;
+  bool use_class_9;
+  bool use_class_11;
 
   vector<float> weight_multi_to_one;
 
@@ -199,6 +204,8 @@ protected:
 
   float pt_had_t_b;
   float pt_lep_t_b;
+  // float pt_tt;
+  float pt_gen_tt;
 
   float eta_had_t_b;
   float eta_lep_t_b;
@@ -212,6 +219,13 @@ protected:
   float template_score_multi_1;
   float template_score_multi_2;
   float template_score_multi_3;
+  float template_score_multi_4;
+  float template_score_multi_5;
+  float template_score_multi_6;
+  float template_score_multi_7;
+  float template_score_multi_8;
+  float template_score_multi_9;
+  float template_score_multi_10;
 
   // For MC
   int decay_mode;

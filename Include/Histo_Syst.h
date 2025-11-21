@@ -20,6 +20,7 @@
 #include <TCanvas.h>
 #include <TLegend.h>
 #include "TROOT.h"
+#include <TPad.h>
 
 #include <Const_Def.h>
 #include <Samples.h>
@@ -33,7 +34,7 @@ using namespace std;
 class Histo_Syst : public TObject
 {
 public:
-  Histo_Syst(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_mode = "Fill", const int &a_index_tree_type = -1, const int &a_last_index_tree_type = -1, const TString &a_tagger = "B", const TString &a_swap_mode = "Permutation_MVA");
+  Histo_Syst(const TString &a_era = "2018", const TString &a_channel = "Mu", const TString &a_mode = "Fill", const int &a_index_tree_type = -1, const int &a_last_index_tree_type = -1, const TString &a_tagger = "B", const bool &a_use_spanet = false, const TString &a_swap_mode = "Permutation_MVA");
   ~Histo_Syst();
 
   class Histo_Conf
@@ -85,8 +86,11 @@ private:
   TString mode;
   TString run_flag;
   TString tagger;
+  bool use_spanet;
 
   TString year;
+
+  float threeb_cr_cut;
 
   bool chk_bin_optimizer = false;
 
@@ -125,6 +129,8 @@ private:
   TString data_short_name;
 
   vector<map<TString, TFile *>> vec_map_fin_mc;
+  vector<map<TString, TTree *>> vec_map_fin_template_mc;
+
   map<TString, TFile *> map_fin_mc;
   map<TString, TFile *> map_fin_mc_cp5_down;
   map<TString, TFile *> map_fin_mc_cp5_up;
@@ -134,7 +140,17 @@ private:
   map<TString, TFile *> map_fin_mc_mtop_173p5;
   map<TString, TFile *> map_fin_mc_tt_4f;
 
+  map<TString, TFile *> map_fin_template_mc;
+  map<TString, TFile *> map_fin_template_mc_cp5_down;
+  map<TString, TFile *> map_fin_template_mc_cp5_up;
+  map<TString, TFile *> map_fin_template_mc_hdamp_down;
+  map<TString, TFile *> map_fin_template_mc_hdamp_up;
+  map<TString, TFile *> map_fin_template_mc_mtop_171p5;
+  map<TString, TFile *> map_fin_template_mc_mtop_173p5;
+
   vector<map<TString, TTree *>> vec_map_tree_mc;
+  vector<map<TString, TTree *>> vec_map_template_tree_mc;
+
   map<TString, TTree *> map_tree_mc_central;
   map<TString, TTree *> map_tree_mc_cp5_down;
   map<TString, TTree *> map_tree_mc_cp5_up;
@@ -144,11 +160,21 @@ private:
   map<TString, TTree *> map_tree_mc_mtop_173p5;
   map<TString, TTree *> map_tree_mc_tt_4f;
 
+  map<TString, TTree *> map_template_tree_mc_central;
+  map<TString, TTree *> map_template_tree_mc_cp5_down;
+  map<TString, TTree *> map_template_tree_mc_cp5_up;
+  map<TString, TTree *> map_template_tree_mc_hdamp_down;
+  map<TString, TTree *> map_template_tree_mc_hdamp_up;
+  map<TString, TTree *> map_template_tree_mc_mtop_171p5;
+  map<TString, TTree *> map_template_tree_mc_mtop_173p5;
+
   map<TString, map<TString, TFile *> *> map_map_fin_mc;
   map<TString, map<TString, TTree *> *> map_map_tree_mc;
 
   map<TString, TFile *> map_fin_data;
+  map<TString, TFile *> map_fin_template_data;
   map<TString, TTree *> map_tree_data;
+  map<TString, TTree *> map_template_tree_data;
 
   Result_Event event;
 
@@ -177,6 +203,8 @@ private:
   TH1 ******histo_mc; // n_abcd_region, n_region, n_syst, n_sample, n_variable
   TH1 ****histo_data; // n_abcd_region, n_region, n_variable
 
+  TH1D ****histo_mc_smoothing_template; // n_region, n_syst, n_sample
+
   TH3D ******histo_mc_dd; // n_abcd_region-2, n_region, n_syst, n_sample, n_variable
   TH3D ****histo_data_dd; // n_abcd_region-2, n_region, n_variable
 
@@ -195,12 +223,17 @@ private:
   TH2D *histo_tf_combine;
   TH2D **histo_tf_qcd_mc; // n_region
 
+  TH1D ****histo_para_smoothing; // n_syst, n_samples in TT_powheg, 2 for pt_gen_tt or n_jets
+  TH2D ****histo_2d_smoothing;   // n_region, n_samples in TT_powheg, 2 for template mva score vs. pt_gen_tt or vs. n_jets
+
   float bvsc_wp_m;
   float cvsb_wp_m;
   float cvsl_wp_m;
 
   TFile *fin_2d;
   TFile *fin_tf;
+  TFile *fin;
+  TFile *fin_para_smoothing;
 
   TFile *fout;
 
@@ -212,6 +245,26 @@ private:
   TString template_mva_name;
   TMVA::Reader *reader_template;
 
+  float modelling_patch_baseline;
+  float modelling_patch_pdf_alternative;
+  float modelling_patch_pdf_error_set[100];
+  float modelling_patch_pdf_as_down;
+  float modelling_patch_pdf_as_up;
+  float modelling_patch_top_pt_reweight;
+  float modelling_patch_scale_variation_1;
+  float modelling_patch_scale_variation_2;
+  float modelling_patch_scale_variation_3;
+  float modelling_patch_scale_variation_4;
+  float modelling_patch_scale_variation_6;
+  float modelling_patch_scale_variation_8;
+  float modelling_patch_ps_0;
+  float modelling_patch_ps_1;
+  float modelling_patch_ps_2;
+  float modelling_patch_ps_3;
+
+  TString sample_name_modelling_patch;
+  TString sample_name_modelling_patch_prev;
+
   // template <typename T>
   // T ****Allocate_Array(const int &dim1, const int &dim2, const int &dim3);
 
@@ -220,27 +273,38 @@ private:
   void Config_Sample();
   void Config_Syst();
   void Config_Variable();
+  void Config_Vec_Tree_Type();
   void Data_Driven();
+  void Draw_Smoothing();
   void Draw_TF();
+  int Get_Region_Index(const TString &region);
   void Fill_Histo_Data();
   void Fill_Histo_MC(const TString &sample_name, const TString &sampple_name_short, const TString &tree_type);
   int Histo_Index(const TString &sample_name, bool &chk_discarded);
+  TString Histo_Name_Modelling_Patch(const TString &sample_name);
   TString Histo_Name_RF(const TString &sample_name);
-  int Get_Region_Index(const TString &region);
   void Init_Histo();
   void Init_Histo_Data_Driven();
+  void Init_Histo_Draw_Smoothing();
+  void Init_Histo_Para_Smoothing();
+  void Init_Histo_Smoothing();
   void Init_Histo_TF();
   void Init_Merge_PDF_Error_Set();
   void Merge_PDF_Error_Set();
+  void Ratio_Para_Smoothing();
   void Read_Tree();
   void Register_Sample();
+  void Register_Sample_Para_Smoothing();
   void Register_Sample_TF();
-  void Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TString, TTree *> &map_tree_syst, const TString &type);
+  void Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TString, TFile *> &map_fin_template_syst, map<TString, TTree *> &map_tree_syst, map<TString, TTree *> &map_template_tree_syst, const TString &type);
   float Reweight_CKM(const TString &sample_name);
   float Reweight_TTHF(const TString &sample_name);
   void Setup_Template_Reader();
   int Set_ABCD_Region();
   int Set_Region();
+  void Smoothing();
+  void Smoothing(const int region_index, const int syst_index, const int sample_index);
+  void Smoothing(TH1D *histo_nominal, TH1D *histo_variated);
 
   void printMemoryUsage(const std::string &stage)
   {

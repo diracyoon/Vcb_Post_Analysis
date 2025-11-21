@@ -160,8 +160,15 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   TList *list_syst = ((TDirectory *)fin->Get(region_name[0]))->GetListOfKeys();
   Setup_Name(list_syst, syst_name);
   syst_name.erase(find(syst_name.begin(), syst_name.end(), "Data"));
-  if (find(syst_name.begin(), syst_name.end(), "TTbb_4f") != syst_name.end())
-    syst_name.erase(find(syst_name.begin(), syst_name.end(), "TTbb_4f"));
+  // if (find(syst_name.begin(), syst_name.end(), "") != syst_name.end())
+  //   syst_name.erase(find(syst_name.begin(), syst_name.end(), ""));
+
+  auto it_remove = std::remove_if(syst_name.begin(), syst_name.end(), [](const TString &s)
+                                  { return s.Contains("_Smoothed"); });
+  syst_name.erase(it_remove, syst_name.end());
+
+  for (const auto &syst : syst_name)
+    cout << syst << endl;
 
   // when jes breakdown is considered, jes_total should be removed
   if (chk_jes_break_down)
@@ -349,7 +356,11 @@ void Data_MC_Comparison::Run()
       // Draw_Each(syst_name_short[i], "N_BJets");
     }
     else if (analyser == "Vcb_DL")
+    {
       Draw_Each(syst_name_short[i], "BvsC_3rd_4th_Jets_Unrolled");
+      // Draw_Each(syst_name_short[i], "Leading_Lepton_Pt");
+      // Draw_Each(syst_name_short[i], "Total");
+    }
   }
 
   if (analyser == "Vcb")
@@ -498,7 +509,7 @@ void Data_MC_Comparison::Draw()
       float max = stack_mc[i][index_mc_nominal][j]->GetMaximum();
       stack_mc[i][index_mc_nominal][j]->SetMaximum(1.6 * max);
 
-      stack_mc[i][index_mc_nominal][j]->SetMinimum(1);
+      stack_mc[i][index_mc_nominal][j]->SetMinimum(0.1);
 
       gr_variation_merged[i][j]->SetFillColor(1);
       gr_variation_merged[i][j]->SetFillStyle(3002);
@@ -656,13 +667,24 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
       int n_syst_target = 0; // only to tweak line color
       float range_ratio_max = 0;
       float range_ratio_min = 10;
+
       for (int k = 0; k < n_syst; k++)
       {
-        TString syst_name_temp = a_syst_name;
-        if (syst_name_temp != "PDF_Alternative" && syst_name_temp != "Top_Pt_Reweight")
-          syst_name_temp += "_";
+        TString syst_name_temp = syst_name[k];
 
-        if (syst_name[k].Contains(syst_name_temp))
+        // if (syst_name[k].Contains(syst_name_temp))
+        if (a_syst_name.Contains("mtop"))
+        {
+          syst_name_temp.ReplaceAll("mtop_173p5", "");
+          syst_name_temp.ReplaceAll("mtop_171p5", "");
+        }
+        else
+        {
+          syst_name_temp.ReplaceAll(a_syst_name, "");
+          syst_name_temp.ReplaceAll("_", "");
+        }
+
+        if (syst_name_temp == "Down" || syst_name_temp == "Up" || syst_name_temp == "")
         {
           cout << a_syst_name << " " << syst_name[k] << " " << k << endl;
 
@@ -1219,6 +1241,11 @@ void Data_MC_Comparison::Setup_Histo_MC()
           //   cout << histo_name << endl;
 
           histo_mc[i][j][k][l] = (TH1D *)fin->Get(histo_name);
+
+          if (sample_name[k].Contains("_BB"))
+            histo_mc[i][j][k][l]->Scale(TTBB_Scale);
+          else if (sample_name[k].Contains("_CC"))
+            histo_mc[i][j][k][l]->Scale(TTCC_Scale);
         } // loop over n_variable
       } // loop over sample
     } // loop over n_syst
@@ -1305,6 +1332,11 @@ void Data_MC_Comparison::Stack_MC()
             histo_mc[i][j][vec_sample_index[l]][k]->SetLineWidth(2);
 
             histo_mc[i][j][vec_sample_index[l]][k]->SetFillColor(color[it->second]);
+
+            if (syst_name[j] == "Jet_En_BBEC1_Down" && variable_name[k] == "Total")
+            {
+              cout << histo_mc[i][j][vec_sample_index[l]][k]->GetBinContent(1) << endl;
+            }
 
             if (it->second.Contains("_45"))
             {

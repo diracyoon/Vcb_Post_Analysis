@@ -142,6 +142,8 @@ void Result_Event_CR_DL::Setup_Tree(TTree *tree, const Syst syst, const bool chk
 
   tree->SetBranchAddress("dilepton_mass", &dilepton_mass);
 
+  tree->SetBranchAddress("pt_gen_tt", &pt_gen_tt);
+
   tree->SetBranchAddress("n_jet", &n_jet);
   tree->SetBranchAddress("n_b_jet", &n_b_jet);
   tree->SetBranchAddress("n_c_jet", &n_c_jet);

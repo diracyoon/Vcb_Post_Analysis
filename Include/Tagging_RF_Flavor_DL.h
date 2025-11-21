@@ -234,6 +234,26 @@ private:
 
   Modelling_Patch modelling_patch;
 
+  float modelling_patch_baseline;
+  float modelling_patch_pdf_alternative;
+  float modelling_patch_pdf_error_set[100];
+  float modelling_patch_pdf_as_down;
+  float modelling_patch_pdf_as_up;
+  float modelling_patch_top_pt_reweight;
+  float modelling_patch_scale_variation_1;
+  float modelling_patch_scale_variation_2;
+  float modelling_patch_scale_variation_3;
+  float modelling_patch_scale_variation_4;
+  float modelling_patch_scale_variation_6;
+  float modelling_patch_scale_variation_8;
+  float modelling_patch_ps_0;
+  float modelling_patch_ps_1;
+  float modelling_patch_ps_2;
+  float modelling_patch_ps_3;
+
+  TString sample_name_modelling_patch;
+  TString sample_name_modelling_patch_prev;
+
   void Combine_Lepton_Channel();
   void Clear();
   void Draw_Result();
@@ -243,6 +263,7 @@ private:
   void Fill_Histo_Validation_MC_C_Tagger(const TString &sample_name, const TString &tree_type);
   int Flavor_Index(const int &flavor);
   int Histo_Index(const TString &sample_name);
+  TString Histo_Name_Modelling_Patch(const TString &sample_name);
   TString Histo_Name_RF(const TString &sample_name);
   void Ratio();
   void Read_Tree();

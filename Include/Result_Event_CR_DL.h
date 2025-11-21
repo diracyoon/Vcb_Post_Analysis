@@ -32,6 +32,8 @@ protected:
   float subleading_lepton_pt;
   float dilepton_mass;
 
+  float pt_gen_tt;
+
   int n_jet;
   int n_b_jet;
   int n_c_jet;

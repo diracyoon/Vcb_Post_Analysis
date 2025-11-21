@@ -19,13 +19,30 @@ Modelling_Patch::Modelling_Patch(const TString &a_mode)
   sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
   vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
 
+  // flavor separation
+  vector<TString> vec_flavor_separation;
+  for (int i = 0; i < vec_short_name_mc.size(); i++)
+  {
+    TString name = vec_short_name_mc[i];
+    if (name.Contains("TTLJ") || name.Contains("TTLL"))
+    {
+      vec_flavor_separation.push_back(name + "_CC");
+      vec_flavor_separation.push_back(name + "_BB");
+    }
+  }
+  vec_short_name_mc.insert(vec_short_name_mc.end(), vec_flavor_separation.begin(), vec_flavor_separation.end());
+
+  // remove redundancy
+  sort(vec_short_name_mc.begin(), vec_short_name_mc.end(), Comparing_TString);
+  vec_short_name_mc.erase(unique(vec_short_name_mc.begin(), vec_short_name_mc.end()), vec_short_name_mc.end());
+
   n_sample_merge_mc = vec_short_name_mc.size();
   cout << "n_sample_merge_mc = " << n_sample_merge_mc << endl;
 
   if (mode == "Analysis")
   {
     vec_eras = {"2016preVFP", "2016postVFP", "2017", "2018"};
-    // vec_eras = {"2016preVFP"};
+    //vec_eras = {"2016preVFP"};
 
     Init_Histo();
     Read_Histo();
@@ -79,6 +96,7 @@ Modelling_Patch::~Modelling_Patch()
     }
 
     fout->Close();
+
     delete fout;
   } // if (mode == "Analysis")
 
@@ -97,8 +115,8 @@ float Modelling_Patch::Get_Modelling_Patch(const TString &sample, const TString 
 
     if (variation_may_swap.Contains("Scale_Variation"))
     {
-      if (sample == "TTLJ_WtoCB" || sample == "TTLJ" || sample == "TTLL" ||
-          sample == "TTLJ_TTbb_4f" || sample == "TTLJ_bbDPS" || sample == "TTLL_TTbb_4f" || sample == "TTLL_bbDPS" ||
+      if (sample.Contains("TTLJ_WtoCB") || sample.Contains("TTLJ") || sample.Contains("TTLL") ||
+          sample.Contains("TTLJ_TTbb_4f") || sample.Contains("TTLJ_bbDPS") || sample.Contains("TTLL_TTbb_4f") || sample.Contains("TTLL_bbDPS") ||
           sample == "ST_tch" || sample == "ST_tw" ||
           sample == "ttHTobb" || sample == "ttHToNonbb")
       {
@@ -258,16 +276,34 @@ void Modelling_Patch::Ratio()
     if (vec_short_name_mc[i].Contains("CP5") || vec_short_name_mc[i].Contains("hdamp") || vec_short_name_mc[i].Contains("mtop"))
     {
       TString sample_name = vec_short_name_mc[i].Copy();
-      cout << sample_name << endl;
+      // cout << sample_name << endl;
 
-      Ssiz_t underscore_pos = sample_name.Last('_');
+      if (sample_name.Contains("_CC") || sample_name.Contains("_BB"))
+      {
+        int last_underscore = sample_name.Last('_');
 
-      if (underscore_pos != kNPOS)
-        sample_name.Remove(underscore_pos);
+        TString temp = sample_name(0, last_underscore);
+        int second_to_last_underscore = temp.Last('_');
+
+        sample_name.Remove(second_to_last_underscore, last_underscore - second_to_last_underscore);
+      }
+      else
+      {
+        Ssiz_t underscore_pos = sample_name.Last('_');
+
+        if (underscore_pos != kNPOS)
+          sample_name.Remove(underscore_pos);
+      }
+
+      cout << "nominal sample name: " << sample_name << endl;
 
       int index_nominal = find(vec_short_name_mc.begin(), vec_short_name_mc.end(), sample_name) - vec_short_name_mc.begin();
 
+      // this part is wrong
+      // But let's leave it since it is not used in the analysis
+      cout << "histo_baseline: " << histo_baseline[index_nominal]->GetBinContent(1) << ", " << histo_baseline[i]->GetBinContent(1);
       histo_baseline[i]->Divide(histo_baseline[index_nominal].get(), histo_baseline[i].get());
+      cout << ", after histo_baseline: " << histo_baseline[i]->GetBinContent(1) << " +- " << histo_baseline[i]->GetBinError(1) <<  endl;
     }
     else
     {
@@ -306,9 +342,12 @@ void Modelling_Patch::Read_Histo()
   for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
   {
     const auto &sample_name = it->first;
-    cout << sample_name << endl;
+    const auto &sample_name_short = samples.map_short_name_mc[sample_name];
+    cout << sample_name << ", " << sample_name_short << endl;
 
-    int histo_index = Histo_Index(samples.map_short_name_mc[sample_name]);
+    vector<TString> vec_histo_name = Short_Name_Group(sample_name_short);
+    // for (const auto &histo_name : vec_histo_name)
+    //   cout << "   " << histo_name << endl;
 
     for (const auto &era : vec_eras)
     {
@@ -317,59 +356,78 @@ void Modelling_Patch::Read_Histo()
       TString path = path_sample_base + era + "/Modelling_Patch/" + samples.map_mc[sample_name];
       TFile *fin = new TFile(path);
 
-      TH1D *histo_to_add_baseline = (TH1D *)fin->Get("Baseline");
-      histo_baseline[histo_index]->Add(histo_to_add_baseline);
+      TString full_name = samples.map_mc[sample_name];
+      full_name.ReplaceAll("Vcb_Modelling_Patch_", "");
+      full_name.ReplaceAll(".root", "");
 
-      if (sample_name.Contains("CP5") || sample_name.Contains("hdamp") || sample_name.Contains("mtop"))
-        continue;
-
-      TH1D *histo_to_add_pdf_alternative = (TH1D *)fin->Get("PDF_Alternative");
-      histo_pdf_alternative[histo_index]->Add(histo_to_add_pdf_alternative);
-
-      for (int i = 0; i < 100; i++)
+      for (int i = 0; i < vec_histo_name.size(); i++)
       {
-        TH1D *histo_to_add_pdf_error_set = (TH1D *)fin->Get(("PDF_Error_Set_" + to_string(i + 1)).c_str());
-        histo_pdf_error_set[histo_index][i]->Add(histo_to_add_pdf_error_set);
-      }
+        cout << vec_histo_name[i] << endl;
 
-      TH1D *histo_to_add_pdf_as_down = (TH1D *)fin->Get("PDF_As_Down");
-      histo_pdf_as_down[histo_index]->Add(histo_to_add_pdf_as_down);
+        int histo_index = Histo_Index(vec_histo_name[i]);
 
-      TH1D *histo_to_add_pdf_as_up = (TH1D *)fin->Get("PDF_As_Up");
-      histo_pdf_as_up[histo_index]->Add(histo_to_add_pdf_as_up);
+        TString flavor;
+        if (vec_histo_name[i].Contains("_BB"))
+          flavor = "_BB";
+        else if (vec_histo_name[i].Contains("_CC"))
+          flavor = "_CC";
+        else
+          flavor = "";
 
-      TH1D *histo_to_add_top_pt_reweight = (TH1D *)fin->Get("Top_Pt_Reweight");
-      histo_top_pt_reweight[histo_index]->Add(histo_to_add_top_pt_reweight);
+        TH1D *histo_to_add_baseline = (TH1D *)fin->Get(full_name + flavor + "_Baseline");
+        histo_baseline[histo_index]->Add(histo_to_add_baseline);
 
-      TH1D *histo_to_add_scale_variation_1 = (TH1D *)fin->Get("Scale_Variation_1");
-      histo_scale_variation_1[histo_index]->Add(histo_to_add_scale_variation_1);
+        if (sample_name.Contains("CP5") || sample_name.Contains("hdamp") || sample_name.Contains("mtop"))
+          continue;
 
-      TH1D *histo_to_add_scale_variation_2 = (TH1D *)fin->Get("Scale_Variation_2");
-      histo_scale_variation_2[histo_index]->Add(histo_to_add_scale_variation_2);
+        TH1D *histo_to_add_pdf_alternative = (TH1D *)fin->Get(full_name + flavor + "_PDF_Alternative");
+        histo_pdf_alternative[histo_index]->Add(histo_to_add_pdf_alternative);
 
-      TH1D *histo_to_add_scale_variation_3 = (TH1D *)fin->Get("Scale_Variation_3");
-      histo_scale_variation_3[histo_index]->Add(histo_to_add_scale_variation_3);
+        for (int i = 0; i < 100; i++)
+        {
+          TH1D *histo_to_add_pdf_error_set = (TH1D *)fin->Get(full_name + flavor + ("_PDF_Error_Set_" + to_string(i + 1)).c_str());
+          histo_pdf_error_set[histo_index][i]->Add(histo_to_add_pdf_error_set);
+        }
 
-      TH1D *histo_to_add_scale_variation_4 = (TH1D *)fin->Get("Scale_Variation_4");
-      histo_scale_variation_4[histo_index]->Add(histo_to_add_scale_variation_4);
+        TH1D *histo_to_add_pdf_as_down = (TH1D *)fin->Get(full_name + flavor + "_PDF_As_Down");
+        histo_pdf_as_down[histo_index]->Add(histo_to_add_pdf_as_down);
 
-      TH1D *histo_to_add_scale_variation_6 = (TH1D *)fin->Get("Scale_Variation_6");
-      histo_scale_variation_6[histo_index]->Add(histo_to_add_scale_variation_6);
+        TH1D *histo_to_add_pdf_as_up = (TH1D *)fin->Get(full_name + flavor + "_PDF_As_Up");
+        histo_pdf_as_up[histo_index]->Add(histo_to_add_pdf_as_up);
 
-      TH1D *histo_to_add_scale_variation_8 = (TH1D *)fin->Get("Scale_Variation_8");
-      histo_scale_variation_8[histo_index]->Add(histo_to_add_scale_variation_8);
+        TH1D *histo_to_add_top_pt_reweight = (TH1D *)fin->Get(full_name + flavor + "_Top_Pt_Reweight");
+        histo_top_pt_reweight[histo_index]->Add(histo_to_add_top_pt_reweight);
 
-      TH1D *histo_to_add_ps_0 = (TH1D *)fin->Get("PS_0");
-      histo_ps_0[histo_index]->Add(histo_to_add_ps_0);
+        TH1D *histo_to_add_scale_variation_1 = (TH1D *)fin->Get(full_name + flavor + "_Scale_Variation_1");
+        histo_scale_variation_1[histo_index]->Add(histo_to_add_scale_variation_1);
 
-      TH1D *histo_to_add_ps_1 = (TH1D *)fin->Get("PS_1");
-      histo_ps_1[histo_index]->Add(histo_to_add_ps_1);
+        TH1D *histo_to_add_scale_variation_2 = (TH1D *)fin->Get(full_name + flavor + "_Scale_Variation_2");
+        histo_scale_variation_2[histo_index]->Add(histo_to_add_scale_variation_2);
 
-      TH1D *histo_to_add_ps_2 = (TH1D *)fin->Get("PS_2");
-      histo_ps_2[histo_index]->Add(histo_to_add_ps_2);
+        TH1D *histo_to_add_scale_variation_3 = (TH1D *)fin->Get(full_name + flavor + "_Scale_Variation_3");
+        histo_scale_variation_3[histo_index]->Add(histo_to_add_scale_variation_3);
 
-      TH1D *histo_to_add_ps_3 = (TH1D *)fin->Get("PS_3");
-      histo_ps_3[histo_index]->Add(histo_to_add_ps_3);
+        TH1D *histo_to_add_scale_variation_4 = (TH1D *)fin->Get(full_name + flavor + "_Scale_Variation_4");
+        histo_scale_variation_4[histo_index]->Add(histo_to_add_scale_variation_4);
+
+        TH1D *histo_to_add_scale_variation_6 = (TH1D *)fin->Get(full_name + flavor + "_Scale_Variation_6");
+        histo_scale_variation_6[histo_index]->Add(histo_to_add_scale_variation_6);
+
+        TH1D *histo_to_add_scale_variation_8 = (TH1D *)fin->Get(full_name + flavor + "_Scale_Variation_8");
+        histo_scale_variation_8[histo_index]->Add(histo_to_add_scale_variation_8);
+
+        TH1D *histo_to_add_ps_0 = (TH1D *)fin->Get(full_name + flavor + "_PS_0");
+        histo_ps_0[histo_index]->Add(histo_to_add_ps_0);
+
+        TH1D *histo_to_add_ps_1 = (TH1D *)fin->Get(full_name + flavor + "_PS_1");
+        histo_ps_1[histo_index]->Add(histo_to_add_ps_1);
+
+        TH1D *histo_to_add_ps_2 = (TH1D *)fin->Get(full_name + flavor + "_PS_2");
+        histo_ps_2[histo_index]->Add(histo_to_add_ps_2);
+
+        TH1D *histo_to_add_ps_3 = (TH1D *)fin->Get(full_name + flavor + "_PS_3");
+        histo_ps_3[histo_index]->Add(histo_to_add_ps_3);
+      } // loop over histo_name
 
       fin->Close();
     } // for (const auto &era : vec_eras)
@@ -392,7 +450,7 @@ void Modelling_Patch::Read_Ratio()
   for (int i = 0; i < n_sample_merge_mc; i++)
   {
     TString sample_name = vec_short_name_mc[i];
-    cout << sample_name << endl;
+    // cout << sample_name << endl;
 
     TDirectory *dir = (TDirectory *)fin->Get(sample_name);
     TList *list = dir->GetListOfKeys();
@@ -439,5 +497,23 @@ void Modelling_Patch::Setup_Name(const TList *list, vector<TString> &vec_name)
 
   return;
 } // void Modelling_Patch::Setup_Name(const TList *list, vector<TString> &vec_name)
+
+//////////
+
+vector<TString> Modelling_Patch::Short_Name_Group(const TString &group_name)
+{
+  vector<TString> vec_name_group;
+
+  if (group_name.Contains("TTLJ") || group_name.Contains("TTLL"))
+  {
+    vec_name_group.push_back(group_name);
+    vec_name_group.push_back(group_name + "_CC");
+    vec_name_group.push_back(group_name + "_BB");
+  }
+  else
+    vec_name_group.push_back(group_name);
+
+  return vec_name_group;
+} // vector<TString> Modelling_Patch::Short_Name_Group(const TString &short_name)
 
 //////////

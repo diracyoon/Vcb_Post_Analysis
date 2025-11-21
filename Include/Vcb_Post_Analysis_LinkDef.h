@@ -23,5 +23,6 @@
 #pragma link C++ class Selection+;
 #pragma link C++ class Compare_TTbb+;
 #pragma link C++ class Modelling_Patch+;
+#pragma link C++ class Draw_Permutation+;
 
 #endif /* __ROOTCLING__ */

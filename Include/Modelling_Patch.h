@@ -77,6 +77,7 @@ private:
   void Read_Histo();
   void Read_Ratio();
   void Setup_Name(const TList *list, vector<TString> &vec_name);
+  vector<TString> Short_Name_Group(const TString& group_name);
 
   ClassDef(Modelling_Patch, 1);
 };
