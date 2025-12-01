@@ -8,10 +8,10 @@ transfer_input_files = Hadd_Vcb_Histos.py
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 request_cpus = 5
-request_memory = 20*1024
-request_disk = 100*1024
+request_memory = 30*1024
+request_disk = 150*1024
 output = job_Hadd_$(Era)_$(Channel).log
-error = job_Hadd_$(Era)_$(Channel).err
+error = job_Hadd_$(Era)_$(Channel).log
 concurrency_limits = n1100.isyoon
 
 queue Era, Channel, Tagger from external.dat

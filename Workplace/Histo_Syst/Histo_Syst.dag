@@ -6,6 +6,7 @@ Job Data_Driven Submit_Data_Driven.jds
 Job Merge_Pdf_Error Submit_Merge_Pdf_Error.jds
 Job Smoothing Submit_Smoothing.jds
 Job Draw Submit_Draw.jds
+Job Draw_Smoothing Submit_Draw_Smoothing.jds
 
 PARENT 2D CHILD Hadd
 PARENT Hadd CHILD Data_Driven
@@ -14,6 +15,7 @@ PARENT Data_Driven CHILD Merge_Pdf_Error
 PARENT Merge_Pdf_Error CHILD Smoothing
 PARENT Para_Smoothing CHILD Smoothing
 PARENT Smoothing CHILD Draw
+PARENT Smoothing CHILD Draw_Smoothing
 
 ABORT-DAG-ON 2D 1
 ABORT-DAG-ON Cal_TF 1

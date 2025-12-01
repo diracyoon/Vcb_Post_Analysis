@@ -10,7 +10,7 @@ when_to_transfer_output = ON_EXIT
 request_cpus = 2
 request_memory = 20*1024
 output = job_2D_$(Era)_$(Channel)_$(Index_Tree_Type).log
-error = job_2D_$(Era)_$(Channel)_$(Index_Tree_Type).err
+error = job_2D_$(Era)_$(Channel)_$(Index_Tree_Type).log
 concurrency_limits = n1000.isyoon
 
 

@@ -9,7 +9,7 @@ should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 request_cpus = 1
 output = job_Para_Smoothing_$(Era)_$(Channel).log
-error = job_Para_Smoothing_$(Era)_$(Channel).err
+error = job_Para_Smoothing_$(Era)_$(Channel).log
 concurrency_limits = n1000.isyoon
 
 queue Era, Channel, Tagger from external.dat
