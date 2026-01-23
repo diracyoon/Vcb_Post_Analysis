@@ -13,8 +13,11 @@ if args.Era=="2016b": args.Era="2016postVFP"
 
 import os
 path=os.environ['Vcb_Post_Analysis_WD']
-path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag_5f/{args.Era}/"
-
+if args.Tagger == "B":
+    path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag_5f_New/{args.Era}/"
+elif args.Tagger == "C":
+    path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag_5f/{args.Era}/"
+    
 import shutil
 
 ## TF ##
@@ -43,8 +46,10 @@ var_list = ['Best_MVA_Score',
             'Template_MVA_Score',
             'BvsC_Leading_Jet',
             'BvsC_Subleading_Jet',
+            'BvsC_Had_t_b',
             'BvsC_W_u',
             'BvsC_W_d',
+            'BvsC_Lep_t_b',
             'CvsB_Leading_Jet',
             'CvsB_Subleading_Jet',
             'CvsB_W_u',
@@ -62,13 +67,27 @@ var_list = ['Best_MVA_Score',
             'N_BJets',
             'N_CJets',
             'N_Jets',
+            'HT',
             'N_Vertex',
             'Pt_Leading_Jet',
             'Pt_Subleading_Jet',
+            'Pt_Had_t_b',
+            'Pt_W_u',
+            'Pt_W_d',
+            'Pt_Lep_t_b',
+            'Pt_TT',
             'Had_T',
             'Had_W',
             'Lep_T',
+            'Lep_T_Partial',
             'Lep_W',
+            'Theta_W_u_W_d',
+            'Theta_Had_W_Had_t_b',
+            'Theta_Lepton_Neu',
+            'Theta_Lep_W_Lep_t_b',
+            'Del_Phi_Had_T_Lep_T',
+            'Least_M_bb',
+            'Least_DR_bb',
             ]
 
 for region in region_list:
@@ -146,3 +165,28 @@ if args.Era == "2017":
 
             os.makedirs(des, exist_ok=True)
             shutil.copy(f"{path}/{each}", des)
+
+## Smoothing ##
+
+syst_smoothing = ["CP5_Up_N_Jets", "CP5_Down_N_Jets",
+                  "hdamp_Up_Pt_Gen_TT", "hdamp_Down_Pt_Gen_TT",
+                  "mtop_171p5_", "mtop_173p5_",]
+
+sample_smoothing = ["TTLJ_45",
+                    "TTLJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
+                    "TTLJ_4", "TTLJ_CC_4", "TTLJ_BB_4",
+                    "TTLL", "TTLL_CC", "TTLL_BB"] 
+
+if args.Era == "2017" and args.Channel == "Mu":
+    for syst in syst_smoothing:
+        for sample in sample_smoothing:
+            origin = f"Smoothing_{syst}_{sample}_{args.Era}_{args.Channel}.png"
+            print(origin)
+
+            origin = f"{path}/{origin}"
+
+            if args.Tagger == "B": 
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/Systematics/{args.Era}/{args.Channel}"
+            
+                os.makedirs(des, exist_ok=True)
+                shutil.copy(origin, des)

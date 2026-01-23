@@ -3,13 +3,14 @@
 import argparse
 parser = argparse.ArgumentParser(description='')
 parser.add_argument('-e', dest='Era', default='2017')
+parser.add_argument('-tagger', dest='Tagger', default='B')
 args = parser.parse_args()
 
 import os
 path=os.environ['Vcb_Post_Analysis_WD']
 
 channel_list = ["Mu", "El"]
-region_list = ["Control0", "Signal"]
+region_list = ["Control", "Signal"]
 
 dict_ch_region_count = dict()
 
@@ -17,7 +18,7 @@ import ROOT
 for channel in channel_list:
     #print(channel)
 
-    fin_path=f"{path}/Workplace/Histo_Syst/{args.Era}/Vcb_Histos_{args.Era}_{channel}_All.root"
+    fin_path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag_5f_MVA/{args.Era}/Vcb_Histos_{args.Era}_{channel}_{args.Tagger}_tagger.root"
 
     fin = ROOT.TFile(fin_path)
     
@@ -34,6 +35,7 @@ for channel in channel_list:
         count_st_sum = 0
         count_vjets_sum = 0
         count_ttv_sum = 0
+        count_vv_sum = 0
         count_sum = 0
 
         key_list = dir_nominal.GetListOfKeys() 
@@ -59,6 +61,9 @@ for channel in channel_list:
             if "WJets" in sample or "DYJets" in sample:
                 count_vjets_sum += count
 
+            if "WW" in sample or "WZ" in sample or "ZZ" in sample:
+                count_vv_sum += count
+                
             if "ttZ" in sample or "ttW" in sample or "ttH" in sample:
                 count_ttv_sum += count
 
@@ -70,6 +75,7 @@ for channel in channel_list:
         dict_count["ST"] = count_st_sum
         dict_count["VJets"] = count_vjets_sum 
         dict_count["ttV"] = count_ttv_sum
+        dict_count["VV"] = count_vv_sum
         dict_count["Sum"] = count_sum
 
         if region != "Signal":
@@ -113,11 +119,11 @@ sample_sort =   {"TTLJ_45":"\\ttljWtoCB",
 ## print table ##
 print('\\begin{table}[htbp]')
 print('\\centering')
-print('\\begin{tabular}{crrrr}')
+print('\\begin{tabular}{crr}')
 print('\hline\hline')
 
 print('& \multicolumn{2}{c}{Mu} & \multicolumn{2}{c}{El} \\\\')
-print('& 2B CR & 3B SR & 2B CR & 3B SR\\\\')
+print('& CR & SR & \\\\')
 
 print('\hline')
 for sample in sample_sort:

@@ -1,42 +1,59 @@
 #!/usr/bin/env python3
 
+import ROOT
 import argparse
-parser = argparse.ArgumentParser(description='')
-parser.add_argument('-e', dest='Era', default='2016a')
-parser.add_argument('-ch', dest='Channel', default='Mu')
-parser.add_argument('-tagger', dest='Tagger', default='B')
+import ctypes
+
+parser = argparse.ArgumentParser(description='Vcb_Post_Analysis Command')
+parser.add_argument('-e', dest='era', default="2017")
+parser.add_argument('-ch', dest='channel', default="El")
 args = parser.parse_args()
 
-if args.Era=="2016a": args.Era="2016preVFP"
-if args.Era=="2016b": args.Era="2016postVFP"
+if args.era=="2016a": args.era="2016preVFP"
+if args.era=="2016b": args.era="2016postVFP"
 
-import ROOT
+ROOT.gROOT.SetBatch(True)
 
-fin = ROOT.TFile.Open('Vcb_Histos_%s_%s_%s_tagger.root'%(args.Era,args.Channel,args.Tagger))
+fin = ROOT.TFile.Open(f"Vcb_Histos_{args.era}_{args.channel}_B_tagger.root", "READ")
 
-region = "Control"
-syst = "hdamp_Up"
-sample = "TTLJ_4"
+region_list = ["Control"]
 
-histo_nominal = fin.Get('%s/%s/Nominal/Template_MVA_Score'%(region,sample))
-histo_raw = fin.Get('%s/%s/%s/Template_MVA_Score'%(region,syst,sample))
-histo_smoothed = fin.Get('%s/%s_Smoothed/%s/Template_MVA_Score'%(region,syst,sample))
+for region in region_list:
+    #print(region)
+ 
+    entry_dict = {}
+    error_dict = {}
+    
+    dir_nominal = fin.GetDirectory(f"{region}/Nominal")
+    keys = dir_nominal.GetListOfKeys()
+    
+    entry_total = 0;    
+    for key in keys:
+        dir_process = dir_nominal.GetDirectory(f"{key.GetName()}")
+        histo_process = dir_process.Get(f"Total")
+        
+        #print(f"{key.GetName()}")
+        error = ctypes.c_double(0.0)      
+        entry_dict[f"{key.GetName()}"] = histo_process.IntegralAndError(1, 1, error)
+        error_dict[f"{key.GetName()}"] = error
+        
+        if "QCD" in key.GetName(): 
+            continue
+    
+        entry_total += entry_dict[f"{key.GetName()}"]
+    
+    print(entry_dict)
+    print(error_dict)
+    
+    if args.channel == "Mu":
+        # sample = "QCD_Data_Driven"
+        sample = "QCD_MuEn"
+    elif args.channel == "El":
+        sample = "QCD_Data_Driven"
+        #sample = "QCD_bEn"
 
-canvas = ROOT.TCanvas('c1','c1',800,600)
-
-histo_nominal.SetLineColor(ROOT.kBlack)
-histo_nominal.SetLineWidth(2)
-histo_nominal.GetYaxis().SetTitle('Events / Bin')
-histo_nominal.GetXaxis().SetTitle('MVA Score')
-histo_nominal.Draw('')
-
-histo_raw.SetLineColor(ROOT.kRed)
-histo_raw.SetLineWidth(2)
-histo_raw.Draw('SAME')
-
-histo_smoothed.SetLineColor(ROOT.kBlue)
-histo_smoothed.SetLineWidth(2)
-histo_smoothed.Draw('SAME')
-
-canvas.BuildLegend()
-canvas.SaveAs('Test_Smoothing.png')
+    qcd_yield = entry_dict[sample]
+    qcd_error = error_dict[sample].value
+        
+    print(entry_total, qcd_yield/(entry_total+qcd_yield), qcd_error/(entry_total+qcd_yield))
+       
