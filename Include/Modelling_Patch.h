@@ -50,6 +50,11 @@ private:
   vector<unique_ptr<TH1D>> histo_pdf_as_down;           // n_sample
   vector<unique_ptr<TH1D>> histo_pdf_as_up;             // n_sample
   vector<unique_ptr<TH1D>> histo_top_pt_reweight;       // n_sample
+  vector<unique_ptr<TH1D>> histo_top_pt_mva_reweight;   // n_sample
+  vector<unique_ptr<TH1D>> histo_hdamp_mva_down;        // n_sample
+  vector<unique_ptr<TH1D>> histo_hdamp_mva_up;          // n_sample
+  vector<unique_ptr<TH1D>> histo_bfrag_mva_nominal;     // n_sample
+  vector<unique_ptr<TH1D>> histo_bfrag_mva_up;          // n_sample
   vector<unique_ptr<TH1D>> histo_scale_variation_1;     // n_sample
   vector<unique_ptr<TH1D>> histo_scale_variation_2;     // n_sample
   vector<unique_ptr<TH1D>> histo_scale_variation_3;     // n_sample
@@ -77,7 +82,7 @@ private:
   void Read_Histo();
   void Read_Ratio();
   void Setup_Name(const TList *list, vector<TString> &vec_name);
-  vector<TString> Short_Name_Group(const TString& group_name);
+  vector<TString> Short_Name_Group(const TString &group_name);
 
   ClassDef(Modelling_Patch, 1);
 };

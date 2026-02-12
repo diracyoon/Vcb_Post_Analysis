@@ -18,12 +18,14 @@
 #include <TLegend.h>
 #include <TROOT.h>
 #include <TLatex.h>
+#include <TDirectory.h>
 
 #include <Samples.h>
 #include <Result_Event.h>
 #include <Tagging_RF.h>
 #include <Tagging_RF_Flavor.h>
 #include <Const_Def.h>
+#include <Modelling_Patch.h>
 
 using namespace std;
 
@@ -66,6 +68,9 @@ protected:
   bool use_spanet;
   TString draw_extension;
 
+  float lumi_corr;
+
+  bool chk_tthf_breakdown = false;
   bool chk_rf_tthf_breakdown = false;
 
   map<TString, TFile *> map_fin;
@@ -134,6 +139,15 @@ protected:
 
   THStack ***stack_dv;
 
+  Modelling_Patch modelling_patch;
+
+  float modelling_patch_top_pt_reweight;
+  float modelling_patch_top_pt_mva_reweight;
+  float modelling_patch_b_frag_mva_nominal;
+
+  TString sample_name_modelling_patch;
+  TString sample_name_modelling_patch_prev;
+
   void Calculate_Significance();
   void Calculate_Prob();
   void Draw_DV();
@@ -149,6 +163,7 @@ protected:
   void Fill_Output_Tree(const TString &short_name, const int &index_decay_mode, const int &index_fail_reason);
   int Get_Index(const TString &name);
   int Get_Index(const TString &short_name, const int &index_decay_mode);
+  TString Histo_Name_Modelling_Patch(const TString &sample_name);
   TString Histo_Name_RF(const TString &sample_name);
   void Read_Tree();
   float Reweight_CKM(const TString &sample_name);

@@ -70,6 +70,9 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
                {"VV", kCyan},
                {"VJets", kAzure},
                {"QCD_bEn", kBlack},
+               {"QCD_MuEn", kBlack},
+               {"QCD_EMEn", kBlack},
+               {"QCD_bcToE", kBlack},
                {"QCD_Data_Driven", kBlack}};
     }
     else
@@ -163,9 +166,25 @@ Data_MC_Comparison::Data_MC_Comparison(const TString &a_era, const TString &a_ch
   // if (find(syst_name.begin(), syst_name.end(), "") != syst_name.end())
   //   syst_name.erase(find(syst_name.begin(), syst_name.end(), ""));
 
+  // auto it = find_if(syst_name.begin(), syst_name.end(), [](const TString &s)
+  //                   { return s.Contains("Smoothed"); });
+  // if (it != syst_name.end())
+  // {
+  //   cout << "test test" << endl;
+  //   auto it_remove = std::remove_if(syst_name.begin(), syst_name.end(), [](const TString &s)
+  //                                   { return ((s.Contains("hdamp") || s.Contains("CP5") || s.Contains("mtop")) && !s.Contains("Smoothed")); });
+  //   syst_name.erase(it_remove, syst_name.end());
+  // }
+
   auto it_remove = std::remove_if(syst_name.begin(), syst_name.end(), [](const TString &s)
                                   { return s.Contains("_Smoothed"); });
   syst_name.erase(it_remove, syst_name.end());
+
+  // syst_name.erase(find(syst_name.begin(), syst_name.end(), "Top_Pt_MVA_Reweight"));
+  // syst_name.erase(find(syst_name.begin(), syst_name.end(), "B_Frag_MVA_Down"));
+  // syst_name.erase(find(syst_name.begin(), syst_name.end(), "B_Frag_MVA_Up"));
+  // syst_name.erase(find(syst_name.begin(), syst_name.end(), "hdamp_MVA_Down"));
+  // syst_name.erase(find(syst_name.begin(), syst_name.end(), "hdamp_MVA_Up"));
 
   for (const auto &syst : syst_name)
     cout << syst << endl;
@@ -436,26 +455,35 @@ void Data_MC_Comparison::Compare_QCD()
       canvas[i][j] = new TCanvas(canvas_name, canvas_name, 1400, 1000);
       canvas[i][j]->Draw();
 
-      int index_qcd_ben = find(sample_name.begin(), sample_name.end(), "QCD_bEn") - sample_name.begin();
+      // int index_qcd_mc = find(sample_name.begin(), sample_name.end(), "QCD_bEn") - sample_name.begin();
+      int index_qcd_mc;
+      if (channel == "Mu")
+        index_qcd_mc = find(sample_name.begin(), sample_name.end(), "QCD_MuEn") - sample_name.begin();
+      else if (channel == "El")
+        index_qcd_mc = find(sample_name.begin(), sample_name.end(), "QCD_bcToE") - sample_name.begin();
+
       int index_qcd_dd = find(sample_name.begin(), sample_name.end(), "QCD_Data_Driven") - sample_name.begin();
 
-      float max = histo_mc[i][index_mc_nominal][index_qcd_ben][j]->GetMaximum();
+      float max = histo_mc[i][index_mc_nominal][index_qcd_mc][j]->GetMaximum();
 
       max = (max < histo_mc[i][index_mc_nominal][index_qcd_dd][j]->GetMaximum()) ? histo_mc[i][index_mc_nominal][index_qcd_dd][j]->GetMaximum() : max;
       max *= 1.5;
 
-      histo_mc[i][index_mc_nominal][index_qcd_ben][j]->GetYaxis()->SetRangeUser(0, max);
-      histo_mc[i][index_mc_nominal][index_qcd_ben][j]->SetLineColor(2);
-      histo_mc[i][index_mc_nominal][index_qcd_ben][j]->SetMarkerColor(2);
+      histo_mc[i][index_mc_nominal][index_qcd_mc][j]->GetYaxis()->SetRangeUser(0, max);
+      histo_mc[i][index_mc_nominal][index_qcd_mc][j]->SetLineColor(2);
+      histo_mc[i][index_mc_nominal][index_qcd_mc][j]->SetMarkerColor(2);
       histo_mc[i][index_mc_nominal][index_qcd_dd][j]->SetLineColor(4);
       histo_mc[i][index_mc_nominal][index_qcd_dd][j]->SetMarkerColor(4);
 
-      histo_mc[i][index_mc_nominal][index_qcd_ben][j]->Draw();
+      histo_mc[i][index_mc_nominal][index_qcd_mc][j]->Draw();
       histo_mc[i][index_mc_nominal][index_qcd_dd][j]->Draw("SAME");
 
       tl[i][j] = new TLegend(0.7, 0.7, 0.9, 0.9);
       tl[i][j]->AddEntry(histo_mc[i][index_mc_nominal][index_qcd_dd][j], "Data Driven", "lep");
-      tl[i][j]->AddEntry(histo_mc[i][index_mc_nominal][index_qcd_ben][j], "QCD bEn.", "lep");
+      if (channel == "Mu")
+        tl[i][j]->AddEntry(histo_mc[i][index_mc_nominal][index_qcd_mc][j], "QCD MuEn", "lep");
+      else if (channel == "El")
+        tl[i][j]->AddEntry(histo_mc[i][index_mc_nominal][index_qcd_mc][j], "QCD bcToE", "lep");
       tl[i][j]->Draw("SAME");
 
       canvas[i][j]->Print(canvas_name + "." + extension, extension);
@@ -549,7 +577,7 @@ void Data_MC_Comparison::Draw()
       latex->DrawLatexNDC(0.1, 0.91, "CMS #bf{work in progress}");
       latex->DrawLatexNDC(0.785, 0.91, Form("%s, %.2f fb^{-1}", channel.Data(), lumi));
 
-      if (variable_name[j] == "Template_MVA_Score")
+      if (variable_name[j] == "Template_MVA_Score" || variable_name[j] == "BvsC_3rd_4th_Jets_Unrolled")
       {
         pad[i][j][0]->SetLogy();
       }
@@ -731,13 +759,28 @@ void Data_MC_Comparison::Draw_Each(const TString &a_syst_name, const TString &a_
           vec_histo_ratio_signal.push_back(histo_ratio_signal);
 
           // min max for ratio
-          if (histo_ratio->GetMinimum() < range_ratio_min)
-            range_ratio_min = histo_ratio->GetMinimum();
+
+          // to remove fake zeros in ratio histo
+          auto Get_Positive_Min = [](TH1 *h) -> float
+          {
+            double min_val = std::numeric_limits<double>::max();
+
+            for (int i = 1; i <= h->GetNbinsX(); ++i)
+            {
+              double content = h->GetBinContent(i);
+              if (content > 0 && content < min_val)
+                min_val = content;
+            }
+            return min_val;
+          };
+
+          if (Get_Positive_Min(histo_ratio) < range_ratio_min)
+            range_ratio_min = Get_Positive_Min(histo_ratio);
           if (histo_ratio->GetMaximum() > range_ratio_max)
             range_ratio_max = histo_ratio->GetMaximum();
 
-          if (histo_ratio_signal->GetMinimum() < range_ratio_min)
-            range_ratio_min = histo_ratio_signal->GetMinimum();
+          if (Get_Positive_Min(histo_ratio_signal) < range_ratio_min)
+            range_ratio_min = Get_Positive_Min(histo_ratio_signal);
           if (histo_ratio_signal->GetMaximum() > range_ratio_max)
             range_ratio_max = histo_ratio_signal->GetMaximum();
 
@@ -1041,7 +1084,13 @@ void Data_MC_Comparison::Ordering_Sample_Name()
       if (chk_qcd_data_driven)
         sample_name_order[0] = "QCD_Data_Driven";
       else
-        sample_name_order[0] = "QCD_bEn";
+      {
+        // sample_name_order[0] = "QCD_bEn";
+        if (channel == "Mu")
+          sample_name_order[0] = "QCD_MuEn";
+        else if (channel == "El")
+          sample_name_order[0] = "QCD_bcToE";
+      }
 
       sample_name_order[1] = "VV";
       sample_name_order[2] = "ttV";
@@ -1242,10 +1291,13 @@ void Data_MC_Comparison::Setup_Histo_MC()
 
           histo_mc[i][j][k][l] = (TH1D *)fin->Get(histo_name);
 
+          if (!chk_use_ttbb_4f)
+          {
           if (sample_name[k].Contains("_BB"))
             histo_mc[i][j][k][l]->Scale(TTBB_Scale);
           else if (sample_name[k].Contains("_CC"))
             histo_mc[i][j][k][l]->Scale(TTCC_Scale);
+          }
         } // loop over n_variable
       } // loop over sample
     } // loop over n_syst

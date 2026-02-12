@@ -17,6 +17,8 @@
 #include "THStack.h"
 #include "TMath.h"
 #include "TPad.h"
+#include <TGraph.h>
+#include <TGraphSmooth.h>
 
 #include <Const_Def.h>
 #include <Samples.h>
@@ -69,6 +71,8 @@ protected:
 
   TString year;
 
+  float lumi_corr;
+
   TString path_base;
 
   bool chk_print; // only for debug
@@ -98,6 +102,9 @@ protected:
   map<TString, TFile *> map_fin_mc_hdamp_up;
   map<TString, TFile *> map_fin_mc_mtop_171p5;
   map<TString, TFile *> map_fin_mc_mtop_173p5;
+  map<TString, TFile *> map_fin_mc_erd_on;
+  map<TString, TFile *> map_fin_mc_cr1;
+  map<TString, TFile *> map_fin_mc_cr2;
   map<TString, TFile *> map_fin_mc_tt_4f;
 
   vector<map<TString, TTree *>> vec_map_tree_mc;
@@ -108,6 +115,9 @@ protected:
   map<TString, TTree *> map_tree_mc_hdamp_up;
   map<TString, TTree *> map_tree_mc_mtop_171p5;
   map<TString, TTree *> map_tree_mc_mtop_173p5;
+  map<TString, TTree *> map_tree_mc_erd_on;
+  map<TString, TTree *> map_tree_mc_cr1;
+  map<TString, TTree *> map_tree_mc_cr2;
   map<TString, TTree *> map_tree_mc_tt_4f;
 
   // map<TString, map<TString, TFile *> *> map_map_fin_mc;
@@ -145,6 +155,8 @@ protected:
 
   TH1D ***histo_mc_smoothing_unrolled; // n_syst, n_sample
 
+  TGraphSmooth *gs;
+
   TH1D **histo_data;    // n_variable
   TH2D **histo_data_2d; // n_variable_2d
 
@@ -163,6 +175,11 @@ protected:
   float modelling_patch_pdf_as_down;
   float modelling_patch_pdf_as_up;
   float modelling_patch_top_pt_reweight;
+  float modelling_patch_top_pt_mva_reweight;
+  float modelling_patch_hdamp_mva_down;
+  float modelling_patch_hdamp_mva_up;
+  float modelling_patch_b_frag_mva_nominal;
+  float modelling_patch_b_frag_mva_up;
   float modelling_patch_scale_variation_1;
   float modelling_patch_scale_variation_2;
   float modelling_patch_scale_variation_3;
@@ -204,7 +221,7 @@ protected:
   void Smoothing(TH1D *histo_nominal, TH1D *histo_variated);
 
   void Unroller();
-  int Unroller(const float &bvsc_third, const float &bvsc_fourth);
+  // int Unroller(const float &bvsc_third, const float &bvsc_fourth);
   void Unroller_Para_Smoothing();
 
   ClassDef(CR_DL, 1);

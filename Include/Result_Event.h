@@ -20,6 +20,7 @@ class Result_Event : public W_Event
   friend class Reco_Eval;
   friend class QCD_Data_Driven;
   friend class Compare_TTbb;
+  friend class HEM_Veto;
 
 public:
   Result_Event(const TString &a_era = "2017", const TString &a_channel = "Mu", const TString &a_analyser = "Vcb", const TString &a_tagger = "C", const bool &a_use_spanet = false, const TString &a_swap_mode = "Permutation_MVA");
@@ -37,6 +38,7 @@ protected:
   bool use_spanet;
   bool use_class_5;
   bool use_class_7;
+  bool use_class_8;
   bool use_class_9;
   bool use_class_11;
 
@@ -147,6 +149,13 @@ protected:
   float weight_scale_variation_8;
 
   float weight_top_pt;
+  float weight_top_pt_mva;
+
+  float weight_hdamp_mva_down;
+  float weight_hdamp_mva_up;
+
+  float weight_b_frag_mva_nominal;
+  float weight_b_frag_mva_up;
 
   int n_pv;
   int n_pileup;
@@ -190,6 +199,7 @@ protected:
   float m_had_t;
   float m_had_w;
   float m_lep_t;
+  float m_lep_t_partial;
   float m_lep_w;
 
   float mva_hf_score;
@@ -204,11 +214,17 @@ protected:
 
   float pt_had_t_b;
   float pt_lep_t_b;
-  // float pt_tt;
+  float pt_tt;
   float pt_gen_tt;
 
   float eta_had_t_b;
   float eta_lep_t_b;
+
+  float theta_w_u_w_d;
+  float theta_had_w_had_t_b;
+  float theta_lep_neu;
+  float theta_lep_w_lep_t_b;
+  float del_phi_had_t_lep_t;
 
   float least_dr_bb;
   float least_m_bb;
@@ -247,6 +263,7 @@ protected:
 
   vector<float> *vec_jet_pt = NULL;
   vector<float> *vec_jet_eta = NULL;
+  vector<float> *vec_jet_phi = NULL;
   vector<int> *vec_jet_flavor = NULL;
 
   ClassDef(Result_Event, 1);

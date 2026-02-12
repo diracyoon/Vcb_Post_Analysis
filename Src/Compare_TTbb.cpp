@@ -5,7 +5,7 @@ ClassImp(Compare_TTbb);
 //////////
 
 Compare_TTbb::Compare_TTbb(const TString &a_era, const TString &a_channel, const TString &a_tagger, const bool &a_use_spanet)
-    : samples(a_era, a_channel, "Vcb"), tagging_rf(a_era)
+    : samples(a_era, a_channel, "Vcb"), tagging_rf(a_era), modelling_patch("Application"), event(a_era, a_channel, "Vcb", a_tagger, a_use_spanet)
 {
   cout << "[Compare_TTbb::Compare_TTbb]: Init analysis" << endl;
 
@@ -17,6 +17,8 @@ Compare_TTbb::Compare_TTbb(const TString &a_era, const TString &a_channel, const
   channel = a_channel;
   tagger = a_tagger;
   use_spanet = a_use_spanet;
+
+  lumi_corr = Lumi_Corr(era);
 
   TString path_sample_base = getenv("Vcb_Post_Analysis_Sample_Dir");
   TString path = path_sample_base + era;
@@ -39,9 +41,9 @@ Compare_TTbb::Compare_TTbb(const TString &a_era, const TString &a_channel, const
   fin_4f = new TFile(path + samples.map_mc["TTLJ_TTbb_4f"]);
   fin_dps = new TFile(path + samples.map_mc["TTLJ_bbDPS"]);
 
-  fin_template_5f = new TFile(path + "7Class_BigModel/" + samples.map_mc["TTLJ"]);
-  fin_template_4f = new TFile(path + "7Class_BigModel/" + samples.map_mc["TTLJ_TTbb_4f"]);
-  fin_template_dps = new TFile(path + "7Class_BigModel/" + samples.map_mc["TTLJ_bbDPS"]);
+  fin_template_5f = new TFile(path + "7Class/" + samples.map_mc["TTLJ"]);
+  fin_template_4f = new TFile(path + "7Class/" + samples.map_mc["TTLJ_TTbb_4f"]);
+  fin_template_dps = new TFile(path + "7Class/" + samples.map_mc["TTLJ_bbDPS"]);
 
   tree_5f = (TTree *)fin_5f->Get(channel + "/Central/Result_Tree");
   tree_4f = (TTree *)fin_4f->Get(channel + "/Central/Result_Tree");
@@ -136,6 +138,7 @@ void Compare_TTbb::Draw()
       histo_ratio[i] = new TH1D("histo_ratio", "histo_ratio", 90, 0.1, 1);
       histo_ratio[i]->Divide(histo[2 * i + 1], histo[2 * i]);
       histo_ratio[i]->GetYaxis()->SetTitle("4f/5f");
+      histo_ratio[i]->GetYaxis()->SetRangeUser(0.5, 1.5);
       histo_ratio[i]->Draw();
     }
   }
@@ -167,6 +170,7 @@ void Compare_TTbb::Fill_Histo_MC(const TString &sample_name)
 
   event.weight = 1;
   event.weight *= event.weight_lumi;
+  event.weight *= lumi_corr;
   event.weight *= event.weight_mc;
   event.weight *= event.weight_hem_veto;
   event.weight *= weight_ckm;
@@ -174,7 +178,9 @@ void Compare_TTbb::Fill_Histo_MC(const TString &sample_name)
   event.weight *= event.weight_pileup;
   event.weight *= event.weight_prefire;
   event.weight *= event.weight_pujet_veto;
-  event.weight *= event.weight_top_pt;
+  // event.weight *= event.weight_top_pt;
+  event.weight *= event.weight_top_pt_mva;
+  event.weight *= event.weight_b_frag_mva_nominal;
   event.weight *= event.weight_sl_trig;
   event.weight *= event.weight_mu_id;
   event.weight *= event.weight_mu_iso;
@@ -233,12 +239,60 @@ int Compare_TTbb::Histo_Index(const TString &sample_name)
 
 //////////
 
-TString Compare_TTbb::Histo_Name_RF(const TString &sample_name)
+TString Compare_TTbb::Histo_Name_Modelling_Patch(const TString &sample_name)
+{
+  if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
+  {
+    TString histo_name_modelling_patch = sample_name;
+
+    bool chk_b = false;
+    bool chk_c = false;
+
+    if (chk_include_pseudo_additional)
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 56)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 46)
+        chk_c = true;
+    }
+    else
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 55)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 45)
+        chk_c = true;
+    }
+
+    if (chk_b)
+      histo_name_modelling_patch += "_BB";
+    else if (chk_c)
+      histo_name_modelling_patch += "_CC";
+
+    return histo_name_modelling_patch;
+  }
+  else
+    return sample_name;
+
+  return "-1";
+} // TString Compare_TTbb::Histo_Name_Modelling_Patch(const TString& sample_name)
+
+    //////////
+
+    TString Compare_TTbb::Histo_Name_RF(const TString &sample_name)
 {
   TString histo_name_rf = sample_name;
 
   if (histo_name_rf.Contains("WtoCB"))
     histo_name_rf.ReplaceAll("TTLJ_WtoCB", "TTLJ");
+
+  // apply nominal RF for top systematic samples to save time.
+  if (histo_name_rf.Contains("CP5") || histo_name_rf.Contains("hdamp") || histo_name_rf.Contains("mtop") || histo_name_rf.Contains("erdOn") || histo_name_rf.Contains("CR1") || histo_name_rf.Contains("CR2"))
+  {
+    if (histo_name_rf.Contains("TTLJ"))
+      histo_name_rf = "TTLJ";
+    else if (histo_name_rf.Contains("TTLL"))
+      histo_name_rf = "TTLL";
+  }
 
   if (chk_rf_tthf_breakdown)
   {
@@ -321,9 +375,18 @@ void Compare_TTbb::Read_Tree()
     TString sample_name = it->first;
     cout << "Sample_Name = " << sample_name << endl;
 
+    TString sample_name_short;
+    if (it->first.Contains("TTLJ") || it->first.Contains("TTLL"))
+      sample_name_short = it->first;
+    else
+      sample_name_short = samples.map_short_name_mc[it->first];
+
     Long64_t n_entries = it->second->GetEntries();
     n_entries /= reduction;
     cout << "N_Entries = " << it->second->GetEntries() << ", Reduction = " << reduction << ", N_Entries/Reduction = " << n_entries << endl;
+
+    sample_name_modelling_patch = "sample_name_modelling_patch";
+    sample_name_modelling_patch_prev = "sample_name_modelling_patch_prev";
 
     for (Long64_t i = 0; i < n_entries; i++)
     {
@@ -336,6 +399,21 @@ void Compare_TTbb::Read_Tree()
 
       if (event.template_score < 0.1)
         continue;
+
+      sample_name_modelling_patch = Histo_Name_Modelling_Patch(sample_name_short);
+
+      if (sample_name_modelling_patch != sample_name_modelling_patch_prev)
+      {
+        modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Top_Pt_Reweight");
+        modelling_patch_top_pt_mva_reweight = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Top_Pt_MVA_Reweight");
+        modelling_patch_b_frag_mva_nominal = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "B_Frag_MVA_Reweight_Nominal");
+
+        sample_name_modelling_patch_prev = sample_name_modelling_patch;
+      }
+
+      event.weight_top_pt *= modelling_patch_top_pt_reweight;
+      event.weight_top_pt_mva *= modelling_patch_top_pt_mva_reweight;
+      event.weight_b_frag_mva_nominal *= modelling_patch_b_frag_mva_nominal;
 
       Fill_Histo_MC(sample_name);
 

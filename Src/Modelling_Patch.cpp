@@ -42,7 +42,7 @@ Modelling_Patch::Modelling_Patch(const TString &a_mode)
   if (mode == "Analysis")
   {
     vec_eras = {"2016preVFP", "2016postVFP", "2017", "2018"};
-    //vec_eras = {"2016preVFP"};
+    // vec_eras = {"2016preVFP"};
 
     Init_Histo();
     Read_Histo();
@@ -51,7 +51,7 @@ Modelling_Patch::Modelling_Patch(const TString &a_mode)
   else if (mode == "Application")
   {
     Read_Ratio();
-    // cout << "test " << Get_Modelling_Patch("TTLL_mtop173p5", "Baseline") << endl;
+    // cout << "test " << Get_Modelling_Patch("TTLL", "Top_Pt_MVA_Reweight") << endl;
   }
 } // Modelling_Patch::Modelling_Patch()
 
@@ -70,9 +70,12 @@ Modelling_Patch::~Modelling_Patch()
       TDirectory *dir = fout->mkdir(vec_short_name_mc[i]);
       dir->cd();
 
-      if (vec_short_name_mc[i].Contains("CP5") || vec_short_name_mc[i].Contains("hdamp") || vec_short_name_mc[i].Contains("mtop"))
+      if (vec_short_name_mc[i].Contains("CP5") || vec_short_name_mc[i].Contains("hdamp") || vec_short_name_mc[i].Contains("mtop") || vec_short_name_mc[i].Contains("erdOn") || vec_short_name_mc[i].Contains("CR1") || vec_short_name_mc[i].Contains("CR2"))
       {
         histo_baseline[i]->Write();
+        histo_top_pt_reweight[i]->Write();
+        histo_top_pt_mva_reweight[i]->Write();
+        histo_bfrag_mva_nominal[i]->Write();
       }
       else
       {
@@ -82,6 +85,11 @@ Modelling_Patch::~Modelling_Patch()
         histo_pdf_as_down[i]->Write();
         histo_pdf_as_up[i]->Write();
         histo_top_pt_reweight[i]->Write();
+        histo_top_pt_mva_reweight[i]->Write();
+        histo_hdamp_mva_down[i]->Write();
+        histo_hdamp_mva_up[i]->Write();
+        histo_bfrag_mva_nominal[i]->Write();
+        histo_bfrag_mva_up[i]->Write();
         histo_scale_variation_1[i]->Write();
         histo_scale_variation_2[i]->Write();
         histo_scale_variation_3[i]->Write();
@@ -108,6 +116,9 @@ Modelling_Patch::~Modelling_Patch()
 
 float Modelling_Patch::Get_Modelling_Patch(const TString &sample, const TString &variation) const
 {
+  if ((sample.Contains("CP5") || sample.Contains("hdamp") || sample.Contains("mtop") || sample.Contains("erdOn") || sample.Contains("CR1") || sample.Contains("CR2")) && (variation != "Top_Pt_Reweight" && variation != "Top_Pt_MVA_Reweight" && variation != "B_Frag_MVA_Reweight_Nominal"))
+    return 1.;
+
   auto it_sample = patch_all.find(sample);
   if (it_sample != patch_all.end())
   {
@@ -117,8 +128,8 @@ float Modelling_Patch::Get_Modelling_Patch(const TString &sample, const TString 
     {
       if (sample.Contains("TTLJ_WtoCB") || sample.Contains("TTLJ") || sample.Contains("TTLL") ||
           sample.Contains("TTLJ_TTbb_4f") || sample.Contains("TTLJ_bbDPS") || sample.Contains("TTLL_TTbb_4f") || sample.Contains("TTLL_bbDPS") ||
-          sample == "ST_tch" || sample == "ST_tw" ||
-          sample == "ttHTobb" || sample == "ttHToNonbb")
+          sample.Contains("CP5") || sample.Contains("mtop") || sample.Contains("hdamp") || sample.Contains("erdOn") || sample.Contains("CR1") || sample.Contains("CR2") ||
+          sample == "ST_tch" || sample == "ST_tw" || sample == "ttHTobb" || sample == "ttHToNonbb")
       {
         // index is OK
         // do nothing
@@ -142,8 +153,7 @@ float Modelling_Patch::Get_Modelling_Patch(const TString &sample, const TString 
         else if (variation_may_swap.Contains("_7"))
           variation_may_swap.ReplaceAll("_7", "_5");
       }
-      else if (sample == "WW" || sample == "WZ" || sample == "ZZ" ||
-               sample.Contains("CP5") || sample.Contains("mtop") || sample.Contains("hdamp"))
+      else if (sample == "WW" || sample == "WZ" || sample == "ZZ" || sample == "QCD_MuEn" || sample == "QCD_EMEn" || sample == "QCD_bcToE")
       {
         // irrelevant
         // do nothing
@@ -157,14 +167,12 @@ float Modelling_Patch::Get_Modelling_Patch(const TString &sample, const TString 
       return it_variation->second;
     else
     {
-      // cout << "[Modelling_Patch::Get_Modelling_Patch]: No variation found for " << sample << " " << variation << endl;
-      return 1.;
+      cerr << "[Modelling_Patch::Get_Modelling_Patch]: No variation found for " << sample << " " << variation << endl;
     }
   }
   else
   {
-    // cout << "[Modelling_Patch::Get_Modelling_Patch]: No sample found" << endl;
-    return 1.;
+    cerr << "[Modelling_Patch::Get_Modelling_Patch]: No sample found" << sample << endl;
   }
 
   return -999;
@@ -210,6 +218,21 @@ void Modelling_Patch::Init_Histo()
 
     histo_name = vec_short_name_mc[i] + "_Top_Pt_Reweight";
     histo_top_pt_reweight.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
+
+    histo_name = vec_short_name_mc[i] + "_Top_Pt_MVA_Reweight";
+    histo_top_pt_mva_reweight.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
+
+    histo_name = vec_short_name_mc[i] + "_hDamp_MVA_Reweight_Down";
+    histo_hdamp_mva_down.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
+
+    histo_name = vec_short_name_mc[i] + "_hDamp_MVA_Reweight_Up";
+    histo_hdamp_mva_up.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
+
+    histo_name = vec_short_name_mc[i] + "_B_Frag_MVA_Reweight_Nominal";
+    histo_bfrag_mva_nominal.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
+
+    histo_name = vec_short_name_mc[i] + "_B_Frag_MVA_Reweight_Up";
+    histo_bfrag_mva_up.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
 
     histo_name = vec_short_name_mc[i] + "_Scale_Variation_1";
     histo_scale_variation_1.push_back(make_unique<TH1D>(histo_name, histo_name, 1, 0, 1));
@@ -275,6 +298,10 @@ void Modelling_Patch::Ratio()
   {
     if (vec_short_name_mc[i].Contains("CP5") || vec_short_name_mc[i].Contains("hdamp") || vec_short_name_mc[i].Contains("mtop"))
     {
+      histo_top_pt_reweight[i]->Divide(histo_baseline[i].get(), histo_top_pt_reweight[i].get());
+      histo_top_pt_mva_reweight[i]->Divide(histo_baseline[i].get(), histo_top_pt_mva_reweight[i].get());
+      histo_bfrag_mva_nominal[i]->Divide(histo_baseline[i].get(), histo_bfrag_mva_nominal[i].get());
+
       TString sample_name = vec_short_name_mc[i].Copy();
       // cout << sample_name << endl;
 
@@ -303,7 +330,7 @@ void Modelling_Patch::Ratio()
       // But let's leave it since it is not used in the analysis
       cout << "histo_baseline: " << histo_baseline[index_nominal]->GetBinContent(1) << ", " << histo_baseline[i]->GetBinContent(1);
       histo_baseline[i]->Divide(histo_baseline[index_nominal].get(), histo_baseline[i].get());
-      cout << ", after histo_baseline: " << histo_baseline[i]->GetBinContent(1) << " +- " << histo_baseline[i]->GetBinError(1) <<  endl;
+      cout << ", after histo_baseline: " << histo_baseline[i]->GetBinContent(1) << " +- " << histo_baseline[i]->GetBinError(1) << endl;
     }
     else
     {
@@ -313,6 +340,11 @@ void Modelling_Patch::Ratio()
       histo_pdf_as_down[i]->Divide(histo_baseline[i].get(), histo_pdf_as_down[i].get());
       histo_pdf_as_up[i]->Divide(histo_baseline[i].get(), histo_pdf_as_up[i].get());
       histo_top_pt_reweight[i]->Divide(histo_baseline[i].get(), histo_top_pt_reweight[i].get());
+      histo_top_pt_mva_reweight[i]->Divide(histo_baseline[i].get(), histo_top_pt_mva_reweight[i].get());
+      histo_hdamp_mva_down[i]->Divide(histo_baseline[i].get(), histo_hdamp_mva_down[i].get());
+      histo_hdamp_mva_up[i]->Divide(histo_baseline[i].get(), histo_hdamp_mva_up[i].get());
+      histo_bfrag_mva_nominal[i]->Divide(histo_baseline[i].get(), histo_bfrag_mva_nominal[i].get());
+      histo_bfrag_mva_up[i]->Divide(histo_baseline[i].get(), histo_bfrag_mva_up[i].get());
       histo_scale_variation_1[i]->Divide(histo_baseline[i].get(), histo_scale_variation_1[i].get());
       histo_scale_variation_2[i]->Divide(histo_baseline[i].get(), histo_scale_variation_2[i].get());
       histo_scale_variation_3[i]->Divide(histo_baseline[i].get(), histo_scale_variation_3[i].get());
@@ -377,8 +409,8 @@ void Modelling_Patch::Read_Histo()
         TH1D *histo_to_add_baseline = (TH1D *)fin->Get(full_name + flavor + "_Baseline");
         histo_baseline[histo_index]->Add(histo_to_add_baseline);
 
-        if (sample_name.Contains("CP5") || sample_name.Contains("hdamp") || sample_name.Contains("mtop"))
-          continue;
+        // if (sample_name.Contains("CP5") || sample_name.Contains("hdamp") || sample_name.Contains("mtop"))
+        //   continue;
 
         TH1D *histo_to_add_pdf_alternative = (TH1D *)fin->Get(full_name + flavor + "_PDF_Alternative");
         histo_pdf_alternative[histo_index]->Add(histo_to_add_pdf_alternative);
@@ -397,6 +429,21 @@ void Modelling_Patch::Read_Histo()
 
         TH1D *histo_to_add_top_pt_reweight = (TH1D *)fin->Get(full_name + flavor + "_Top_Pt_Reweight");
         histo_top_pt_reweight[histo_index]->Add(histo_to_add_top_pt_reweight);
+
+        TH1D *histo_to_add_top_pt_mva_reweight = (TH1D *)fin->Get(full_name + flavor + "_Top_Pt_Reweight_MVA");
+        histo_top_pt_mva_reweight[histo_index]->Add(histo_to_add_top_pt_mva_reweight);
+
+        TH1D *histo_to_add_hdamp_mva_down = (TH1D *)fin->Get(full_name + flavor + "_Hdamp_Reweight_MVA_Down");
+        histo_hdamp_mva_down[histo_index]->Add(histo_to_add_hdamp_mva_down);
+
+        TH1D *histo_to_add_hdamp_mva_up = (TH1D *)fin->Get(full_name + flavor + "_Hdamp_Reweight_MVA_Up");
+        histo_hdamp_mva_up[histo_index]->Add(histo_to_add_hdamp_mva_up);
+
+        TH1D *histo_to_add_bfrag_mva_nominal = (TH1D *)fin->Get(full_name + flavor + "_B_Frag_Reweight_Nominal");
+        histo_bfrag_mva_nominal[histo_index]->Add(histo_to_add_bfrag_mva_nominal);
+
+        TH1D *histo_to_add_bfrag_mva_up = (TH1D *)fin->Get(full_name + flavor + "_B_Frag_Reweight_Up");
+        histo_bfrag_mva_up[histo_index]->Add(histo_to_add_bfrag_mva_up);
 
         TH1D *histo_to_add_scale_variation_1 = (TH1D *)fin->Get(full_name + flavor + "_Scale_Variation_1");
         histo_scale_variation_1[histo_index]->Add(histo_to_add_scale_variation_1);

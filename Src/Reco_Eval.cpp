@@ -5,7 +5,7 @@ ClassImp(Reco_Eval);
 //////////
 
 Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TString &a_tagger, const bool &a_use_spanet, const TString &a_swap_mode, const TString &a_draw_extension)
-    : samples(a_era, a_channel), event(a_era, a_channel, "Vcb", a_tagger, a_use_spanet, a_swap_mode), tagging_rf(a_era)
+    : samples(a_era, a_channel), event(a_era, a_channel, "Vcb", a_tagger, a_use_spanet, a_swap_mode), tagging_rf(a_era), modelling_patch("Application")
 {
   ROOT::EnableImplicitMT(10);
 
@@ -48,6 +48,8 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     cvsl_wp_m = cvsl_wp_m_2018;
   }
 
+  lumi_corr = Lumi_Corr(era);
+
   TString path_base = getenv("Vcb_Post_Analysis_Sample_Dir");
 
   if (use_spanet)
@@ -79,7 +81,7 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     //  continue;
 
     map_fin[it->first] = new TFile(path_base + it->second);
-    map_fin_template[it->first] = new TFile(path_base + "11Class/" + it->second);
+    map_fin_template[it->first] = new TFile(path_base + "7Class/" + it->second);
 
     TString key;
     if (channel == "Mu")
@@ -99,12 +101,15 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     vec_histo_sample.push_back(it->second);
 
   vec_histo_sample.erase(remove(vec_histo_sample.begin(), vec_histo_sample.end(), "TTLJ"));
-  vec_histo_sample.push_back("TTLJ_2");    // TTLJ, w->ud or w->us
-  vec_histo_sample.push_back("TTLJ_4");    // TTLJ, w->cd or w->cs
-  vec_histo_sample.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
-  vec_histo_sample.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
-  vec_histo_sample.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
-  vec_histo_sample.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
+  vec_histo_sample.push_back("TTLJ_2"); // TTLJ, w->ud or w->us
+  vec_histo_sample.push_back("TTLJ_4"); // TTLJ, w->cd or w->cs
+  if (chk_tthf_breakdown)
+  {
+    vec_histo_sample.push_back("TTLJ_CC_2"); // TTLJ+cc, w->ud or w->us
+    vec_histo_sample.push_back("TTLJ_CC_4"); // TTLJ+cc, w->cd or w->cs
+    vec_histo_sample.push_back("TTLJ_BB_2"); // TTLJ+bb, w->ud or w->us
+    vec_histo_sample.push_back("TTLJ_BB_4"); // TTLJ+bb, w->cd or w->cs
+  }
 
   vec_histo_sample.erase(remove(vec_histo_sample.begin(), vec_histo_sample.end(), "TTLJ_WtoCB"));
   vec_histo_sample.push_back("TTLJ_45"); // TTLJ, w->cb
@@ -160,9 +165,9 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
     for (int j = 0; j < n_histo_type; j++)
     {
       if (j == 0)
-        name_base += "_Correct";
+        name_base = vec_histo_sample[i] + "_Correct";
       else
-        name_base += "_Wrong_" + fail_reason[j - 1];
+        name_base = vec_histo_sample[i] + "_Wrong_" + fail_reason[j - 1];
 
       name = name_base + "_MVA_Pre";
       histo_mva_pre[i][j] = new TH1D(name, name, 100, 0, 1);
@@ -353,16 +358,27 @@ Reco_Eval::Reco_Eval(const TString &a_era, const TString &a_channel, const TStri
 
 Reco_Eval::~Reco_Eval()
 {
-  fout->Close();
 
-  fout_tree->cd();
   for (int i = 0; i < n_histo_sample; i++)
   {
+    TString name = vec_histo_sample[i];
+
+    TDirectory *dir = fout->mkdir(name);
+    dir->cd();
+
+    for (int j = 0; j < 5; j++)
+    {
+      histo_mva[i][j]->Write();
+      histo_template[i][j]->Write();
+    }
+
     for (int j = 0; j < n_discriminators; j++)
     {
       // stack_dv[i][j]->Write();
     }
   }
+
+  fout->Close();
 
   fout_tree->cd();
   for (int i = 0; i < 5; i++)
@@ -1266,7 +1282,7 @@ int Reco_Eval::Get_Index(const TString &short_name, const int &index_decay_mode)
 
     name = "TTLJ";
 
-    if (decay_mode != 45)
+    if (decay_mode != 45 && chk_tthf_breakdown)
     {
       if (chk_b)
         name += "_BB";
@@ -1283,6 +1299,45 @@ int Reco_Eval::Get_Index(const TString &short_name, const int &index_decay_mode)
 
   return index;
 } // int Reco_Eval::Get_Index(const TString& short_name, const int& index_decay_mode)
+
+//////////
+
+TString Reco_Eval::Histo_Name_Modelling_Patch(const TString &sample_name)
+{
+  if (sample_name.Contains("TTLL") || sample_name.Contains("TTLJ"))
+  {
+    TString histo_name_modelling_patch = sample_name;
+
+    bool chk_b = false;
+    bool chk_c = false;
+
+    if (chk_include_pseudo_additional)
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 56)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 46)
+        chk_c = true;
+    }
+    else
+    {
+      if (51 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 55)
+        chk_b = true;
+      else if (41 <= event.gen_ttbar_id % 100 && event.gen_ttbar_id % 100 <= 45)
+        chk_c = true;
+    }
+
+    if (chk_b)
+      histo_name_modelling_patch += "_BB";
+    else if (chk_c)
+      histo_name_modelling_patch += "_CC";
+
+    return histo_name_modelling_patch;
+  }
+  else
+    return sample_name;
+
+  return "-1";
+} // TString Reco_Eval::Histo_Name_Modelling_Patch(const TString& sample_name)
 
 //////////
 
@@ -1393,6 +1448,21 @@ void Reco_Eval::Read_Tree()
 
       // chk_swap = event.Swap();
 
+      sample_name_modelling_patch = Histo_Name_Modelling_Patch(short_name);
+
+      if (sample_name_modelling_patch != sample_name_modelling_patch_prev)
+      {
+        modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Top_Pt_Reweight");
+        modelling_patch_top_pt_mva_reweight = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Top_Pt_MVA_Reweight");
+        modelling_patch_b_frag_mva_nominal = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "B_Frag_MVA_Reweight_Nominal");
+
+        sample_name_modelling_patch_prev = sample_name_modelling_patch;
+      }
+
+      event.weight_top_pt *= modelling_patch_top_pt_reweight;
+      event.weight_top_pt_mva *= modelling_patch_top_pt_mva_reweight;
+      event.weight_b_frag_mva_nominal *= modelling_patch_b_frag_mva_nominal;
+
       int index_fail_reason = -1;
       if (event.chk_reco_correct)
         index_fail_reason = 0; // correct
@@ -1411,11 +1481,14 @@ void Reco_Eval::Read_Tree()
       event.weight = 1;
       event.weight *= Reweight_CKM(sample_name);
       event.weight *= event.weight_lumi;
+      event.weight *= lumi_corr;
       event.weight *= event.weight_mc;
       event.weight *= event.weight_hem_veto;
       event.weight *= event.weight_pileup;
       event.weight *= event.weight_prefire;
-      event.weight *= event.weight_top_pt;
+      // event.weight *= event.weight_top_pt;
+      event.weight *= event.weight_top_pt_mva;
+      event.weight *= event.weight_b_frag_mva_nominal;
       event.weight *= event.weight_sl_trig;
 
       if (channel == "Mu")
@@ -1449,6 +1522,9 @@ void Reco_Eval::Read_Tree()
 
       // if (event.n_jets != 5)
       //   continue;
+
+      if (!TMath::Finite(event.weight) || TMath::IsNaN(event.weight))
+        continue;
 
       Fill_Output_Tree(short_name, event.decay_mode, index_fail_reason);
 

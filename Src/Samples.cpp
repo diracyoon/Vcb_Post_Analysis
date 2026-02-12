@@ -56,6 +56,26 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   // map_mc["QCD_Pt_1800to2400"] = "Vcb_QCD_Pt_1800to2400.root";
   // map_mc["QCD_Pt_2400to3200"] = "Vcb_QCD_Pt_2400to3200.root";
   // map_mc["QCD_Pt_3200toInf"] = "Vcb_QCD_Pt_3200toInf.root";
+  map_mc["QCD_Pt_30to50_EMEn"] = "Vcb_QCD_Pt_30to50_EMEnriched.root";
+  map_mc["QCD_Pt_50to80_EMEn"] = "Vcb_QCD_Pt_50to80_EMEnriched.root";
+  map_mc["QCD_Pt_80to120_EMEn"] = "Vcb_QCD_Pt_80to120_EMEnriched.root";
+  map_mc["QCD_Pt_120to170_EMEn"] = "Vcb_QCD_Pt_120to170_EMEnriched.root";
+  map_mc["QCD_Pt_170to300_EMEn"] = "Vcb_QCD_Pt_170to300_EMEnriched.root";
+  map_mc["QCD_Pt_300toInf_EMEn"] = "Vcb_QCD_Pt_300toInf_EMEnriched.root";
+  map_mc["QCD_Pt_30to80_bcToE"] = "Vcb_QCD_Pt_30to80_bcToE.root";
+  map_mc["QCD_Pt_80to170_bcToE"] = "Vcb_QCD_Pt_80to170_bcToE.root";
+  map_mc["QCD_Pt_170to250_bcToE"] = "Vcb_QCD_Pt_170to250_bcToE.root";
+  map_mc["QCD_Pt_250toInf_bcToE"] = "Vcb_QCD_Pt_250toInf_bcToE.root";
+  map_mc["QCD_Pt_20to30_MuEn"] = "Vcb_QCD_Pt_20to30_MuEnriched.root";
+  map_mc["QCD_Pt_30to50_MuEn"] = "Vcb_QCD_Pt_30to50_MuEnriched.root";
+  map_mc["QCD_Pt_50to80_MuEn"] = "Vcb_QCD_Pt_50to80_MuEnriched.root";
+  map_mc["QCD_Pt_80to120_MuEn"] = "Vcb_QCD_Pt_80to120_MuEnriched.root";
+  map_mc["QCD_Pt_120to170_MuEn"] = "Vcb_QCD_Pt_120to170_MuEnriched.root";
+  map_mc["QCD_Pt_170to300_MuEn"] = "Vcb_QCD_Pt_170to300_MuEnriched.root";
+  map_mc["QCD_Pt_300to470_MuEn"] = "Vcb_QCD_Pt_300to470_MuEnriched.root";
+  map_mc["QCD_Pt_470to600_MuEn"] = "Vcb_QCD_Pt_470to600_MuEnriched.root";
+  map_mc["QCD_Pt_600to800_MuEn"] = "Vcb_QCD_Pt_600to800_MuEnriched.root";
+  map_mc["QCD_Pt_800to1000_MuEn"] = "Vcb_QCD_Pt_800to1000_MuEnriched.root";
   map_mc["ttHTobb"] = "Vcb_ttHTobb.root";
   map_mc["ttHToNonbb"] = "Vcb_ttHToNonbb.root";
   map_mc["ttWToLNu"] = "Vcb_ttWToLNu.root";
@@ -112,6 +132,26 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   // map_short_name_mc["QCD_Pt_1800to2400"] = "QCD";
   // map_short_name_mc["QCD_Pt_2400to3200"] = "QCD";
   // map_short_name_mc["QCD_Pt_3200toInf"] = "QCD";
+  map_short_name_mc["QCD_Pt_30to50_EMEn"] = "QCD_EMEn";
+  map_short_name_mc["QCD_Pt_50to80_EMEn"] = "QCD_EMEn";
+  map_short_name_mc["QCD_Pt_80to120_EMEn"] = "QCD_EMEn";
+  map_short_name_mc["QCD_Pt_120to170_EMEn"] = "QCD_EMEn";
+  map_short_name_mc["QCD_Pt_170to300_EMEn"] = "QCD_EMEn";
+  map_short_name_mc["QCD_Pt_300toInf_EMEn"] = "QCD_EMEn";
+  map_short_name_mc["QCD_Pt_30to80_bcToE"] = "QCD_bcToE";
+  map_short_name_mc["QCD_Pt_80to170_bcToE"] = "QCD_bcToE";
+  map_short_name_mc["QCD_Pt_170to250_bcToE"] = "QCD_bcToE";
+  map_short_name_mc["QCD_Pt_250toInf_bcToE"] = "QCD_bcToE";
+  map_short_name_mc["QCD_Pt_20to30_MuEn"] = "QCD_MuEn";
+  map_short_name_mc["QCD_Pt_30to50_MuEn"] = "QCD_MuEn";
+  map_short_name_mc["QCD_Pt_50to80_MuEn"] = "QCD_MuEn";
+  map_short_name_mc["QCD_Pt_80to120_MuEn"] = "QCD_MuEn";
+  map_short_name_mc["QCD_Pt_120to170_MuEn"] = "QCD_MuEn";
+  map_short_name_mc["QCD_Pt_170to300_MuEn"] = "QCD_MuEn";
+  map_short_name_mc["QCD_Pt_300to470_MuEn"] = "QCD_MuEn";
+  map_short_name_mc["QCD_Pt_470to600_MuEn"] = "QCD_MuEn";
+  map_short_name_mc["QCD_Pt_600to800_MuEn"] = "QCD_MuEn";
+  map_short_name_mc["QCD_Pt_800to1000_MuEn"] = "QCD_MuEn";
   map_short_name_mc["ttHTobb"] = "ttHTobb";
   map_short_name_mc["ttHToNonbb"] = "ttHToNonbb";
   map_short_name_mc["ttWToLNu"] = "ttWToLNu";
@@ -137,7 +177,10 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_short_short_name["WJets"] = "VJets";
   map_short_short_name["DYJets"] = "VJets";
   map_short_short_name["QCD_bEn"] = "QCD_bEn";
-  // map_short_short_name["QCD"] = "QCD";
+  map_short_short_name["QCD_EMEn"] = "QCD_EMEn";
+  map_short_short_name["QCD_bcToE"] = "QCD_bcToE";
+  map_short_short_name["QCD_MuEn"] = "QCD_MuEn";
+  map_short_short_name["QCD"] = "QCD";
   map_short_short_name["ttHTobb"] = "ttV";
   map_short_short_name["ttHToNonbb"] = "ttV";
   map_short_short_name["ttWToLNu"] = "ttV";
@@ -155,8 +198,9 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_top_syst["TTLJ_hdampUp"] = "Vcb_TTLJ_powheg_hdampUp.root";
   map_top_syst["TTLJ_mtop171p5"] = "Vcb_TTLJ_powheg_mtop171p5.root";
   map_top_syst["TTLJ_mtop173p5"] = "Vcb_TTLJ_powheg_mtop173p5.root";
-  // map_top_syst["TTLJ_TTbb_4f"] = "Vcb_TTbb_4f_TTLJ.root";
-  // map_top_syst["TTLJ_bbDPS"] = "Vcb_TTLJ_bbDPS.root";
+  map_top_syst["TTLJ_erdOn"] = "Vcb_TTLJ_powheg_erdOn.root";
+  map_top_syst["TTLJ_CR1"] = "Vcb_TTLJ_powheg_CR1.root";
+  map_top_syst["TTLJ_CR2"] = "Vcb_TTLJ_powheg_CR2.root";
 
   map_top_syst["TTLL_CP5Down"] = "Vcb_TTLL_powheg_CP5Down.root";
   map_top_syst["TTLL_CP5Up"] = "Vcb_TTLL_powheg_CP5Up.root";
@@ -164,8 +208,9 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_top_syst["TTLL_hdampUp"] = "Vcb_TTLL_powheg_hdampUp.root";
   map_top_syst["TTLL_mtop171p5"] = "Vcb_TTLL_powheg_mtop171p5.root";
   map_top_syst["TTLL_mtop173p5"] = "Vcb_TTLL_powheg_mtop173p5.root";
-  // map_top_syst["TTLL_TTbb_4f"] = "Vcb_TTbb_4f_TTLL.root";
-  // map_top_syst["TTLL_bbDPS"] = "Vcb_TTLL_bbDPS.root";
+  map_top_syst["TTLL_erdOn"] = "Vcb_TTLL_powheg_erdOn.root";
+  map_top_syst["TTLL_CR1"] = "Vcb_TTLL_powheg_CR1.root";
+  map_top_syst["TTLL_CR2"] = "Vcb_TTLL_powheg_CR2.root";
 
   map_top_syst["TTLJ_WtoCB_CP5Down"] = "Vcb_TTLJ_WtoCB_powheg_CP5Down.root";
   map_top_syst["TTLJ_WtoCB_CP5Up"] = "Vcb_TTLJ_WtoCB_powheg_CP5Up.root";
@@ -173,6 +218,9 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   map_top_syst["TTLJ_WtoCB_hdampUp"] = "Vcb_TTLJ_WtoCB_powheg_hdampUp.root";
   map_top_syst["TTLJ_WtoCB_mtop171p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop171p5.root";
   map_top_syst["TTLJ_WtoCB_mtop173p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop173p5.root";
+  // map_top_syst["TTLJ_WtoCB_erdOn"] = "Vcb_TTLJ_WtoCB_powheg_erdOn.root";
+  // map_top_syst["TTLJ_WtoCB_CR1"] = "Vcb_TTLJ_WtoCB_powheg_CR1.root";
+  // map_top_syst["TTLJ_WtoCB_CR2"] = "Vcb_TTLJ_WtoCB_powheg_CR2.root";
 
   if (era == "2016preVFP")
     vec_period = {"B_ver2", "C", "D", "E", "F"};
@@ -255,8 +303,9 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     map_mc["TTLJ_CP5Up"] = "Vcb_TTLJ_powheg_CP5Up.root";
     map_mc["TTLJ_mtop171p5"] = "Vcb_TTLJ_powheg_mtop171p5.root";
     map_mc["TTLJ_mtop173p5"] = "Vcb_TTLJ_powheg_mtop173p5.root";
-    // map_mc["TTLJ_TTbb_4f"] = "Vcb_TTbb_4f_TTLJ.root";
-    // map_mc["TTLJ_bbDPS"] = "Vcb_TTLJ_bbDPS.root";
+    map_mc["TTLJ_erdOn"] = "Vcb_TTLJ_powheg_erdOn.root";
+    map_mc["TTLJ_CR1"] = "Vcb_TTLJ_powheg_CR1.root";
+    map_mc["TTLJ_CR2"] = "Vcb_TTLJ_powheg_CR2.root";
 
     map_short_name_mc["TTLJ_hdampDown"] = "TTLJ_hdampDown";
     map_short_name_mc["TTLJ_hdampUp"] = "TTLJ_hdampUp";
@@ -264,8 +313,9 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     map_short_name_mc["TTLJ_CP5Up"] = "TTLJ_CP5Up";
     map_short_name_mc["TTLJ_mtop171p5"] = "TTLJ_mtop171p5";
     map_short_name_mc["TTLJ_mtop173p5"] = "TTLJ_mtop173p5";
-    // map_short_name_mc["TTLJ_TTbb_4f"] = "TTLJ_TTbb_4f";
-    // map_short_name_mc["TTLJ_bbDPS"] = "TTLJ_bbDPS";
+    map_short_name_mc["TTLJ_erdOn"] = "TTLJ_erdOn";
+    map_short_name_mc["TTLJ_CR1"] = "TTLJ_CR1";
+    map_short_name_mc["TTLJ_CR2"] = "TTLJ_CR2";
 
     map_mc["TTLL_hdampDown"] = "Vcb_TTLL_powheg_hdampDown.root";
     map_mc["TTLL_hdampUp"] = "Vcb_TTLL_powheg_hdampUp.root";
@@ -273,8 +323,9 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     map_mc["TTLL_CP5Up"] = "Vcb_TTLL_powheg_CP5Up.root";
     map_mc["TTLL_mtop171p5"] = "Vcb_TTLL_powheg_mtop171p5.root";
     map_mc["TTLL_mtop173p5"] = "Vcb_TTLL_powheg_mtop173p5.root";
-    // map_mc["TTLL_TTbb_4f"] = "Vcb_TTbb_4f_TTLL.root";
-    // map_mc["TTLL_bbDPS"] = "Vcb_TTLL_bbDPS.root";
+    map_mc["TTLL_erdOn"] = "Vcb_TTLL_powheg_erdOn.root";
+    map_mc["TTLL_CR1"] = "Vcb_TTLL_powheg_CR1.root";
+    map_mc["TTLL_CR2"] = "Vcb_TTLL_powheg_CR2.root";
 
     map_short_name_mc["TTLL_hdampDown"] = "TTLL_hdampDown";
     map_short_name_mc["TTLL_hdampUp"] = "TTLL_hdampUp";
@@ -282,8 +333,9 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     map_short_name_mc["TTLL_CP5Up"] = "TTLL_CP5Up";
     map_short_name_mc["TTLL_mtop171p5"] = "TTLL_mtop171p5";
     map_short_name_mc["TTLL_mtop173p5"] = "TTLL_mtop173p5";
-    // map_short_name_mc["TTLL_TTbb_4f"] = "TTLL_TTbb_4f";
-    // map_short_name_mc["TTLL_bbDPS"] = "TTLL_bbDPS";
+    map_short_name_mc["TTLL_erdOn"] = "TTLL_erdOn";
+    map_short_name_mc["TTLL_CR1"] = "TTLL_CR1";
+    map_short_name_mc["TTLL_CR2"] = "TTLL_CR2";
 
     map_mc["TTLJ_WtoCB_CP5Down"] = "Vcb_TTLJ_WtoCB_powheg_CP5Down.root";
     map_mc["TTLJ_WtoCB_CP5Up"] = "Vcb_TTLJ_WtoCB_powheg_CP5Up.root";
@@ -291,6 +343,9 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     map_mc["TTLJ_WtoCB_hdampUp"] = "Vcb_TTLJ_WtoCB_powheg_hdampUp.root";
     map_mc["TTLJ_WtoCB_mtop171p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop171p5.root";
     map_mc["TTLJ_WtoCB_mtop173p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop173p5.root";
+    // map_mc["TTLJ_WtoCB_erdOn"] = "Vcb_TTLJ_WtoCB_powheg_erdOn.root";
+    // map_mc["TTLJ_WtoCB_CR1"] = "Vcb_TTLJ_WtoCB_powheg_CR1.root";
+    // map_mc["TTLJ_WtoCB_CR2"] = "Vcb_TTLJ_WtoCB_powheg_CR2.root";
 
     map_short_name_mc["TTLJ_WtoCB_CP5Down"] = "TTLJ_WtoCB_CP5Down";
     map_short_name_mc["TTLJ_WtoCB_CP5Up"] = "TTLJ_WtoCB_CP5Up";
@@ -298,61 +353,74 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
     map_short_name_mc["TTLJ_WtoCB_hdampUp"] = "TTLJ_WtoCB_hdampUp";
     map_short_name_mc["TTLJ_WtoCB_mtop171p5"] = "TTLJ_WtoCB_mtop171p5";
     map_short_name_mc["TTLJ_WtoCB_mtop173p5"] = "TTLJ_WtoCB_mtop173p5";
+    // map_short_name_mc["TTLJ_WtoCB_erdOn"] = "TTLJ_WtoCB_erdOn";
+    // map_short_name_mc["TTLJ_WtoCB_CR1"] = "TTLJ_WtoCB_CR1";
+    // map_short_name_mc["TTLJ_WtoCB_CR2"] = "TTLJ_WtoCB_CR2";
 
     for (auto it = map_mc.begin(); it != map_mc.end(); it++)
       it->second.ReplaceAll("Vcb", "Vcb_Modelling_Patch");
   }
   else if (analyser == "Vcb_Tagging_RF")
   {
-    map_mc["TTLJ_hdampDown"] = "Vcb_TTLJ_powheg_hdampDown.root";
-    map_mc["TTLJ_hdampUp"] = "Vcb_TTLJ_powheg_hdampUp.root";
-    map_mc["TTLJ_CP5Down"] = "Vcb_TTLJ_powheg_CP5Down.root";
-    map_mc["TTLJ_CP5Up"] = "Vcb_TTLJ_powheg_CP5Up.root";
-    map_mc["TTLJ_mtop171p5"] = "Vcb_TTLJ_powheg_mtop171p5.root";
-    map_mc["TTLJ_mtop173p5"] = "Vcb_TTLJ_powheg_mtop173p5.root";
-    // map_mc["TTLJ_TTbb_4f"] = "Vcb_TTbb_4f_TTLJ.root";
-    // map_mc["TTLJ_bbDPS"] = "Vcb_TTLJ_bbDPS.root";
+    // map_mc["TTLJ_hdampDown"] = "Vcb_TTLJ_powheg_hdampDown.root";
+    // map_mc["TTLJ_hdampUp"] = "Vcb_TTLJ_powheg_hdampUp.root";
+    // map_mc["TTLJ_CP5Down"] = "Vcb_TTLJ_powheg_CP5Down.root";
+    // map_mc["TTLJ_CP5Up"] = "Vcb_TTLJ_powheg_CP5Up.root";
+    // map_mc["TTLJ_mtop171p5"] = "Vcb_TTLJ_powheg_mtop171p5.root";
+    // map_mc["TTLJ_mtop173p5"] = "Vcb_TTLJ_powheg_mtop173p5.root";
+    // map_mc["TTLJ_erdOn"] = "Vcb_TTLJ_powheg_erdOn.root";
+    // map_mc["TTLJ_CR1"] = "Vcb_TTLJ_powheg_CR1.root";
+    // map_mc["TTLJ_CR2"] = "Vcb_TTLJ_powheg_CR2.root";
 
-    map_short_name_mc["TTLJ_hdampDown"] = "TTLJ_hdampDown";
-    map_short_name_mc["TTLJ_hdampUp"] = "TTLJ_hdampUp";
-    map_short_name_mc["TTLJ_CP5Down"] = "TTLJ_CP5Down";
-    map_short_name_mc["TTLJ_CP5Up"] = "TTLJ_CP5Up";
-    map_short_name_mc["TTLJ_mtop171p5"] = "TTLJ_mtop171p5";
-    map_short_name_mc["TTLJ_mtop173p5"] = "TTLJ_mtop173p5";
-    // map_short_name_mc["TTLJ_TTbb_4f"] = "TTLJ_TTbb_4f";
-    // map_short_name_mc["TTLJ_bbDPS"] = "TTLJ_bbDPS";
+    // map_short_name_mc["TTLJ_hdampDown"] = "TTLJ_hdampDown";
+    // map_short_name_mc["TTLJ_hdampUp"] = "TTLJ_hdampUp";
+    // map_short_name_mc["TTLJ_CP5Down"] = "TTLJ_CP5Down";
+    // map_short_name_mc["TTLJ_CP5Up"] = "TTLJ_CP5Up";
+    // map_short_name_mc["TTLJ_mtop171p5"] = "TTLJ_mtop171p5";
+    // map_short_name_mc["TTLJ_mtop173p5"] = "TTLJ_mtop173p5";
+    // map_short_name_mc["TTLJ_erdOn"] = "TTLJ_erdOn";
+    // map_short_name_mc["TTLJ_CR1"] = "TTLJ_CR1";
+    // map_short_name_mc["TTLJ_CR2"] = "TTLJ_CR2";
 
-    map_mc["TTLL_hdampDown"] = "Vcb_TTLL_powheg_hdampDown.root";
-    map_mc["TTLL_hdampUp"] = "Vcb_TTLL_powheg_hdampUp.root";
-    map_mc["TTLL_CP5Down"] = "Vcb_TTLL_powheg_CP5Down.root";
-    map_mc["TTLL_CP5Up"] = "Vcb_TTLL_powheg_CP5Up.root";
-    map_mc["TTLL_mtop171p5"] = "Vcb_TTLL_powheg_mtop171p5.root";
-    map_mc["TTLL_mtop173p5"] = "Vcb_TTLL_powheg_mtop173p5.root";
-    // map_mc["TTLL_TTbb_4f"] = "Vcb_TTbb_4f_TTLL.root";
-    // map_mc["TTLL_bbDPS"] = "Vcb_TTLL_bbDPS.root";
+    // map_mc["TTLL_hdampDown"] = "Vcb_TTLL_powheg_hdampDown.root";
+    // map_mc["TTLL_hdampUp"] = "Vcb_TTLL_powheg_hdampUp.root";
+    // map_mc["TTLL_CP5Down"] = "Vcb_TTLL_powheg_CP5Down.root";
+    // map_mc["TTLL_CP5Up"] = "Vcb_TTLL_powheg_CP5Up.root";
+    // map_mc["TTLL_mtop171p5"] = "Vcb_TTLL_powheg_mtop171p5.root";
+    // map_mc["TTLL_mtop173p5"] = "Vcb_TTLL_powheg_mtop173p5.root";
+    // map_mc["TTLL_erdOn"] = "Vcb_TTLL_powheg_erdOn.root";
+    // map_mc["TTLL_CR1"] = "Vcb_TTLL_powheg_CR1.root";
+    // map_mc["TTLL_CR2"] = "Vcb_TTLL_powheg_CR2.root";
 
-    map_short_name_mc["TTLL_hdampDown"] = "TTLL_hdampDown";
-    map_short_name_mc["TTLL_hdampUp"] = "TTLL_hdampUp";
-    map_short_name_mc["TTLL_CP5Down"] = "TTLL_CP5Down";
-    map_short_name_mc["TTLL_CP5Up"] = "TTLL_CP5Up";
-    map_short_name_mc["TTLL_mtop171p5"] = "TTLL_mtop171p5";
-    map_short_name_mc["TTLL_mtop173p5"] = "TTLL_mtop173p5";
-    // map_short_name_mc["TTLL_TTbb_4f"] = "TTLL_TTbb_4f";
-    // map_short_name_mc["TTLL_bbDPS"] = "TTLL_bbDPS";
+    // map_short_name_mc["TTLL_hdampDown"] = "TTLL_hdampDown";
+    // map_short_name_mc["TTLL_hdampUp"] = "TTLL_hdampUp";
+    // map_short_name_mc["TTLL_CP5Down"] = "TTLL_CP5Down";
+    // map_short_name_mc["TTLL_CP5Up"] = "TTLL_CP5Up";
+    // map_short_name_mc["TTLL_mtop171p5"] = "TTLL_mtop171p5";
+    // map_short_name_mc["TTLL_mtop173p5"] = "TTLL_mtop173p5";
+    // map_short_name_mc["TTLL_erdOn"] = "TTLL_erdOn";
+    // map_short_name_mc["TTLL_CR1"] = "TTLL_CR1";
+    // map_short_name_mc["TTLL_CR2"] = "TTLL_CR2";
 
-    map_mc["TTLJ_WtoCB_CP5Down"] = "Vcb_TTLJ_WtoCB_powheg_CP5Down.root";
-    map_mc["TTLJ_WtoCB_CP5Up"] = "Vcb_TTLJ_WtoCB_powheg_CP5Up.root";
-    map_mc["TTLJ_WtoCB_hdampDown"] = "Vcb_TTLJ_WtoCB_powheg_hdampDown.root";
-    map_mc["TTLJ_WtoCB_hdampUp"] = "Vcb_TTLJ_WtoCB_powheg_hdampUp.root";
-    map_mc["TTLJ_WtoCB_mtop171p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop171p5.root";
-    map_mc["TTLJ_WtoCB_mtop173p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop173p5.root";
+    // map_mc["TTLJ_WtoCB_CP5Down"] = "Vcb_TTLJ_WtoCB_powheg_CP5Down.root";
+    // map_mc["TTLJ_WtoCB_CP5Up"] = "Vcb_TTLJ_WtoCB_powheg_CP5Up.root";
+    // map_mc["TTLJ_WtoCB_hdampDown"] = "Vcb_TTLJ_WtoCB_powheg_hdampDown.root";
+    // map_mc["TTLJ_WtoCB_hdampUp"] = "Vcb_TTLJ_WtoCB_powheg_hdampUp.root";
+    // map_mc["TTLJ_WtoCB_mtop171p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop171p5.root";
+    // map_mc["TTLJ_WtoCB_mtop173p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop173p5.root";
+    // // map_mc["TTLJ_WtoCB_erdOn"] = "Vcb_TTLJ_WtoCB_powheg_erdOn.root";
+    // // map_mc["TTLJ_WtoCB_CR1"] = "Vcb_TTLJ_WtoCB_powheg_CR1.root";
+    // // map_mc["TTLJ_WtoCB_CR2"] = "Vcb_TTLJ_WtoCB_powheg_CR2.root";
 
-    map_short_name_mc["TTLJ_WtoCB_CP5Down"] = "TTLJ_WtoCB_CP5Down";
-    map_short_name_mc["TTLJ_WtoCB_CP5Up"] = "TTLJ_WtoCB_CP5Up";
-    map_short_name_mc["TTLJ_WtoCB_hdampDown"] = "TTLJ_WtoCB_hdampDown";
-    map_short_name_mc["TTLJ_WtoCB_hdampUp"] = "TTLJ_WtoCB_hdampUp";
-    map_short_name_mc["TTLJ_WtoCB_mtop171p5"] = "TTLJ_WtoCB_mtop171p5";
-    map_short_name_mc["TTLJ_WtoCB_mtop173p5"] = "TTLJ_WtoCB_mtop173p5";
+    // map_short_name_mc["TTLJ_WtoCB_CP5Down"] = "TTLJ_WtoCB_CP5Down";
+    // map_short_name_mc["TTLJ_WtoCB_CP5Up"] = "TTLJ_WtoCB_CP5Up";
+    // map_short_name_mc["TTLJ_WtoCB_hdampDown"] = "TTLJ_WtoCB_hdampDown";
+    // map_short_name_mc["TTLJ_WtoCB_hdampUp"] = "TTLJ_WtoCB_hdampUp";
+    // map_short_name_mc["TTLJ_WtoCB_mtop171p5"] = "TTLJ_WtoCB_mtop171p5";
+    // map_short_name_mc["TTLJ_WtoCB_mtop173p5"] = "TTLJ_WtoCB_mtop173p5";
+    // // map_short_name_mc["TTLJ_WtoCB_erdOn"] = "TTLJ_WtoCB_erdOn";
+    // // map_short_name_mc["TTLJ_WtoCB_CR1"] = "TTLJ_WtoCB_CR1";
+    // // map_short_name_mc["TTLJ_WtoCB_CR2"] = "TTLJ_WtoCB_CR2";
 
     for (auto it = map_mc.begin(); it != map_mc.end(); it++)
       it->second.ReplaceAll("Vcb", "Vcb_Tagging_RF");
@@ -389,55 +457,65 @@ Samples::Samples(const TString &a_era, const TString &a_channel, const TString &
   } // if (analyser == "Vcb_DL")
   else if (analyser == "Vcb_Tagging_RF_DL")
   {
-    map_mc["TTLJ_hdampDown"] = "Vcb_TTLJ_powheg_hdampDown.root";
-    map_mc["TTLJ_hdampUp"] = "Vcb_TTLJ_powheg_hdampUp.root";
-    map_mc["TTLJ_CP5Down"] = "Vcb_TTLJ_powheg_CP5Down.root";
-    map_mc["TTLJ_CP5Up"] = "Vcb_TTLJ_powheg_CP5Up.root";
-    map_mc["TTLJ_mtop171p5"] = "Vcb_TTLJ_powheg_mtop171p5.root";
-    map_mc["TTLJ_mtop173p5"] = "Vcb_TTLJ_powheg_mtop173p5.root";
-    // map_mc["TTLJ_TTbb_4f"] = "Vcb_TTbb_4f_TTLJ.root";
-    // map_mc["TTLJ_bbDPS"] = "Vcb_TTLJ_bbDPS.root";
+    // map_mc["TTLJ_hdampDown"] = "Vcb_TTLJ_powheg_hdampDown.root";
+    // map_mc["TTLJ_hdampUp"] = "Vcb_TTLJ_powheg_hdampUp.root";
+    // map_mc["TTLJ_CP5Down"] = "Vcb_TTLJ_powheg_CP5Down.root";
+    // map_mc["TTLJ_CP5Up"] = "Vcb_TTLJ_powheg_CP5Up.root";
+    // map_mc["TTLJ_mtop171p5"] = "Vcb_TTLJ_powheg_mtop171p5.root";
+    // map_mc["TTLJ_mtop173p5"] = "Vcb_TTLJ_powheg_mtop173p5.root";
+    // map_mc["TTLJ_erdOn"] = "Vcb_TTLJ_powheg_erdOn.root";
+    // map_mc["TTLJ_CR1"] = "Vcb_TTLJ_powheg_CR1.root";
+    // map_mc["TTLJ_CR2"] = "Vcb_TTLJ_powheg_CR2.root";
 
-    map_short_name_mc["TTLJ_hdampDown"] = "TTLJ_hdampDown";
-    map_short_name_mc["TTLJ_hdampUp"] = "TTLJ_hdampUp";
-    map_short_name_mc["TTLJ_CP5Down"] = "TTLJ_CP5Down";
-    map_short_name_mc["TTLJ_CP5Up"] = "TTLJ_CP5Up";
-    map_short_name_mc["TTLJ_mtop171p5"] = "TTLJ_mtop171p5";
-    map_short_name_mc["TTLJ_mtop173p5"] = "TTLJ_mtop173p5";
-    // map_short_name_mc["TTLJ_TTbb_4f"] = "TTLJ_TTbb_4f";
-    // map_short_name_mc["TTLJ_bbDPS"] = "TTLJ_bbDPS";
+    // map_short_name_mc["TTLJ_hdampDown"] = "TTLJ_hdampDown";
+    // map_short_name_mc["TTLJ_hdampUp"] = "TTLJ_hdampUp";
+    // map_short_name_mc["TTLJ_CP5Down"] = "TTLJ_CP5Down";
+    // map_short_name_mc["TTLJ_CP5Up"] = "TTLJ_CP5Up";
+    // map_short_name_mc["TTLJ_mtop171p5"] = "TTLJ_mtop171p5";
+    // map_short_name_mc["TTLJ_mtop173p5"] = "TTLJ_mtop173p5";
+    // map_short_name_mc["TTLJ_erdOn"] = "TTLJ_erdOn";
+    // map_short_name_mc["TTLJ_CR1"] = "TTLJ_CR1";
+    // map_short_name_mc["TTLJ_CR2"] = "TTLJ_CR2";
 
-    map_mc["TTLL_hdampDown"] = "Vcb_TTLL_powheg_hdampDown.root";
-    map_mc["TTLL_hdampUp"] = "Vcb_TTLL_powheg_hdampUp.root";
-    map_mc["TTLL_CP5Down"] = "Vcb_TTLL_powheg_CP5Down.root";
-    map_mc["TTLL_CP5Up"] = "Vcb_TTLL_powheg_CP5Up.root";
-    map_mc["TTLL_mtop171p5"] = "Vcb_TTLL_powheg_mtop171p5.root";
-    map_mc["TTLL_mtop173p5"] = "Vcb_TTLL_powheg_mtop173p5.root";
-    // map_mc["TTLL_TTbb_4f"] = "Vcb_TTbb_4f_TTLL.root";
-    // map_mc["TTLL_bbDPS"] = "Vcb_TTLL_bbDPS.root";
+    // map_mc["TTLL_hdampDown"] = "Vcb_TTLL_powheg_hdampDown.root";
+    // map_mc["TTLL_hdampUp"] = "Vcb_TTLL_powheg_hdampUp.root";
+    // map_mc["TTLL_CP5Down"] = "Vcb_TTLL_powheg_CP5Down.root";
+    // map_mc["TTLL_CP5Up"] = "Vcb_TTLL_powheg_CP5Up.root";
+    // map_mc["TTLL_mtop171p5"] = "Vcb_TTLL_powheg_mtop171p5.root";
+    // map_mc["TTLL_mtop173p5"] = "Vcb_TTLL_powheg_mtop173p5.root";
+    // map_mc["TTLL_erdOn"] = "Vcb_TTLL_powheg_erdOn.root";
+    // map_mc["TTLL_CR1"] = "Vcb_TTLL_powheg_CR1.root";
+    // map_mc["TTLL_CR2"] = "Vcb_TTLL_powheg_CR2.root";
 
-    map_short_name_mc["TTLL_hdampDown"] = "TTLL_hdampDown";
-    map_short_name_mc["TTLL_hdampUp"] = "TTLL_hdampUp";
-    map_short_name_mc["TTLL_CP5Down"] = "TTLL_CP5Down";
-    map_short_name_mc["TTLL_CP5Up"] = "TTLL_CP5Up";
-    map_short_name_mc["TTLL_mtop171p5"] = "TTLL_mtop171p5";
-    map_short_name_mc["TTLL_mtop173p5"] = "TTLL_mtop173p5";
-    // map_short_name_mc["TTLL_TTbb_4f"] = "TTLL_TTbb_4f";
-    // map_short_name_mc["TTLL_bbDPS"] = "TTLL_bbDPS";
+    // map_short_name_mc["TTLL_hdampDown"] = "TTLL_hdampDown";
+    // map_short_name_mc["TTLL_hdampUp"] = "TTLL_hdampUp";
+    // map_short_name_mc["TTLL_CP5Down"] = "TTLL_CP5Down";
+    // map_short_name_mc["TTLL_CP5Up"] = "TTLL_CP5Up";
+    // map_short_name_mc["TTLL_mtop171p5"] = "TTLL_mtop171p5";
+    // map_short_name_mc["TTLL_mtop173p5"] = "TTLL_mtop173p5";
+    // map_short_name_mc["TTLL_erdOn"] = "TTLL_erdOn";
+    // map_short_name_mc["TTLL_CR1"] = "TTLL_CR1";
+    // map_short_name_mc["TTLL_CR2"] = "TTLL_CR2";
 
-    map_mc["TTLJ_WtoCB_CP5Down"] = "Vcb_TTLJ_WtoCB_powheg_CP5Down.root";
-    map_mc["TTLJ_WtoCB_CP5Up"] = "Vcb_TTLJ_WtoCB_powheg_CP5Up.root";
-    map_mc["TTLJ_WtoCB_hdampDown"] = "Vcb_TTLJ_WtoCB_powheg_hdampDown.root";
-    map_mc["TTLJ_WtoCB_hdampUp"] = "Vcb_TTLJ_WtoCB_powheg_hdampUp.root";
-    map_mc["TTLJ_WtoCB_mtop171p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop171p5.root";
-    map_mc["TTLJ_WtoCB_mtop173p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop173p5.root";
+    // map_mc["TTLJ_WtoCB_CP5Down"] = "Vcb_TTLJ_WtoCB_powheg_CP5Down.root";
+    // map_mc["TTLJ_WtoCB_CP5Up"] = "Vcb_TTLJ_WtoCB_powheg_CP5Up.root";
+    // map_mc["TTLJ_WtoCB_hdampDown"] = "Vcb_TTLJ_WtoCB_powheg_hdampDown.root";
+    // map_mc["TTLJ_WtoCB_hdampUp"] = "Vcb_TTLJ_WtoCB_powheg_hdampUp.root";
+    // map_mc["TTLJ_WtoCB_mtop171p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop171p5.root";
+    // map_mc["TTLJ_WtoCB_mtop173p5"] = "Vcb_TTLJ_WtoCB_powheg_mtop173p5.root";
+    // // map_mc["TTLJ_WtoCB_erdOn"] = "Vcb_TTLJ_WtoCB_powheg_erdOn.root";
+    // // map_mc["TTLJ_WtoCB_CR1"] = "Vcb_TTLJ_WtoCB_powheg_CR1.root";
+    // // map_mc["TTLJ_WtoCB_CR2"] = "Vcb_TTLJ_WtoCB_powheg_CR2.root";
 
-    map_short_name_mc["TTLJ_WtoCB_CP5Down"] = "TTLJ_WtoCB_CP5Down";
-    map_short_name_mc["TTLJ_WtoCB_CP5Up"] = "TTLJ_WtoCB_CP5Up";
-    map_short_name_mc["TTLJ_WtoCB_hdampDown"] = "TTLJ_WtoCB_hdampDown";
-    map_short_name_mc["TTLJ_WtoCB_hdampUp"] = "TTLJ_WtoCB_hdampUp";
-    map_short_name_mc["TTLJ_WtoCB_mtop171p5"] = "TTLJ_WtoCB_mtop171p5";
-    map_short_name_mc["TTLJ_WtoCB_mtop173p5"] = "TTLJ_WtoCB_mtop173p5";
+    // map_short_name_mc["TTLJ_WtoCB_CP5Down"] = "TTLJ_WtoCB_CP5Down";
+    // map_short_name_mc["TTLJ_WtoCB_CP5Up"] = "TTLJ_WtoCB_CP5Up";
+    // map_short_name_mc["TTLJ_WtoCB_hdampDown"] = "TTLJ_WtoCB_hdampDown";
+    // map_short_name_mc["TTLJ_WtoCB_hdampUp"] = "TTLJ_WtoCB_hdampUp";
+    // map_short_name_mc["TTLJ_WtoCB_mtop171p5"] = "TTLJ_WtoCB_mtop171p5";
+    // map_short_name_mc["TTLJ_WtoCB_mtop173p5"] = "TTLJ_WtoCB_mtop173p5";
+    // // map_short_name_mc["TTLJ_WtoCB_erdOn"] = "TTLJ_WtoCB_erdOn";
+    // // map_short_name_mc["TTLJ_WtoCB_CR1"] = "TTLJ_WtoCB_CR1";
+    // // map_short_name_mc["TTLJ_WtoCB_CR2"] = "TTLJ_WtoCB_CR2";
 
     for (auto it = map_mc.begin(); it != map_mc.end(); it++)
       it->second.ReplaceAll("Vcb", "Vcb_Tagging_RF_DL");

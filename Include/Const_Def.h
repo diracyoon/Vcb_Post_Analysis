@@ -8,13 +8,13 @@
 using namespace std;
 
 const bool chk_include_pseudo_additional = true;
-const bool chk_use_ttbb_4f = false;
-// const bool chk_use_ttbb_4f = true;
-// const bool chk_jes_breakdown = false;
+const bool chk_use_ttbb_4f = true;
+// const bool chk_use_ttbb_4f = false;
 const bool chk_jes_breakdown = true;
+// const bool chk_jes_breakdown = false;
 const bool chk_rf_tthf_breakdown = false;
 
-const float template_score_cut = 0.2;
+// const float template_score_cut = 0.2;
 
 // XGBoost
 // const float threeb_cr_cut_b = 0.90;
@@ -112,6 +112,7 @@ const float REL_ISO_ELECTRON_ENDCAP_A = 0.0658;
 const float REL_ISO_ELECTRON_ENDCAP_B = 0.963;
 
 const float MET_PT = 25;
+const float MET_PT_DL = 30;
 const float MT_CUT = 25;
 
 const float TTBB_Scale = 1.36;
@@ -290,7 +291,24 @@ static Syst StringToSyst(const TString &syst_str)
         return Syst::UEUp;
     else
     {
-        cerr << "Const_Def::SystToString Unknown Syst." << endl;
+        cerr << "Const_Def::SystToString Unknown Syst. " << syst_str << endl;
+        exit(1);
+    }
+}
+
+static float Lumi_Corr(const TString &era)
+{
+    if (era == "2016preVFP")
+        return 19501.601622 / 19517.523849863;
+    else if (era == "2016postVFP")
+        return 16812.151722 / 16812.151722482;
+    else if (era == "2017")
+        return 42068.228660 / 41477.877400009;
+    else if (era == "2018")
+        return 59561.262519 / 59561.262519;
+    else
+    {
+        cerr << "Const_Def::Lumi_Corr Unknown era. " << era << endl;
         exit(1);
     }
 }

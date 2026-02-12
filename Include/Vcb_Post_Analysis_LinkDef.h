@@ -24,5 +24,6 @@
 #pragma link C++ class Compare_TTbb+;
 #pragma link C++ class Modelling_Patch+;
 #pragma link C++ class Draw_Permutation+;
+#pragma link C++ class HEM_Veto+;
 
 #endif /* __ROOTCLING__ */

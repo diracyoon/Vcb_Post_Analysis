@@ -27,6 +27,8 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_mo
   else
     year = era;
 
+  lumi_corr = Lumi_Corr(era);
+
   // chk_bin_optimizer = true;
 
   path_base = getenv("Vcb_Post_Analysis_WD");
@@ -70,6 +72,7 @@ CR_DL::CR_DL(const TString &a_era, const TString &a_channel, const TString &a_mo
   {
     if (chk_use_ttbb_4f == false)
     {
+      gs = new TGraphSmooth("graph_smoother");
       Config_Sample();
       Config_Syst();
       Config_Variable();
@@ -361,10 +364,14 @@ void CR_DL::Config_Syst()
                  //"MuF_MuR_Down", "MuR_MuR_Up",
                  "FSR_Down", "FSR_Up",
                  "ISR_TT_Down", "ISR_TT_Up", "ISR_ST_Down", "ISR_ST_Up", "ISR_WJets_Down", "ISR_WJets_Up", "ISR_DYJets_Down", "ISR_DYJets_Up",
-                 "Top_Pt_Reweight",
+                 //"Top_Pt_Reweight",
+                 "Top_Pt_MVA_Reweight",
+                 "hdamp_MVA_Down", "hdamp_MVA_Up",
+                 "B_Frag_MVA_Down", "B_Frag_MVA_Up",
                  "CP5_Down", "CP5_Up",
                  "hdamp_Down", "hdamp_Up",
-                 "mtop_171p5", "mtop_173p5"};
+                 "mtop_171p5", "mtop_173p5",
+                 "erdOn", "CR1", "CR2"};
     //"TTbb_4f"};
 
     if (chk_jes_breakdown == true)
@@ -690,10 +697,10 @@ void CR_DL::Config_Vec_Tree_Type()
   } // if (mode == "Main")
   else if (mode == "Para_Smoothing")
   {
-    // vec_tree_type = {"CP5Down", "CP5Up",
-    //                  "hdampDown", "hdampUp",
-    //                  "Central"};
-    vec_tree_type = {"Central"};
+    vec_tree_type = {"CP5Down", "CP5Up",
+                     "hdampDown", "hdampUp",
+                     "Central"};
+    // vec_tree_type = {"Central"};
   }
 
   cout << vec_tree_type.size() << " tree types are configured." << endl;
@@ -709,7 +716,7 @@ void CR_DL::Draw_Smoothing()
 
   gStyle->SetOptStat(0);
 
-  vector<TString> sample_to_draw = {"TTLL_JJ"};
+  vector<TString> sample_to_draw = {"TTLL_JJ", "TTLL_CC", "TTLL_BB"};
 
   auto it = std::find(syst_name.begin(), syst_name.end(), "Nominal");
   int nominal_index = std::distance(syst_name.begin(), it);
@@ -820,7 +827,6 @@ void CR_DL::Draw_Smoothing()
       TH1D *histo_ratio_direct = (TH1D *)histo_mc_smoothing_unrolled[i][j]->Clone("histo_ratio_direct");
       histo_ratio_direct->Divide(histo_mc_smoothing_unrolled[nominal_index][j]);
       histo_ratio_direct->SetLineColor(kRed);
-      histo_ratio_direct->SetTitle("");
       histo_ratio_direct->GetXaxis()->SetTitle("BvsC_3rd_4th_Jets_Unrolled");
       histo_ratio_direct->GetYaxis()->SetTitle("/Nominal");
       histo_ratio_direct->GetYaxis()->SetRangeUser(0.5, 1.5);
@@ -919,14 +925,8 @@ void CR_DL::Read_Tree()
         event.Clear();
         it->second->GetEntry(i);
 
-        // int n_jets = 0;
-        // for (int j = 0; j < event.vec_jet_eta->size(); j++)
-        // {
-        //   if (TMath::Abs(event.vec_jet_eta->at(j)) < 2.4)
-        //     n_jets++;
-        // }
-        // if (n_jets < 4)
-        //   continue;
+        if (event.met_pt < MET_PT_DL)
+          continue;
 
         // quick and dirty method to fix index ordering issue
         event.Swap_Scale_Variation(sample_name_short);
@@ -937,47 +937,57 @@ void CR_DL::Read_Tree()
         if (TMath::IsNaN(event.weight_scale_variation_6) || !TMath::Finite(event.weight_scale_variation_6))
           cout << "IsNaN scale variation 6 " << event.weight_scale_variation_6 << endl;
 
-        if (tree_type == "Central")
+        sample_name_modelling_patch = Histo_Name_Modelling_Patch(sample_name_short);
+
+        if (sample_name_modelling_patch != sample_name_modelling_patch_prev)
         {
-          sample_name_modelling_patch = Histo_Name_Modelling_Patch(sample_name_short);
+          for (int i = 0; i < 100; i++)
+            modelling_patch_pdf_error_set[i] = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PDF_Error_Set_" + to_string(i));
+          modelling_patch_pdf_as_down = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PDF_As_Down");
+          modelling_patch_pdf_as_up = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PDF_As_Up");
+          modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Top_Pt_Reweight");
+          modelling_patch_top_pt_mva_reweight = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Top_Pt_MVA_Reweight");
+          modelling_patch_hdamp_mva_down = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "hDamp_MVA_Reweight_Down");
+          modelling_patch_hdamp_mva_up = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "hDamp_MVA_Reweight_Up");
+          modelling_patch_b_frag_mva_nominal = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "B_Frag_MVA_Reweight_Nominal");
+          modelling_patch_b_frag_mva_up = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "B_Frag_MVA_Reweight_Up");
+          modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_1");
+          modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_2");
+          modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_3");
+          modelling_patch_scale_variation_4 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_4");
+          modelling_patch_scale_variation_6 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_6");
+          modelling_patch_scale_variation_8 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_8");
+          modelling_patch_ps_0 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_0");
+          modelling_patch_ps_1 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_1");
+          modelling_patch_ps_2 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_2");
+          modelling_patch_ps_3 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_3");
 
-          if (sample_name_modelling_patch != sample_name_modelling_patch_prev)
-          {
-            for (int i = 0; i < 100; i++)
-              modelling_patch_pdf_error_set[i] = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PDF_Error_Set_" + to_string(i));
-            modelling_patch_pdf_as_down = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PDF_As_Down");
-            modelling_patch_pdf_as_up = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PDF_As_Up");
-            modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Top_Pt_Reweight");
-            modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_1");
-            modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_2");
-            modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_3");
-            modelling_patch_scale_variation_4 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_4");
-            modelling_patch_scale_variation_6 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_6");
-            modelling_patch_scale_variation_8 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_8");
-            modelling_patch_ps_0 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_0");
-            modelling_patch_ps_1 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_1");
-            modelling_patch_ps_2 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_2");
-            modelling_patch_ps_3 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "PS_3");
+          sample_name_modelling_patch_prev = sample_name_modelling_patch;
+        }
 
-            sample_name_modelling_patch_prev = sample_name_modelling_patch;
-          }
+        // if(sample_name_short.Contains("erdOn") || sample_name_short.Contains("CR1") || sample_name_short.Contains("CR2"))
+        //   cout << "test " << sample_name_short << " " << sample_name_modelling_patch << " " << modelling_patch_top_pt_mva_reweight << ", " << modelling_patch_b_frag_mva_nominal << endl;
 
-          for (int j = 0; j < 100; j++)
-            event.weight_pdf_error_set[j] = event.weight_pdf_error_set[j] * modelling_patch_pdf_error_set[j];
-          event.weight_pdf_as_down = event.weight_pdf_as_down * modelling_patch_pdf_as_down;
-          event.weight_pdf_as_up = event.weight_pdf_as_up * modelling_patch_pdf_as_up;
-          event.weight_top_pt *= modelling_patch_top_pt_reweight;
-          event.weight_scale_variation_1 *= modelling_patch_scale_variation_1;
-          event.weight_scale_variation_2 *= modelling_patch_scale_variation_2;
-          event.weight_scale_variation_3 *= modelling_patch_scale_variation_3;
-          event.weight_scale_variation_4 *= modelling_patch_scale_variation_4;
-          event.weight_scale_variation_6 *= modelling_patch_scale_variation_6;
-          event.weight_scale_variation_8 *= modelling_patch_scale_variation_8;
-          event.weight_ps[0] *= modelling_patch_ps_0;
-          event.weight_ps[1] *= modelling_patch_ps_1;
-          event.weight_ps[2] *= modelling_patch_ps_2;
-          event.weight_ps[3] *= modelling_patch_ps_3;
-        } // if (tree_type == "Central")
+        for (int j = 0; j < 100; j++)
+          event.weight_pdf_error_set[j] = event.weight_pdf_error_set[j] * modelling_patch_pdf_error_set[j];
+        event.weight_pdf_as_down = event.weight_pdf_as_down * modelling_patch_pdf_as_down;
+        event.weight_pdf_as_up = event.weight_pdf_as_up * modelling_patch_pdf_as_up;
+        event.weight_top_pt *= modelling_patch_top_pt_reweight;
+        event.weight_top_pt_mva *= modelling_patch_top_pt_mva_reweight;
+        event.weight_hdamp_mva_down *= modelling_patch_hdamp_mva_down;
+        event.weight_hdamp_mva_up *= modelling_patch_hdamp_mva_up;
+        event.weight_b_frag_mva_nominal *= modelling_patch_b_frag_mva_nominal;
+        event.weight_b_frag_mva_up *= modelling_patch_b_frag_mva_up;
+        event.weight_scale_variation_1 *= modelling_patch_scale_variation_1;
+        event.weight_scale_variation_2 *= modelling_patch_scale_variation_2;
+        event.weight_scale_variation_3 *= modelling_patch_scale_variation_3;
+        event.weight_scale_variation_4 *= modelling_patch_scale_variation_4;
+        event.weight_scale_variation_6 *= modelling_patch_scale_variation_6;
+        event.weight_scale_variation_8 *= modelling_patch_scale_variation_8;
+        event.weight_ps[0] *= modelling_patch_ps_0;
+        event.weight_ps[1] *= modelling_patch_ps_1;
+        event.weight_ps[2] *= modelling_patch_ps_2;
+        event.weight_ps[3] *= modelling_patch_ps_3;
 
         Fill_Histo_MC(sample_name, sample_name_short, syst_fix);
       } // loop over entries
@@ -1002,14 +1012,8 @@ void CR_DL::Read_Tree()
       event.Clear();
       it->second->GetEntry(i);
 
-      // int n_jets = 0;
-      // for (int j = 0; j < event.vec_jet_eta->size(); j++)
-      // {
-      //   if (TMath::Abs(event.vec_jet_eta->at(j)) < 2.4)
-      //     n_jets++;
-      // }
-      // if (n_jets < 4)
-      //   continue;
+      if (event.met_pt < MET_PT_DL)
+        continue;
 
       // if ((channel == "MM" || channel == "EE") && abs(event.dilepton_mass - Z_MASS) < 15)
       //   continue;
@@ -1054,6 +1058,8 @@ void CR_DL::Register_Sample()
       if (tree_type == "Central")
         chk_all = true;
 
+      vec_map_tree_mc[i][it->first]->SetCacheSize(512 * 1024 * 1024);
+
       event.Setup_Tree(vec_map_tree_mc[i][it->first], StringToSyst(tree_type), chk_all);
     } // for (unsigned int i = 0; i < vec_tree_type.size(); i++)
   } // for (auto it = samples.map_mc.begin(); it != samples.map_mc.end(); it++)
@@ -1086,6 +1092,15 @@ void CR_DL::Register_Sample()
 
   // mTop 173.5
   Register_Top_Syst(map_fin_mc_mtop_173p5, map_tree_mc_mtop_173p5, "mtop173p5");
+
+  // erdOn
+  Register_Top_Syst(map_fin_mc_erd_on, map_tree_mc_erd_on, "erdOn");
+
+  // CR1
+  Register_Top_Syst(map_fin_mc_cr1, map_tree_mc_cr1, "CR1");
+
+  // CR2
+  Register_Top_Syst(map_fin_mc_cr2, map_tree_mc_cr2, "CR2");
 
   // // TTbb4f
   // Register_Top_Syst(map_fin_mc_tt_4f, map_tree_mc_tt_4f, "TTbb4f");
@@ -1141,7 +1156,11 @@ void CR_DL::Register_Sample_Para_Smoothing()
     {
       TString tree_type = vec_tree_type[i];
 
-      // cout << tree_type << endl;
+      if (tree_type == "Data")
+        continue;
+
+      if (tree_type.Contains("CP5") || tree_type.Contains("hdamp") || tree_type.Contains("mtop"))
+        continue;
 
       vec_map_tree_mc[i][it->first] = (TTree *)map_fin_mc[it->first]->Get(channel + "/" + tree_type + "/Result_Tree");
 
@@ -1189,26 +1208,37 @@ void CR_DL::Register_Top_Syst(map<TString, TFile *> &map_fin_syst, map<TString, 
   TString path_base = getenv("Vcb_Post_Analysis_Sample_Dir");
   TString result_path = path_base + era + "/Vcb_DL/Top_Syst/";
 
-  if (type != "TTbb4f")
+  map_tree_syst = map_tree_mc_central;
+
+  map_tree_syst.erase("TTLJ");
+  map_tree_syst.erase("TTLL");
+  map_tree_syst.erase("TTLJ_WtoCB");
+
+  map_fin_syst["TTLJ_" + type] = new TFile(result_path + samples.map_top_syst["TTLJ_" + type]);
+  map_tree_syst["TTLJ_" + type] = (TTree *)map_fin_syst["TTLJ_" + type]->Get(channel + "/Central/Result_Tree");
+  event.Setup_Tree(map_tree_syst["TTLJ_" + type], Syst::Central);
+
+  map_fin_syst["TTLL_" + type] = new TFile(result_path + samples.map_top_syst["TTLL_" + type]);
+  map_tree_syst["TTLL_" + type] = (TTree *)map_fin_syst["TTLL_" + type]->Get(channel + "/Central/Result_Tree");
+  event.Setup_Tree(map_tree_syst["TTLL_" + type], Syst::Central);
+
+  if (type != "erdOn" && type != "CR1" && type != "CR2")
   {
-    map_tree_syst = map_tree_mc_central;
-
-    map_tree_syst.erase("TTLJ");
-    map_tree_syst.erase("TTLL");
-    map_tree_syst.erase("TTLJ_WtoCB");
-
-    map_fin_syst["TTLJ_" + type] = new TFile(result_path + samples.map_top_syst["TTLJ_" + type]);
-    map_tree_syst["TTLJ_" + type] = (TTree *)map_fin_syst["TTLJ_" + type]->Get(channel + "/Central/Result_Tree");
-    event.Setup_Tree(map_tree_syst["TTLJ_" + type], Syst::Central);
-
-    map_fin_syst["TTLL_" + type] = new TFile(result_path + samples.map_top_syst["TTLL_" + type]);
-    map_tree_syst["TTLL_" + type] = (TTree *)map_fin_syst["TTLL_" + type]->Get(channel + "/Central/Result_Tree");
-    event.Setup_Tree(map_tree_syst["TTLL_" + type], Syst::Central);
-
     map_fin_syst["TTLJ_WtoCB_" + type] = new TFile(result_path + samples.map_top_syst["TTLJ_WtoCB_" + type]);
     map_tree_syst["TTLJ_WtoCB_" + type] = (TTree *)map_fin_syst["TTLJ_WtoCB_" + type]->Get(channel + "/Central/Result_Tree");
     event.Setup_Tree(map_tree_syst["TTLJ_WtoCB_" + type], Syst::Central);
+  } // if (type != "erdOn" && type != "CR1" && type != "CR2")
+  // for erdOn, CR1, CR2, use the nominal WtoCB sample since we don't have dedicated samples
+  else
+  {
+    TString path_base = getenv("Vcb_Post_Analysis_Sample_Dir");
+    TString result_path = path_base + era + "/Vcb_DL/Central_Syst/";
+
+    map_fin_syst["TTLJ_WtoCB"] = new TFile(result_path + samples.map_mc["TTLJ_WtoCB"]);
+    map_tree_syst["TTLJ_WtoCB"] = (TTree *)map_fin_syst["TTLJ_WtoCB"]->Get(channel + "/Central/Result_Tree");
+    event.Setup_Tree(map_tree_syst["TTLJ_WtoCB"], Syst::Central);
   }
+
   // else
   // {
   //   cout << "TTLJ_TTbb_4f" << endl;
@@ -1322,38 +1352,41 @@ float CR_DL::Reweight_TTHF(const TString &sample_name)
 
 void CR_DL::Fill_Histo_Data()
 {
-  // int unrolled_bin = Unroller(event.bvsc_third, event.bvsc_fourth);
+  event.weight = 1.;
+  event.weight *= event.weight_hem_veto;
 
-  // histo_data[0]->Fill(unrolled_bin, 1.);
-  histo_data[1]->Fill(event.n_pv, 1.);
-  histo_data[2]->Fill(event.leading_lepton_eta, 1.);
-  histo_data[3]->Fill(event.leading_lepton_pt, 1.);
-  histo_data[4]->Fill(event.subleading_lepton_eta, 1.);
-  histo_data[5]->Fill(event.subleading_lepton_pt, 1.);
-  histo_data[6]->Fill(event.dilepton_mass, 1.);
-  histo_data[7]->Fill(event.n_jet, 1.);
-  histo_data[8]->Fill(event.n_b_jet, 1.);
-  histo_data[9]->Fill(event.n_c_jet, 1);
-  histo_data[10]->Fill(event.ht, 1.);
-  histo_data[11]->Fill(event.leading_jet_bvsc, 1.);
-  histo_data[12]->Fill(event.leading_jet_cvsb, 1.);
-  histo_data[13]->Fill(event.leading_jet_cvsl, 1.);
-  histo_data[14]->Fill(event.subleading_jet_bvsc, 1.);
-  histo_data[15]->Fill(event.subleading_jet_cvsb, 1.);
-  histo_data[16]->Fill(event.subleading_jet_cvsl, 1.);
-  histo_data[17]->Fill(event.met_pt, 1.);
-  histo_data[18]->Fill(event.met_phi, 1.);
-  histo_data[19]->Fill(event.leading_jet_charge, 1);
-  histo_data[20]->Fill(event.subleading_jet_charge, 1);
-  histo_data[21]->Fill(event.leading_jet_pt, 1);
-  histo_data[22]->Fill(event.subleading_jet_pt, 1);
-  histo_data[23]->Fill(event.bvsc_third_pt, 1);
-  histo_data[24]->Fill(event.bvsc_third_eta, 1);
-  histo_data[25]->Fill(event.bvsc_fourth_pt, 1);
-  histo_data[26]->Fill(event.bvsc_fourth_eta, 1);
-  histo_data[27]->Fill(0.5, 1.); // total events
+  // int unrolled_bin = Unroller(event.bvsc_third, event.bvsc_fourth, event.weight);
 
-  histo_data_2d[0]->Fill(event.bvsc_third, event.bvsc_fourth, 1.);
+  // histo_data[0]->Fill(unrolled_bin, event.weight);
+  histo_data[1]->Fill(event.n_pv, event.weight);
+  histo_data[2]->Fill(event.leading_lepton_eta, event.weight);
+  histo_data[3]->Fill(event.leading_lepton_pt, event.weight);
+  histo_data[4]->Fill(event.subleading_lepton_eta, event.weight);
+  histo_data[5]->Fill(event.subleading_lepton_pt, event.weight);
+  histo_data[6]->Fill(event.dilepton_mass, event.weight);
+  histo_data[7]->Fill(event.n_jet, event.weight);
+  histo_data[8]->Fill(event.n_b_jet, event.weight);
+  histo_data[9]->Fill(event.n_c_jet, event.weight);
+  histo_data[10]->Fill(event.ht, event.weight);
+  histo_data[11]->Fill(event.leading_jet_bvsc, event.weight);
+  histo_data[12]->Fill(event.leading_jet_cvsb, event.weight);
+  histo_data[13]->Fill(event.leading_jet_cvsl, event.weight);
+  histo_data[14]->Fill(event.subleading_jet_bvsc, event.weight);
+  histo_data[15]->Fill(event.subleading_jet_cvsb, event.weight);
+  histo_data[16]->Fill(event.subleading_jet_cvsl, event.weight);
+  histo_data[17]->Fill(event.met_pt, event.weight);
+  histo_data[18]->Fill(event.met_phi, event.weight);
+  histo_data[19]->Fill(event.leading_jet_charge, event.weight);
+  histo_data[20]->Fill(event.subleading_jet_charge, event.weight);
+  histo_data[21]->Fill(event.leading_jet_pt, event.weight);
+  histo_data[22]->Fill(event.subleading_jet_pt, event.weight);
+  histo_data[23]->Fill(event.bvsc_third_pt, event.weight);
+  histo_data[24]->Fill(event.bvsc_third_eta, event.weight);
+  histo_data[25]->Fill(event.bvsc_fourth_pt, event.weight);
+  histo_data[26]->Fill(event.bvsc_fourth_eta, event.weight);
+  histo_data[27]->Fill(0.5, event.weight); // total events
+
+  histo_data_2d[0]->Fill(event.bvsc_third, event.bvsc_fourth, event.weight);
 
   return;
 } // void CR_DL::Fill_Histo_Data()
@@ -1389,6 +1422,7 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
          syst_type == "CP5_Down" || syst_type == "CP5_Up" ||
          syst_type == "hdamp_Down" || syst_type == "hdamp_Up" ||
          syst_type == "mtop_171p5" || syst_type == "mtop_173p5" ||
+         syst_type == "erdOn" || syst_type == "CR1" || syst_type == "CR2" ||
          // syst_type == "TTbb_4f" ||
          syst_type.Contains("Jet_En")))
       continue;
@@ -1403,6 +1437,7 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
 
     event.weight = 1;
     event.weight *= event.weight_lumi;
+    event.weight *= lumi_corr;
     event.weight *= event.weight_mc;
     event.weight *= event.weight_hem_veto;
 
@@ -1504,11 +1539,28 @@ void CR_DL::Fill_Histo_MC(const TString &sample_name, const TString &sample_name
     else
       event.weight *= event.weight_pujet_veto;
 
-    // top pt
-    if (syst_type == "Top_Pt_Reweight")
+    // // top pt
+    // if (syst_type == "Top_Pt_Reweight")
+    //   event.weight *= 1;
+    // else
+    //   event.weight *= event.weight_top_pt;
+
+    if (syst_type == "Top_Pt_MVA_Reweight")
       event.weight *= 1;
     else
-      event.weight *= event.weight_top_pt;
+      event.weight *= event.weight_top_pt_mva;
+
+    if (syst_type == "B_Frag_MVA_Down")
+      event.weight *= 1;
+    else if (syst_type == "B_Frag_MVA_Up")
+      event.weight *= event.weight_b_frag_mva_up;
+    else
+      event.weight *= event.weight_b_frag_mva_nominal;
+
+    if (syst_type == "hdamp_MVA_Down")
+      event.weight *= event.weight_hdamp_mva_down;
+    else if (syst_type == "hdamp_MVA_Up")
+      event.weight *= event.weight_hdamp_mva_up;
 
     // single lepton trigger
     if (syst_type == "Mu_Trig_Down")
@@ -1920,7 +1972,7 @@ int CR_DL::Histo_Index(const TString &sample_name, bool &chk_discarded)
     if (histo_name.Contains("WtoCB"))
       histo_name.ReplaceAll("TTLJ_WtoCB", "TTLJ");
 
-    if (histo_name.Contains("CP5") || histo_name.Contains("hdamp") || histo_name.Contains("mtop"))
+    if (histo_name.Contains("CP5") || histo_name.Contains("hdamp") || histo_name.Contains("mtop") || histo_name.Contains("erdOn") || histo_name.Contains("CR1") || histo_name.Contains("CR2"))
     {
       if (histo_name.Contains("TTLJ"))
         histo_name = "TTLJ";
@@ -2079,6 +2131,15 @@ TString CR_DL::Histo_Name_RF(const TString &sample_name)
     if (histo_name_rf.Contains("WtoCB"))
       histo_name_rf.ReplaceAll("TTLJ_WtoCB", "TTLJ");
 
+    // apply nominal RF for top systematic samples to save time.
+    if (histo_name_rf.Contains("CP5") || histo_name_rf.Contains("hdamp") || histo_name_rf.Contains("mtop") || histo_name_rf.Contains("erdOn") || histo_name_rf.Contains("CR1") || histo_name_rf.Contains("CR2"))
+    {
+      if (histo_name_rf.Contains("TTLJ"))
+        histo_name_rf = "TTLJ";
+      else if (histo_name_rf.Contains("TTLL"))
+        histo_name_rf = "TTLL";
+    }
+
     if (chk_rf_tthf_breakdown)
     {
       bool chk_b = false;
@@ -2122,6 +2183,7 @@ TString CR_DL::Histo_Name_RF(const TString &sample_name)
         histo_name_rf += "_CC";
       else
         histo_name_rf += "_JJ";
+
     } // if(chk_rf_tthf_breakdown)
 
     if (event.decay_mode == 21 || event.decay_mode == 23)
@@ -2130,6 +2192,8 @@ TString CR_DL::Histo_Name_RF(const TString &sample_name)
       histo_name_rf += "_4";
     else if (event.decay_mode == 45)
       histo_name_rf += "_45";
+
+    // cout << "test " << sample_name << " " << histo_name_rf << endl;
   }
   else
     histo_name_rf = samples.map_short_name_mc[sample_name];
@@ -2559,30 +2623,30 @@ void CR_DL::Unroller()
 
 //////////
 
-int CR_DL::Unroller(const float &bvsc_third, const float &bvsc_fourth)
-{
-  int bin_third = -1;
-  for (unsigned int i = 0; i < bin_bvsc.size(); i++)
-  {
-    if (bvsc_third < bin_bvsc[i])
-      break;
+// int CR_DL::Unroller(const float &bvsc_third, const float &bvsc_fourth)
+// {
+//   int bin_third = -1;
+//   for (unsigned int i = 0; i < bin_bvsc.size(); i++)
+//   {
+//     if (bvsc_third < bin_bvsc[i])
+//       break;
 
-    bin_third++;
-  }
+//     bin_third++;
+//   }
 
-  int bin_fourth = -1;
-  for (unsigned int i = 0; i < bin_bvsc.size(); i++)
-  {
-    if (bvsc_fourth < bin_bvsc[i])
-      break;
+//   int bin_fourth = -1;
+//   for (unsigned int i = 0; i < bin_bvsc.size(); i++)
+//   {
+//     if (bvsc_fourth < bin_bvsc[i])
+//       break;
 
-    bin_fourth++;
-  }
+//     bin_fourth++;
+//   }
 
-  int bin_index = bin_third - 0.5 * bin_fourth * bin_fourth + 3.5 * bin_fourth - 0.5;
+//   int bin_index = bin_third - 0.5 * bin_fourth * bin_fourth + 3.5 * bin_fourth - 0.5;
 
-  return bin_index;
-} // int CR_DL::Unroller(const float &bvsc_third, const float &bvsc_fourth)
+//   return bin_index;
+// } // int CR_DL::Unroller(const float &bvsc_third, const float &bvsc_fourth)
 
 //////////
 
@@ -2602,9 +2666,9 @@ void CR_DL::Unroller_Para_Smoothing()
             if (l < m)
               continue;
 
-            // remove below loose & loose bin where MC description of data is poor
-            if (l == 0 && m == 0)
-              continue;
+            // // remove below loose & loose bin where MC description of data is poor
+            // if (l == 0 && m == 0)
+            //   continue;
 
             float content = histo_3d_smoothing[i][j]->GetBinContent(l + 1, m + 1, k + 1);
             float error = histo_3d_smoothing[i][j]->GetBinError(l + 1, m + 1, k + 1);
@@ -2705,9 +2769,21 @@ void CR_DL::Smoothing(TH1D *histo_nominal, TH1D *histo_syst)
 {
   cout << "[CR_DL::Smoothing]: Smoothing for mtop" << endl;
 
+  // histo_syst->Add(histo_nominal, -1);
+  // histo_syst->Smooth();
+  // histo_syst->Add(histo_nominal);
+
   histo_syst->Add(histo_nominal, -1);
-  histo_syst->Smooth();
-  histo_syst->Add(histo_nominal);
+
+  TGraph *gr_diff = new TGraph(histo_syst);
+
+  TGraph *gr_smoothed = gs->SmoothSuper(gr_diff, "", 6);
+
+  for (int i = 0; i < histo_syst->GetNbinsX(); i++)
+  {
+    histo_syst->SetBinContent(i + 1, gr_smoothed->GetY()[i] + histo_nominal->GetBinContent(i + 1));
+    histo_syst->SetBinError(i + 1, histo_nominal->GetBinError(i + 1));
+  }
 
   return;
 } // void CR_DL::Smoothing(TH1F* histo_nominal, TH1F* histo_syst)

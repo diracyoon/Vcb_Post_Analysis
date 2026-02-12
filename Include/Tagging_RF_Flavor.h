@@ -56,6 +56,8 @@ private:
 
   TString year;
 
+  float lumi_corr;
+
   bool chk_tthf_breakdown = false;
   bool chk_w_decay_breakdown = false;
   bool chk_jes_breakdown = false;
@@ -170,6 +172,8 @@ private:
 
   float weight_prefire;
   float weight_top_pt;
+  float weight_top_pt_mva;
+  float weight_b_frag_mva_nominal;
   float weight_pujet_veto;
 
   float weight_scale_variation_1;
@@ -254,6 +258,8 @@ private:
   float modelling_patch_pdf_as_down;
   float modelling_patch_pdf_as_up;
   float modelling_patch_top_pt_reweight;
+  float modelling_patch_top_pt_mva_reweight;
+  float modelling_patch_b_frag_mva_nominal;
   float modelling_patch_scale_variation_1;
   float modelling_patch_scale_variation_2;
   float modelling_patch_scale_variation_3;

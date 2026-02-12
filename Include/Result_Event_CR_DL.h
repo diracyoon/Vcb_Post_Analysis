@@ -181,6 +181,13 @@ protected:
   float weight_sl_trig_mu_up;
 
   float weight_top_pt;
+  float weight_top_pt_mva;
+
+  float weight_hdamp_mva_down;
+  float weight_hdamp_mva_up;
+
+  float weight_b_frag_mva_nominal;
+  float weight_b_frag_mva_up;
 
   vector<float> *vec_jet_pt = NULL;
   vector<float> *vec_jet_eta = NULL;

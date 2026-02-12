@@ -26,7 +26,7 @@ using namespace std;
 class Data_MC_Comparison_Cal_TF : public TObject
 {
 public:
-  Data_MC_Comparison_Cal_TF(const TString &a_era, const TString &a_channel, const TString& a_tagger = "C", const TString &a_extension = "png");
+  Data_MC_Comparison_Cal_TF(const TString &a_era, const TString &a_channel, const TString &a_tagger = "C", const TString &a_extension = "png");
   ~Data_MC_Comparison_Cal_TF();
 
 protected:
@@ -49,13 +49,15 @@ protected:
   vector<TString> sample_name;
   map<int, TString> sample_name_order;
 
-  TH1 ****histo_mc;   // n_region, n_abcd_region, n_sample
+  TH1 ****histo_mc;        // n_region, n_abcd_region, n_sample
   THStack ***stack_mc_eta; // n_region, n_abcd_region
   THStack ***stack_mc_pt;  // n_region, n_abcd_region
 
   TH1 ***histo_data; // n_region, n_abcd_region
 
   TCanvas **canvas; // n_region
+
+  TLegend **tl;// n_region
 
   TFile *fin;
 

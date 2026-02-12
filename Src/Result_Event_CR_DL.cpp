@@ -123,6 +123,13 @@ void Result_Event_CR_DL::Clear()
   weight_sl_trig_mu_up = 1;
 
   weight_top_pt = 1;
+  weight_top_pt_mva = 1;
+
+  weight_hdamp_mva_down = 1;
+  weight_hdamp_mva_up = 1;
+
+  weight_b_frag_mva_nominal = 1;
+  weight_b_frag_mva_up = 1;
 
   return;
 } // void Result_Event_CR_DL::Clear()
@@ -423,6 +430,13 @@ void Result_Event_CR_DL::Setup_Tree(TTree *tree, const Syst syst, const bool chk
     }
 
     tree->SetBranchAddress("weight_top_pt", &weight_top_pt);
+    tree->SetBranchAddress("weight_top_pt_mva", &weight_top_pt_mva);
+
+    tree->SetBranchAddress("weight_hdamp_mva_down", &weight_hdamp_mva_down);
+    tree->SetBranchAddress("weight_hdamp_mva_up", &weight_hdamp_mva_up);
+    
+    tree->SetBranchAddress("weight_b_frag_mva_nominal", &weight_b_frag_mva_nominal);
+    tree->SetBranchAddress("weight_b_frag_mva_up", &weight_b_frag_mva_up);
   } // if(!chk_data)
 
   return;
@@ -462,7 +476,8 @@ void Result_Event_CR_DL::Swap_Scale_Variation(const TString &sample_name_short)
     weight_scale_variation_7 = temp;
   }
   else if (sample_name_short == "WW" || sample_name_short == "WZ" || sample_name_short == "ZZ" ||
-           sample_name_short.Contains("CP5") || sample_name_short.Contains("mtop") || sample_name_short.Contains("hdamp"))
+           sample_name_short.Contains("QCD_MuEn") || sample_name_short.Contains("QCD_EMEn") ||
+           sample_name_short.Contains("CP5") || sample_name_short.Contains("mtop") || sample_name_short.Contains("hdamp") || sample_name_short.Contains("erdOn") || sample_name_short.Contains("CR1") || sample_name_short.Contains("CR2"))
   {
     // irrelevant
     // do nothing

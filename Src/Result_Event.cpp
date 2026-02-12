@@ -11,15 +11,17 @@ Result_Event::Result_Event(const TString &a_era, const TString &a_channel, const
 
   use_spanet = a_use_spanet;
   use_class_5 = false;
-  use_class_7 = false;
+  use_class_7 = true;
+  use_class_8 = false;
   use_class_9 = false;
-  use_class_11 = true;
+  use_class_11 = false;
   // use_class_7 = false;
   // use_class_9 = true;
 
   int chk_use_class = 0;
   chk_use_class += use_class_5 ? 1 : 0;
   chk_use_class += use_class_7 ? 1 : 0;
+  chk_use_class += use_class_8 ? 1 : 0;
   chk_use_class += use_class_9 ? 1 : 0;
   chk_use_class += use_class_11 ? 1 : 0;
   if (chk_use_class != 1)
@@ -46,19 +48,13 @@ Result_Event::Result_Event(const TString &a_era, const TString &a_channel, const
     {
       // weight_multi_to_one = {1, 0.475, 33, 4.97};
       if (use_class_5)
-      {
-        weight_multi_to_one = {1.0,
-                               0.13534381985664368,
-                               1.1491124629974365,
-                               7.348548889160156,
-                               2.4812419414520264,
-                               7.3692450523376465};
-      } // if (use_class_5)
+        weight_multi_to_one = {1.0, 0.13534381985664368, 1.1491124629974365, 7.348548889160156, 2.4812419414520264, 7.3692450523376465};
       else if (use_class_7)
       {
-        // 7 class big model
-        //  weight_multi_to_one = {1.0, 1.422459363937378, 0.8187478184700012, 0.15913666784763336, 0.13556669652462006, 1.3436123132705688, 0.13638406991958618};
-        weight_multi_to_one = {1.0, 2.0953543186187744, 0.3221606910228729, 0.13957561552524567, 0.1682095229625702, 3.835331439971924, 7.1731696128845215};
+        // 7 class
+        weight_multi_to_one = {1.0, 2.1147396564483643, 0.2601150572299957, 0.13942623138427734, 0.14658157527446747, 3.4934051036834717, 7.172461032867432};
+        // weight_multi_to_one = {1.0, 2.208143949508667, 0.3558271527290344, 0.13560611009597778, 0.13633579015731812, 4.023483753204346, 6.939846515655518};
+        // weight_multi_to_one = {1.0, 2.0953543186187744, 0.3221606910228729, 0.13957561552524567, 0.1682095229625702, 3.835331439971924, 7.1731696128845215};
 
         // if (era == "2016preVFP")
         //   weight_multi_to_one = {1, 2.32, 0.603, 0.724, 0.203, 1.12, 7.36};
@@ -76,14 +72,12 @@ Result_Event::Result_Event(const TString &a_era, const TString &a_channel, const
         //   cout << "[Result_Event::Result_Event]: ERROR: era is not properly set: " << era << endl;
         // }
       }
+      else if (use_class_8)
+        weight_multi_to_one = {1.0, 4.206587314605713, 0.17745105922222137, 0.14298032224178314, 1.3001340627670288, 4.254217147827148, 2.70405650138855, 0.17214177548885345};
       else if (use_class_9)
-      {
         weight_multi_to_one = {1.0, 2.9286446571350098, 0.18061691522598267, 0.14046022295951843, 0.17766238749027252, 6.950849533081055, 7.305800914764404, 0.1379690170288086, 0.1488856077194214};
-      }
       else if (use_class_11)
-      {
         weight_multi_to_one = {1.0, 0.6397884488105774, 6.201714038848877, 3.9107139110565186, 5.776496887207031, 2.6785318851470947, 3.990135669708252, 0.7478070259094238, 0.7260197401046753, 0.9436725974082947, 0.32608968019485474};
-      }
     }
     else if (tagger == "C")
     {
@@ -209,6 +203,13 @@ void Result_Event::Clear()
   weight_scale_variation_8 = 1;
 
   weight_top_pt = 1;
+  weight_top_pt_mva = 1;
+
+  weight_hdamp_mva_down = 1;
+  weight_hdamp_mva_up = 1;
+
+  weight_b_frag_mva_nominal = 1;
+  weight_b_frag_mva_up = 1;
 
   return;
 } // void Result_Event::Clear()
@@ -245,6 +246,21 @@ float Result_Event::Multi_To_One()
     one_d_score = weight_multi_to_one[0] * template_score_multi_0 + weight_multi_to_one[1] * template_score_multi_1;
     one_d_score /= (weight_multi_to_one[0] * template_score_multi_0 + weight_multi_to_one[1] * template_score_multi_1 + weight_multi_to_one[2] * template_score_multi_2 + weight_multi_to_one[3] * template_score_multi_3 + weight_multi_to_one[4] * template_score_multi_4 + weight_multi_to_one[5] * template_score_multi_5 + weight_multi_to_one[6] * template_score_multi_6);
   }
+  else if (use_class_8)
+  {
+    template_score_multi_0 = TMath::Exp(template_score_multi_0);
+    template_score_multi_1 = TMath::Exp(template_score_multi_1);
+    template_score_multi_2 = TMath::Exp(template_score_multi_2);
+    template_score_multi_3 = TMath::Exp(template_score_multi_3);
+    template_score_multi_4 = TMath::Exp(template_score_multi_4);
+    template_score_multi_5 = TMath::Exp(template_score_multi_5);
+    template_score_multi_6 = TMath::Exp(template_score_multi_6);
+    template_score_multi_7 = TMath::Exp(template_score_multi_7);
+
+    // one_d_score = weight_multi_to_one[0] * template_score_multi_0;
+    one_d_score = weight_multi_to_one[0] * template_score_multi_0 + weight_multi_to_one[1] * template_score_multi_1;
+    one_d_score /= (weight_multi_to_one[0] * template_score_multi_0 + weight_multi_to_one[1] * template_score_multi_1 + weight_multi_to_one[2] * template_score_multi_2 + weight_multi_to_one[3] * template_score_multi_3 + weight_multi_to_one[4] * template_score_multi_4 + weight_multi_to_one[5] * template_score_multi_5 + weight_multi_to_one[6] * template_score_multi_6 + weight_multi_to_one[7] * template_score_multi_7);
+  }
   else if (use_class_9)
   {
     template_score_multi_0 = TMath::Exp(template_score_multi_0);
@@ -261,7 +277,7 @@ float Result_Event::Multi_To_One()
     one_d_score = weight_multi_to_one[0] * template_score_multi_0 + weight_multi_to_one[1] * template_score_multi_1;
     one_d_score /= (weight_multi_to_one[0] * template_score_multi_0 + weight_multi_to_one[1] * template_score_multi_1 + weight_multi_to_one[2] * template_score_multi_2 + weight_multi_to_one[3] * template_score_multi_3 + weight_multi_to_one[4] * template_score_multi_4 + weight_multi_to_one[5] * template_score_multi_5 + weight_multi_to_one[6] * template_score_multi_6 + weight_multi_to_one[7] * template_score_multi_7 + weight_multi_to_one[8] * template_score_multi_8);
   }
-  else if(use_class_11)
+  else if (use_class_11)
   {
     template_score_multi_0 = TMath::Exp(template_score_multi_0);
     template_score_multi_1 = TMath::Exp(template_score_multi_1);
@@ -324,153 +340,159 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all, 
     tree->SetBranchAddress("weight_sl_trig_up", &weight_sl_trig_up);
   }
 
-  if (syst == Syst::Central && chk_all)
+  if (tagger == "B")
   {
-    tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
-    tree->SetBranchAddress("weight_b_tag_down_hf", &weight_b_tag_hf_down);
-    tree->SetBranchAddress("weight_b_tag_up_hf", &weight_b_tag_hf_up);
-    tree->SetBranchAddress("weight_b_tag_down_lf", &weight_b_tag_lf_down);
-    tree->SetBranchAddress("weight_b_tag_up_lf", &weight_b_tag_lf_up);
-    tree->SetBranchAddress("weight_b_tag_down_lfstats1", &weight_b_tag_lfstats1_down);
-    tree->SetBranchAddress("weight_b_tag_up_lfstats1", &weight_b_tag_lfstats1_up);
-    tree->SetBranchAddress("weight_b_tag_down_lfstats2", &weight_b_tag_lfstats2_down);
-    tree->SetBranchAddress("weight_b_tag_up_lfstats2", &weight_b_tag_lfstats2_up);
-    tree->SetBranchAddress("weight_b_tag_down_cferr1", &weight_b_tag_cferr1_down);
-    tree->SetBranchAddress("weight_b_tag_up_cferr1", &weight_b_tag_cferr1_up);
-    tree->SetBranchAddress("weight_b_tag_down_cferr2", &weight_b_tag_cferr2_down);
-    tree->SetBranchAddress("weight_b_tag_up_cferr2", &weight_b_tag_cferr2_up);
-    tree->SetBranchAddress("weight_b_tag_down_hfstats1", &weight_b_tag_hfstats1_down);
-    tree->SetBranchAddress("weight_b_tag_up_hfstats1", &weight_b_tag_hfstats1_up);
-    tree->SetBranchAddress("weight_b_tag_down_hfstats2", &weight_b_tag_hfstats2_down);
-    tree->SetBranchAddress("weight_b_tag_up_hfstats2", &weight_b_tag_hfstats2_up);
-  }
-  else if (syst == Syst::JetEnDown ||
-           syst == Syst::JetEnAbsoluteDown ||
-           syst == Syst::JetEnBBEC1Down ||
-           syst == Syst::JetEnEC2Down ||
-           syst == Syst::JetEnFlavorQCDDown ||
-           syst == Syst::JetEnHFDown ||
-           syst == Syst::JetEnRelativeBalDown ||
-           syst == Syst::JetEnAbsolute2016Down ||
-           syst == Syst::JetEnBBEC12016Down ||
-           syst == Syst::JetEnEC22016Down ||
-           syst == Syst::JetEnHF2016Down ||
-           syst == Syst::JetEnRelativeSample2016Down ||
-           syst == Syst::JetEnAbsolute2017Down ||
-           syst == Syst::JetEnBBEC12017Down ||
-           syst == Syst::JetEnEC22017Down ||
-           syst == Syst::JetEnHF2017Down ||
-           syst == Syst::JetEnRelativeSample2017Down ||
-           syst == Syst::JetEnAbsolute2018Down ||
-           syst == Syst::JetEnBBEC12018Down ||
-           syst == Syst::JetEnEC22018Down ||
-           syst == Syst::JetEnHF2018Down ||
-           syst == Syst::JetEnRelativeSample2018Down)
-    tree->SetBranchAddress("weight_b_tag_down_jes", &weight_b_tag_jes_down);
-  else if (syst == Syst::JetEnUp ||
-           syst == Syst::JetEnAbsoluteUp ||
-           syst == Syst::JetEnBBEC1Up ||
-           syst == Syst::JetEnEC2Up ||
-           syst == Syst::JetEnFlavorQCDUp ||
-           syst == Syst::JetEnHFUp ||
-           syst == Syst::JetEnRelativeBalUp ||
-           syst == Syst::JetEnAbsolute2016Up ||
-           syst == Syst::JetEnBBEC12016Up ||
-           syst == Syst::JetEnEC22016Up ||
-           syst == Syst::JetEnHF2016Up ||
-           syst == Syst::JetEnRelativeSample2016Up ||
-           syst == Syst::JetEnAbsolute2017Up ||
-           syst == Syst::JetEnBBEC12017Up ||
-           syst == Syst::JetEnEC22017Up ||
-           syst == Syst::JetEnHF2017Up ||
-           syst == Syst::JetEnRelativeSample2017Up ||
-           syst == Syst::JetEnAbsolute2018Up ||
-           syst == Syst::JetEnBBEC12018Up ||
-           syst == Syst::JetEnEC22018Up ||
-           syst == Syst::JetEnHF2018Up ||
-           syst == Syst::JetEnRelativeSample2018Up)
-    tree->SetBranchAddress("weight_b_tag_up_jes", &weight_b_tag_jes_up);
-  else
-    tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
+    if (syst == Syst::Central && chk_all)
+    {
+      tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
+      tree->SetBranchAddress("weight_b_tag_down_hf", &weight_b_tag_hf_down);
+      tree->SetBranchAddress("weight_b_tag_up_hf", &weight_b_tag_hf_up);
+      tree->SetBranchAddress("weight_b_tag_down_lf", &weight_b_tag_lf_down);
+      tree->SetBranchAddress("weight_b_tag_up_lf", &weight_b_tag_lf_up);
+      tree->SetBranchAddress("weight_b_tag_down_lfstats1", &weight_b_tag_lfstats1_down);
+      tree->SetBranchAddress("weight_b_tag_up_lfstats1", &weight_b_tag_lfstats1_up);
+      tree->SetBranchAddress("weight_b_tag_down_lfstats2", &weight_b_tag_lfstats2_down);
+      tree->SetBranchAddress("weight_b_tag_up_lfstats2", &weight_b_tag_lfstats2_up);
+      tree->SetBranchAddress("weight_b_tag_down_cferr1", &weight_b_tag_cferr1_down);
+      tree->SetBranchAddress("weight_b_tag_up_cferr1", &weight_b_tag_cferr1_up);
+      tree->SetBranchAddress("weight_b_tag_down_cferr2", &weight_b_tag_cferr2_down);
+      tree->SetBranchAddress("weight_b_tag_up_cferr2", &weight_b_tag_cferr2_up);
+      tree->SetBranchAddress("weight_b_tag_down_hfstats1", &weight_b_tag_hfstats1_down);
+      tree->SetBranchAddress("weight_b_tag_up_hfstats1", &weight_b_tag_hfstats1_up);
+      tree->SetBranchAddress("weight_b_tag_down_hfstats2", &weight_b_tag_hfstats2_down);
+      tree->SetBranchAddress("weight_b_tag_up_hfstats2", &weight_b_tag_hfstats2_up);
+    }
+    else if (syst == Syst::JetEnDown ||
+             syst == Syst::JetEnAbsoluteDown ||
+             syst == Syst::JetEnBBEC1Down ||
+             syst == Syst::JetEnEC2Down ||
+             syst == Syst::JetEnFlavorQCDDown ||
+             syst == Syst::JetEnHFDown ||
+             syst == Syst::JetEnRelativeBalDown ||
+             syst == Syst::JetEnAbsolute2016Down ||
+             syst == Syst::JetEnBBEC12016Down ||
+             syst == Syst::JetEnEC22016Down ||
+             syst == Syst::JetEnHF2016Down ||
+             syst == Syst::JetEnRelativeSample2016Down ||
+             syst == Syst::JetEnAbsolute2017Down ||
+             syst == Syst::JetEnBBEC12017Down ||
+             syst == Syst::JetEnEC22017Down ||
+             syst == Syst::JetEnHF2017Down ||
+             syst == Syst::JetEnRelativeSample2017Down ||
+             syst == Syst::JetEnAbsolute2018Down ||
+             syst == Syst::JetEnBBEC12018Down ||
+             syst == Syst::JetEnEC22018Down ||
+             syst == Syst::JetEnHF2018Down ||
+             syst == Syst::JetEnRelativeSample2018Down)
+      tree->SetBranchAddress("weight_b_tag_down_jes", &weight_b_tag_jes_down);
+    else if (syst == Syst::JetEnUp ||
+             syst == Syst::JetEnAbsoluteUp ||
+             syst == Syst::JetEnBBEC1Up ||
+             syst == Syst::JetEnEC2Up ||
+             syst == Syst::JetEnFlavorQCDUp ||
+             syst == Syst::JetEnHFUp ||
+             syst == Syst::JetEnRelativeBalUp ||
+             syst == Syst::JetEnAbsolute2016Up ||
+             syst == Syst::JetEnBBEC12016Up ||
+             syst == Syst::JetEnEC22016Up ||
+             syst == Syst::JetEnHF2016Up ||
+             syst == Syst::JetEnRelativeSample2016Up ||
+             syst == Syst::JetEnAbsolute2017Up ||
+             syst == Syst::JetEnBBEC12017Up ||
+             syst == Syst::JetEnEC22017Up ||
+             syst == Syst::JetEnHF2017Up ||
+             syst == Syst::JetEnRelativeSample2017Up ||
+             syst == Syst::JetEnAbsolute2018Up ||
+             syst == Syst::JetEnBBEC12018Up ||
+             syst == Syst::JetEnEC22018Up ||
+             syst == Syst::JetEnHF2018Up ||
+             syst == Syst::JetEnRelativeSample2018Up)
+      tree->SetBranchAddress("weight_b_tag_up_jes", &weight_b_tag_jes_up);
+    else
+      tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
+  } // if (tagger == "B")
 
-  if (syst == Syst::Central && chk_all)
+  else if (tagger == "C")
   {
-    tree->SetBranchAddress("weight_c_tag", &weight_c_tag);
-    tree->SetBranchAddress("weight_c_tag_down_extrap", &weight_c_tag_extrap_down);
-    tree->SetBranchAddress("weight_c_tag_up_extrap", &weight_c_tag_extrap_up);
-    tree->SetBranchAddress("weight_c_tag_down_interp", &weight_c_tag_interp_down);
-    tree->SetBranchAddress("weight_c_tag_up_interp", &weight_c_tag_interp_up);
-    tree->SetBranchAddress("weight_c_tag_down_lhe_scale_muf", &weight_c_tag_lhe_scale_muf_down);
-    tree->SetBranchAddress("weight_c_tag_up_lhe_scale_muf", &weight_c_tag_lhe_scale_muf_up);
-    tree->SetBranchAddress("weight_c_tag_down_lhe_scale_mur", &weight_c_tag_lhe_scale_mur_down);
-    tree->SetBranchAddress("weight_c_tag_up_lhe_scale_mur", &weight_c_tag_lhe_scale_mur_up);
-    tree->SetBranchAddress("weight_c_tag_down_ps_fsr_fixed", &weight_c_tag_ps_fsr_fixed_down);
-    tree->SetBranchAddress("weight_c_tag_up_ps_fsr_fixed", &weight_c_tag_ps_fsr_fixed_up);
-    tree->SetBranchAddress("weight_c_tag_down_ps_isr_fixed", &weight_c_tag_ps_isr_fixed_down);
-    tree->SetBranchAddress("weight_c_tag_up_ps_isr_fixed", &weight_c_tag_ps_isr_fixed_up);
-    tree->SetBranchAddress("weight_c_tag_down_pu", &weight_c_tag_pu_down);
-    tree->SetBranchAddress("weight_c_tag_up_pu", &weight_c_tag_pu_up);
-    tree->SetBranchAddress("weight_c_tag_down_stat", &weight_c_tag_stat_down);
-    tree->SetBranchAddress("weight_c_tag_up_stat", &weight_c_tag_stat_up);
-    tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_dyjets_b", &weight_c_tag_xsec_br_unc_dyjets_b_down);
-    tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_dyjets_b", &weight_c_tag_xsec_br_unc_dyjets_b_up);
-    tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_dyjets_c", &weight_c_tag_xsec_br_unc_dyjets_c_down);
-    tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_dyjets_c", &weight_c_tag_xsec_br_unc_dyjets_c_up);
-    tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_down);
-    tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_up);
-  }
-  else if (syst == Syst::JetResDown)
-    tree->SetBranchAddress("weight_c_tag_down_jer", &weight_c_tag_jer_down);
-  else if (syst == Syst::JetResUp)
-    tree->SetBranchAddress("weight_c_tag_up_jer", &weight_c_tag_jer_up);
-  else if (syst == Syst::JetEnDown ||
-           syst == Syst::JetEnAbsoluteDown ||
-           syst == Syst::JetEnBBEC1Down ||
-           syst == Syst::JetEnEC2Down ||
-           syst == Syst::JetEnFlavorQCDDown ||
-           syst == Syst::JetEnHFDown ||
-           syst == Syst::JetEnRelativeBalDown ||
-           syst == Syst::JetEnAbsolute2016Down ||
-           syst == Syst::JetEnBBEC12016Down ||
-           syst == Syst::JetEnEC22016Down ||
-           syst == Syst::JetEnHF2016Down ||
-           syst == Syst::JetEnRelativeSample2016Down ||
-           syst == Syst::JetEnAbsolute2017Down ||
-           syst == Syst::JetEnBBEC12017Down ||
-           syst == Syst::JetEnEC22017Down ||
-           syst == Syst::JetEnHF2017Down ||
-           syst == Syst::JetEnRelativeSample2017Down ||
-           syst == Syst::JetEnAbsolute2018Down ||
-           syst == Syst::JetEnBBEC12018Down ||
-           syst == Syst::JetEnEC22018Down ||
-           syst == Syst::JetEnHF2018Down ||
-           syst == Syst::JetEnRelativeSample2018Down)
-    tree->SetBranchAddress("weight_c_tag_down_jes_total", &weight_c_tag_jes_total_down);
-  else if (syst == Syst::JetEnUp ||
-           syst == Syst::JetEnAbsoluteUp ||
-           syst == Syst::JetEnBBEC1Up ||
-           syst == Syst::JetEnEC2Up ||
-           syst == Syst::JetEnFlavorQCDUp ||
-           syst == Syst::JetEnHFUp ||
-           syst == Syst::JetEnRelativeBalUp ||
-           syst == Syst::JetEnAbsolute2016Up ||
-           syst == Syst::JetEnBBEC12016Up ||
-           syst == Syst::JetEnEC22016Up ||
-           syst == Syst::JetEnHF2016Up ||
-           syst == Syst::JetEnRelativeSample2016Up ||
-           syst == Syst::JetEnAbsolute2017Up ||
-           syst == Syst::JetEnBBEC12017Up ||
-           syst == Syst::JetEnEC22017Up ||
-           syst == Syst::JetEnHF2017Up ||
-           syst == Syst::JetEnRelativeSample2017Up ||
-           syst == Syst::JetEnAbsolute2018Up ||
-           syst == Syst::JetEnBBEC12018Up ||
-           syst == Syst::JetEnEC22018Up ||
-           syst == Syst::JetEnHF2018Up ||
-           syst == Syst::JetEnRelativeSample2018Up)
-    tree->SetBranchAddress("weight_c_tag_up_jes_total", &weight_c_tag_jes_total_up);
-  else
-    tree->SetBranchAddress("weight_c_tag", &weight_c_tag);
+    if (syst == Syst::Central && chk_all)
+    {
+      tree->SetBranchAddress("weight_c_tag", &weight_c_tag);
+      tree->SetBranchAddress("weight_c_tag_down_extrap", &weight_c_tag_extrap_down);
+      tree->SetBranchAddress("weight_c_tag_up_extrap", &weight_c_tag_extrap_up);
+      tree->SetBranchAddress("weight_c_tag_down_interp", &weight_c_tag_interp_down);
+      tree->SetBranchAddress("weight_c_tag_up_interp", &weight_c_tag_interp_up);
+      tree->SetBranchAddress("weight_c_tag_down_lhe_scale_muf", &weight_c_tag_lhe_scale_muf_down);
+      tree->SetBranchAddress("weight_c_tag_up_lhe_scale_muf", &weight_c_tag_lhe_scale_muf_up);
+      tree->SetBranchAddress("weight_c_tag_down_lhe_scale_mur", &weight_c_tag_lhe_scale_mur_down);
+      tree->SetBranchAddress("weight_c_tag_up_lhe_scale_mur", &weight_c_tag_lhe_scale_mur_up);
+      tree->SetBranchAddress("weight_c_tag_down_ps_fsr_fixed", &weight_c_tag_ps_fsr_fixed_down);
+      tree->SetBranchAddress("weight_c_tag_up_ps_fsr_fixed", &weight_c_tag_ps_fsr_fixed_up);
+      tree->SetBranchAddress("weight_c_tag_down_ps_isr_fixed", &weight_c_tag_ps_isr_fixed_down);
+      tree->SetBranchAddress("weight_c_tag_up_ps_isr_fixed", &weight_c_tag_ps_isr_fixed_up);
+      tree->SetBranchAddress("weight_c_tag_down_pu", &weight_c_tag_pu_down);
+      tree->SetBranchAddress("weight_c_tag_up_pu", &weight_c_tag_pu_up);
+      tree->SetBranchAddress("weight_c_tag_down_stat", &weight_c_tag_stat_down);
+      tree->SetBranchAddress("weight_c_tag_up_stat", &weight_c_tag_stat_up);
+      tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_dyjets_b", &weight_c_tag_xsec_br_unc_dyjets_b_down);
+      tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_dyjets_b", &weight_c_tag_xsec_br_unc_dyjets_b_up);
+      tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_dyjets_c", &weight_c_tag_xsec_br_unc_dyjets_c_down);
+      tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_dyjets_c", &weight_c_tag_xsec_br_unc_dyjets_c_up);
+      tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_down);
+      tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_up);
+    }
+    else if (syst == Syst::JetResDown)
+      tree->SetBranchAddress("weight_c_tag_down_jer", &weight_c_tag_jer_down);
+    else if (syst == Syst::JetResUp)
+      tree->SetBranchAddress("weight_c_tag_up_jer", &weight_c_tag_jer_up);
+    else if (syst == Syst::JetEnDown ||
+             syst == Syst::JetEnAbsoluteDown ||
+             syst == Syst::JetEnBBEC1Down ||
+             syst == Syst::JetEnEC2Down ||
+             syst == Syst::JetEnFlavorQCDDown ||
+             syst == Syst::JetEnHFDown ||
+             syst == Syst::JetEnRelativeBalDown ||
+             syst == Syst::JetEnAbsolute2016Down ||
+             syst == Syst::JetEnBBEC12016Down ||
+             syst == Syst::JetEnEC22016Down ||
+             syst == Syst::JetEnHF2016Down ||
+             syst == Syst::JetEnRelativeSample2016Down ||
+             syst == Syst::JetEnAbsolute2017Down ||
+             syst == Syst::JetEnBBEC12017Down ||
+             syst == Syst::JetEnEC22017Down ||
+             syst == Syst::JetEnHF2017Down ||
+             syst == Syst::JetEnRelativeSample2017Down ||
+             syst == Syst::JetEnAbsolute2018Down ||
+             syst == Syst::JetEnBBEC12018Down ||
+             syst == Syst::JetEnEC22018Down ||
+             syst == Syst::JetEnHF2018Down ||
+             syst == Syst::JetEnRelativeSample2018Down)
+      tree->SetBranchAddress("weight_c_tag_down_jes_total", &weight_c_tag_jes_total_down);
+    else if (syst == Syst::JetEnUp ||
+             syst == Syst::JetEnAbsoluteUp ||
+             syst == Syst::JetEnBBEC1Up ||
+             syst == Syst::JetEnEC2Up ||
+             syst == Syst::JetEnFlavorQCDUp ||
+             syst == Syst::JetEnHFUp ||
+             syst == Syst::JetEnRelativeBalUp ||
+             syst == Syst::JetEnAbsolute2016Up ||
+             syst == Syst::JetEnBBEC12016Up ||
+             syst == Syst::JetEnEC22016Up ||
+             syst == Syst::JetEnHF2016Up ||
+             syst == Syst::JetEnRelativeSample2016Up ||
+             syst == Syst::JetEnAbsolute2017Up ||
+             syst == Syst::JetEnBBEC12017Up ||
+             syst == Syst::JetEnEC22017Up ||
+             syst == Syst::JetEnHF2017Up ||
+             syst == Syst::JetEnRelativeSample2017Up ||
+             syst == Syst::JetEnAbsolute2018Up ||
+             syst == Syst::JetEnBBEC12018Up ||
+             syst == Syst::JetEnEC22018Up ||
+             syst == Syst::JetEnHF2018Up ||
+             syst == Syst::JetEnRelativeSample2018Up)
+      tree->SetBranchAddress("weight_c_tag_up_jes_total", &weight_c_tag_jes_total_up);
+    else
+      tree->SetBranchAddress("weight_c_tag", &weight_c_tag);
+  } // else if (tagger == "C")
 
   tree->SetBranchAddress("weight_lumi", &weight_lumi);
   tree->SetBranchAddress("weight_mc", &weight_mc);
@@ -519,6 +541,17 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all, 
   }
 
   tree->SetBranchAddress("weight_top_pt", &weight_top_pt);
+  tree->SetBranchAddress("weight_top_pt_mva", &weight_top_pt_mva);
+
+  if (syst == Syst::Central && chk_all)
+  {
+    tree->SetBranchAddress("weight_hdamp_mva_down", &weight_hdamp_mva_down);
+    tree->SetBranchAddress("weight_hdamp_mva_up", &weight_hdamp_mva_up);
+  }
+
+  tree->SetBranchAddress("weight_b_frag_mva_nominal", &weight_b_frag_mva_nominal);
+  if (syst == Syst::Central && chk_all)
+    tree->SetBranchAddress("weight_b_frag_mva_up", &weight_b_frag_mva_up);
 
   tree->SetBranchAddress("n_vertex", &n_pv);
 
@@ -533,13 +566,15 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all, 
 
   tree->SetBranchAddress("n_jets", &n_jets);
   tree->SetBranchAddress("n_bjets", &n_bjets);
-  tree->SetBranchAddress("n_cjets", &n_cjets);
+  if (tagger == "C")
+    tree->SetBranchAddress("n_cjets", &n_cjets);
 
   tree->SetBranchAddress("ht", &ht);
 
   tree->SetBranchAddress("m_had_t", &m_had_t);
   tree->SetBranchAddress("m_had_w", &m_had_w);
   tree->SetBranchAddress("m_lep_t", &m_lep_t);
+  tree->SetBranchAddress("m_lep_t_partial", &m_lep_t_partial);
   tree->SetBranchAddress("m_lep_w", &m_lep_w);
 
   tree->SetBranchAddress("pt_leading_jet", &pt_leading_jet);
@@ -549,51 +584,75 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all, 
   tree->SetBranchAddress("eta_subleading_jet", &eta_subleading_jet);
 
   tree->SetBranchAddress("bvsc_leading_jet", &bvsc_leading_jet);
-  tree->SetBranchAddress("cvsb_leading_jet", &cvsb_leading_jet);
-  tree->SetBranchAddress("cvsl_leading_jet", &cvsl_leading_jet);
+  if (tagger == "C")
+  {
+    tree->SetBranchAddress("cvsb_leading_jet", &cvsb_leading_jet);
+    tree->SetBranchAddress("cvsl_leading_jet", &cvsl_leading_jet);
+  }
 
   tree->SetBranchAddress("bvsc_subleading_jet", &bvsc_subleading_jet);
-  tree->SetBranchAddress("cvsb_subleading_jet", &cvsb_subleading_jet);
-  tree->SetBranchAddress("cvsl_subleading_jet", &cvsl_subleading_jet);
+  if (tagger == "C")
+  {
+    tree->SetBranchAddress("cvsb_subleading_jet", &cvsb_subleading_jet);
+    tree->SetBranchAddress("cvsl_subleading_jet", &cvsl_subleading_jet);
+  }
 
   tree->SetBranchAddress("met_pt", &met_pt);
   tree->SetBranchAddress("met_phi", &met_phi);
 
   tree->SetBranchAddress("best_mva_score_pre", &best_mva_score_pre);
   tree->SetBranchAddress("best_mva_score", &best_mva_score);
-  tree->SetBranchAddress("best_chi2", &best_chi2);
+  // tree->SetBranchAddress("best_chi2", &best_chi2);
 
   tree->SetBranchAddress("mt", &mt);
 
-  tree->SetBranchAddress("mva_hf_score", &mva_hf_score);
+  // tree->SetBranchAddress("mva_hf_score", &mva_hf_score);
 
   tree->SetBranchAddress("bvsc_had_t_b", &bvsc_had_t_b);
-  tree->SetBranchAddress("cvsb_had_t_b", &cvsb_had_t_b);
-  tree->SetBranchAddress("cvsl_had_t_b", &cvsl_had_t_b);
+  if (tagger == "C")
+  {
+    tree->SetBranchAddress("cvsb_had_t_b", &cvsb_had_t_b);
+    tree->SetBranchAddress("cvsl_had_t_b", &cvsl_had_t_b);
+  }
 
   tree->SetBranchAddress("bvsc_w_u", &bvsc_w_u);
-  tree->SetBranchAddress("cvsb_w_u", &cvsb_w_u);
-  tree->SetBranchAddress("cvsl_w_u", &cvsl_w_u);
+  if (tagger == "C")
+  {
+    tree->SetBranchAddress("cvsb_w_u", &cvsb_w_u);
+    tree->SetBranchAddress("cvsl_w_u", &cvsl_w_u);
+  }
 
   tree->SetBranchAddress("bvsc_w_d", &bvsc_w_d);
-  tree->SetBranchAddress("cvsb_w_d", &cvsb_w_d);
-  tree->SetBranchAddress("cvsl_w_d", &cvsl_w_d);
+  if (tagger == "C")
+  {
+    tree->SetBranchAddress("cvsb_w_d", &cvsb_w_d);
+    tree->SetBranchAddress("cvsl_w_d", &cvsl_w_d);
+  }
 
   tree->SetBranchAddress("bvsc_lep_t_b", &bvsc_lep_t_b);
-  tree->SetBranchAddress("cvsb_lep_t_b", &cvsb_lep_t_b);
-  tree->SetBranchAddress("cvsl_lep_t_b", &cvsl_lep_t_b);
+  if (tagger == "C")
+  {
+    tree->SetBranchAddress("cvsb_lep_t_b", &cvsb_lep_t_b);
+    tree->SetBranchAddress("cvsl_lep_t_b", &cvsl_lep_t_b);
+  }
 
   tree->SetBranchAddress("pt_had_t_b", &pt_had_t_b);
   tree->SetBranchAddress("pt_w_u", &pt_w_u);
   tree->SetBranchAddress("pt_w_d", &pt_w_d);
   tree->SetBranchAddress("pt_lep_t_b", &pt_lep_t_b);
-  // tree->SetBranchAddress("pt_tt", &pt_tt);
+  tree->SetBranchAddress("pt_tt", &pt_tt);
   tree->SetBranchAddress("pt_gen_tt", &pt_gen_tt);
 
   tree->SetBranchAddress("eta_had_t_b", &eta_had_t_b);
   tree->SetBranchAddress("eta_w_u", &eta_w_u);
   tree->SetBranchAddress("eta_w_d", &eta_w_d);
   tree->SetBranchAddress("eta_lep_t_b", &eta_lep_t_b);
+
+  tree->SetBranchAddress("theta_w_u_w_d", &theta_w_u_w_d);
+  tree->SetBranchAddress("theta_had_w_had_t_b", &theta_had_w_had_t_b);
+  tree->SetBranchAddress("theta_lep_neu", &theta_lep_neu);
+  tree->SetBranchAddress("theta_lep_w_lep_t_b", &theta_lep_w_lep_t_b);
+  tree->SetBranchAddress("del_phi_had_t_lep_t", &del_phi_had_t_lep_t);
 
   tree->SetBranchAddress("least_dr_bb", &least_dr_bb);
   tree->SetBranchAddress("least_m_bb", &least_m_bb);
@@ -637,6 +696,17 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all, 
     tree->SetBranchAddress("log_prob_5", &template_score_multi_5);
     tree->SetBranchAddress("log_prob_6", &template_score_multi_6);
   }
+  else if (use_class_8)
+  {
+    tree->SetBranchAddress("log_prob_0", &template_score_multi_0);
+    tree->SetBranchAddress("log_prob_1", &template_score_multi_1);
+    tree->SetBranchAddress("log_prob_2", &template_score_multi_2);
+    tree->SetBranchAddress("log_prob_3", &template_score_multi_3);
+    tree->SetBranchAddress("log_prob_4", &template_score_multi_4);
+    tree->SetBranchAddress("log_prob_5", &template_score_multi_5);
+    tree->SetBranchAddress("log_prob_6", &template_score_multi_6);
+    tree->SetBranchAddress("log_prob_7", &template_score_multi_7);
+  }
   else if (use_class_9)
   {
     tree->SetBranchAddress("log_prob_0", &template_score_multi_0);
@@ -666,6 +736,7 @@ void Result_Event::Setup_Tree(TTree *tree, const Syst syst, const bool chk_all, 
 
   tree->SetBranchAddress("Jet_Pt", &vec_jet_pt);
   tree->SetBranchAddress("Jet_Eta", &vec_jet_eta);
+  tree->SetBranchAddress("Jet_Phi", &vec_jet_phi);
   tree->SetBranchAddress("Jet_Flavor", &vec_jet_flavor);
 
   // for MC
@@ -739,111 +810,116 @@ void Result_Event::Setup_Tree_Cal_TF(TTree *tree, const Syst syst, const bool ch
     tree->SetBranchAddress("weight_sl_trig_up", &weight_sl_trig_up);
   }
 
-  if (syst == Syst::Central && chk_all)
+  if (tagger == "B")
   {
-    tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
-    tree->SetBranchAddress("weight_b_tag_down_hf", &weight_b_tag_hf_down);
-    tree->SetBranchAddress("weight_b_tag_up_hf", &weight_b_tag_hf_up);
-    tree->SetBranchAddress("weight_b_tag_down_lf", &weight_b_tag_lf_down);
-    tree->SetBranchAddress("weight_b_tag_up_lf", &weight_b_tag_lf_up);
-    tree->SetBranchAddress("weight_b_tag_down_lfstats1", &weight_b_tag_lfstats1_down);
-    tree->SetBranchAddress("weight_b_tag_up_lfstats1", &weight_b_tag_lfstats1_up);
-    tree->SetBranchAddress("weight_b_tag_down_lfstats2", &weight_b_tag_lfstats2_down);
-    tree->SetBranchAddress("weight_b_tag_up_lfstats2", &weight_b_tag_lfstats2_up);
-    tree->SetBranchAddress("weight_b_tag_down_cferr1", &weight_b_tag_cferr1_down);
-    tree->SetBranchAddress("weight_b_tag_up_cferr1", &weight_b_tag_cferr1_up);
-    tree->SetBranchAddress("weight_b_tag_down_cferr2", &weight_b_tag_cferr2_down);
-    tree->SetBranchAddress("weight_b_tag_up_cferr2", &weight_b_tag_cferr2_up);
-    tree->SetBranchAddress("weight_b_tag_down_hfstats1", &weight_b_tag_hfstats1_down);
-    tree->SetBranchAddress("weight_b_tag_up_hfstats1", &weight_b_tag_hfstats1_up);
-    tree->SetBranchAddress("weight_b_tag_down_hfstats2", &weight_b_tag_hfstats2_down);
-    tree->SetBranchAddress("weight_b_tag_up_hfstats2", &weight_b_tag_hfstats2_up);
-  }
-  else if (syst == Syst::JetEnDown)
-    tree->SetBranchAddress("weight_b_tag_down_jes", &weight_b_tag_jes_down);
-  else if (syst == Syst::JetEnUp)
-    tree->SetBranchAddress("weight_b_tag_up_jes", &weight_b_tag_jes_up);
-  else
-    tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
-
-  if (syst == Syst::Central && chk_all)
+    if (syst == Syst::Central && chk_all)
+    {
+      tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
+      tree->SetBranchAddress("weight_b_tag_down_hf", &weight_b_tag_hf_down);
+      tree->SetBranchAddress("weight_b_tag_up_hf", &weight_b_tag_hf_up);
+      tree->SetBranchAddress("weight_b_tag_down_lf", &weight_b_tag_lf_down);
+      tree->SetBranchAddress("weight_b_tag_up_lf", &weight_b_tag_lf_up);
+      tree->SetBranchAddress("weight_b_tag_down_lfstats1", &weight_b_tag_lfstats1_down);
+      tree->SetBranchAddress("weight_b_tag_up_lfstats1", &weight_b_tag_lfstats1_up);
+      tree->SetBranchAddress("weight_b_tag_down_lfstats2", &weight_b_tag_lfstats2_down);
+      tree->SetBranchAddress("weight_b_tag_up_lfstats2", &weight_b_tag_lfstats2_up);
+      tree->SetBranchAddress("weight_b_tag_down_cferr1", &weight_b_tag_cferr1_down);
+      tree->SetBranchAddress("weight_b_tag_up_cferr1", &weight_b_tag_cferr1_up);
+      tree->SetBranchAddress("weight_b_tag_down_cferr2", &weight_b_tag_cferr2_down);
+      tree->SetBranchAddress("weight_b_tag_up_cferr2", &weight_b_tag_cferr2_up);
+      tree->SetBranchAddress("weight_b_tag_down_hfstats1", &weight_b_tag_hfstats1_down);
+      tree->SetBranchAddress("weight_b_tag_up_hfstats1", &weight_b_tag_hfstats1_up);
+      tree->SetBranchAddress("weight_b_tag_down_hfstats2", &weight_b_tag_hfstats2_down);
+      tree->SetBranchAddress("weight_b_tag_up_hfstats2", &weight_b_tag_hfstats2_up);
+    }
+    else if (syst == Syst::JetEnDown)
+      tree->SetBranchAddress("weight_b_tag_down_jes", &weight_b_tag_jes_down);
+    else if (syst == Syst::JetEnUp)
+      tree->SetBranchAddress("weight_b_tag_up_jes", &weight_b_tag_jes_up);
+    else
+      tree->SetBranchAddress("weight_b_tag", &weight_b_tag);
+  } // if (tagger == "B")
+  if (tagger == "C")
   {
-    tree->SetBranchAddress("weight_c_tag", &weight_c_tag);
-    tree->SetBranchAddress("weight_c_tag_down_extrap", &weight_c_tag_extrap_down);
-    tree->SetBranchAddress("weight_c_tag_up_extrap", &weight_c_tag_extrap_up);
-    tree->SetBranchAddress("weight_c_tag_down_interp", &weight_c_tag_interp_down);
-    tree->SetBranchAddress("weight_c_tag_up_interp", &weight_c_tag_interp_up);
-    tree->SetBranchAddress("weight_c_tag_down_lhe_scale_muf", &weight_c_tag_lhe_scale_muf_down);
-    tree->SetBranchAddress("weight_c_tag_up_lhe_scale_muf", &weight_c_tag_lhe_scale_muf_up);
-    tree->SetBranchAddress("weight_c_tag_down_lhe_scale_mur", &weight_c_tag_lhe_scale_mur_down);
-    tree->SetBranchAddress("weight_c_tag_up_lhe_scale_mur", &weight_c_tag_lhe_scale_mur_up);
-    tree->SetBranchAddress("weight_c_tag_down_ps_fsr_fixed", &weight_c_tag_ps_fsr_fixed_down);
-    tree->SetBranchAddress("weight_c_tag_up_ps_fsr_fixed", &weight_c_tag_ps_fsr_fixed_up);
-    tree->SetBranchAddress("weight_c_tag_down_ps_isr_fixed", &weight_c_tag_ps_isr_fixed_down);
-    tree->SetBranchAddress("weight_c_tag_up_ps_isr_fixed", &weight_c_tag_ps_isr_fixed_up);
-    tree->SetBranchAddress("weight_c_tag_down_pu", &weight_c_tag_pu_down);
-    tree->SetBranchAddress("weight_c_tag_up_pu", &weight_c_tag_pu_up);
-    tree->SetBranchAddress("weight_c_tag_down_stat", &weight_c_tag_stat_down);
-    tree->SetBranchAddress("weight_c_tag_up_stat", &weight_c_tag_stat_up);
-    tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_dyjets_b", &weight_c_tag_xsec_br_unc_dyjets_b_down);
-    tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_dyjets_b", &weight_c_tag_xsec_br_unc_dyjets_b_up);
-    tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_dyjets_c", &weight_c_tag_xsec_br_unc_dyjets_c_down);
-    tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_dyjets_c", &weight_c_tag_xsec_br_unc_dyjets_c_up);
-    tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_down);
-    tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_up);
-  }
-  else if (syst == Syst::JetResDown)
-    tree->SetBranchAddress("weight_c_tag_down_jer", &weight_c_tag_jer_down);
-  else if (syst == Syst::JetResUp)
-    tree->SetBranchAddress("weight_c_tag_up_jer", &weight_c_tag_jer_up);
-  else if (syst == Syst::JetEnDown ||
-           syst == Syst::JetEnAbsoluteDown ||
-           syst == Syst::JetEnBBEC1Down ||
-           syst == Syst::JetEnEC2Down ||
-           syst == Syst::JetEnFlavorQCDDown ||
-           syst == Syst::JetEnHFDown ||
-           syst == Syst::JetEnRelativeBalDown ||
-           syst == Syst::JetEnAbsolute2016Down ||
-           syst == Syst::JetEnBBEC12016Down ||
-           syst == Syst::JetEnEC22016Down ||
-           syst == Syst::JetEnHF2016Down ||
-           syst == Syst::JetEnRelativeSample2016Down ||
-           syst == Syst::JetEnAbsolute2017Down ||
-           syst == Syst::JetEnBBEC12017Down ||
-           syst == Syst::JetEnEC22017Down ||
-           syst == Syst::JetEnHF2017Down ||
-           syst == Syst::JetEnRelativeSample2017Down ||
-           syst == Syst::JetEnAbsolute2018Down ||
-           syst == Syst::JetEnBBEC12018Down ||
-           syst == Syst::JetEnEC22018Down ||
-           syst == Syst::JetEnHF2018Down ||
-           syst == Syst::JetEnRelativeSample2018Down)
-    tree->SetBranchAddress("weight_c_tag_down_jes_total", &weight_c_tag_jes_total_down);
-  else if (syst == Syst::JetEnUp ||
-           syst == Syst::JetEnAbsoluteUp ||
-           syst == Syst::JetEnBBEC1Up ||
-           syst == Syst::JetEnEC2Up ||
-           syst == Syst::JetEnFlavorQCDUp ||
-           syst == Syst::JetEnHFUp ||
-           syst == Syst::JetEnRelativeBalUp ||
-           syst == Syst::JetEnAbsolute2016Up ||
-           syst == Syst::JetEnBBEC12016Up ||
-           syst == Syst::JetEnEC22016Up ||
-           syst == Syst::JetEnHF2016Up ||
-           syst == Syst::JetEnRelativeSample2016Up ||
-           syst == Syst::JetEnAbsolute2017Up ||
-           syst == Syst::JetEnBBEC12017Up ||
-           syst == Syst::JetEnEC22017Up ||
-           syst == Syst::JetEnHF2017Up ||
-           syst == Syst::JetEnRelativeSample2017Up ||
-           syst == Syst::JetEnAbsolute2018Up ||
-           syst == Syst::JetEnBBEC12018Up ||
-           syst == Syst::JetEnEC22018Up ||
-           syst == Syst::JetEnHF2018Up ||
-           syst == Syst::JetEnRelativeSample2018Up)
-    tree->SetBranchAddress("weight_c_tag_up_jes_total", &weight_c_tag_jes_total_up);
-  else
-    tree->SetBranchAddress("weight_c_tag", &weight_c_tag);
+    if (syst == Syst::Central && chk_all)
+    {
+      tree->SetBranchAddress("weight_c_tag", &weight_c_tag);
+      tree->SetBranchAddress("weight_c_tag_down_extrap", &weight_c_tag_extrap_down);
+      tree->SetBranchAddress("weight_c_tag_up_extrap", &weight_c_tag_extrap_up);
+      tree->SetBranchAddress("weight_c_tag_down_interp", &weight_c_tag_interp_down);
+      tree->SetBranchAddress("weight_c_tag_up_interp", &weight_c_tag_interp_up);
+      tree->SetBranchAddress("weight_c_tag_down_lhe_scale_muf", &weight_c_tag_lhe_scale_muf_down);
+      tree->SetBranchAddress("weight_c_tag_up_lhe_scale_muf", &weight_c_tag_lhe_scale_muf_up);
+      tree->SetBranchAddress("weight_c_tag_down_lhe_scale_mur", &weight_c_tag_lhe_scale_mur_down);
+      tree->SetBranchAddress("weight_c_tag_up_lhe_scale_mur", &weight_c_tag_lhe_scale_mur_up);
+      tree->SetBranchAddress("weight_c_tag_down_ps_fsr_fixed", &weight_c_tag_ps_fsr_fixed_down);
+      tree->SetBranchAddress("weight_c_tag_up_ps_fsr_fixed", &weight_c_tag_ps_fsr_fixed_up);
+      tree->SetBranchAddress("weight_c_tag_down_ps_isr_fixed", &weight_c_tag_ps_isr_fixed_down);
+      tree->SetBranchAddress("weight_c_tag_up_ps_isr_fixed", &weight_c_tag_ps_isr_fixed_up);
+      tree->SetBranchAddress("weight_c_tag_down_pu", &weight_c_tag_pu_down);
+      tree->SetBranchAddress("weight_c_tag_up_pu", &weight_c_tag_pu_up);
+      tree->SetBranchAddress("weight_c_tag_down_stat", &weight_c_tag_stat_down);
+      tree->SetBranchAddress("weight_c_tag_up_stat", &weight_c_tag_stat_up);
+      tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_dyjets_b", &weight_c_tag_xsec_br_unc_dyjets_b_down);
+      tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_dyjets_b", &weight_c_tag_xsec_br_unc_dyjets_b_up);
+      tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_dyjets_c", &weight_c_tag_xsec_br_unc_dyjets_c_down);
+      tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_dyjets_c", &weight_c_tag_xsec_br_unc_dyjets_c_up);
+      tree->SetBranchAddress("weight_c_tag_down_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_down);
+      tree->SetBranchAddress("weight_c_tag_up_xsec_brunc_wjets_c", &weight_c_tag_xsec_br_unc_wjets_c_up);
+    }
+    else if (syst == Syst::JetResDown)
+      tree->SetBranchAddress("weight_c_tag_down_jer", &weight_c_tag_jer_down);
+    else if (syst == Syst::JetResUp)
+      tree->SetBranchAddress("weight_c_tag_up_jer", &weight_c_tag_jer_up);
+    else if (syst == Syst::JetEnDown ||
+             syst == Syst::JetEnAbsoluteDown ||
+             syst == Syst::JetEnBBEC1Down ||
+             syst == Syst::JetEnEC2Down ||
+             syst == Syst::JetEnFlavorQCDDown ||
+             syst == Syst::JetEnHFDown ||
+             syst == Syst::JetEnRelativeBalDown ||
+             syst == Syst::JetEnAbsolute2016Down ||
+             syst == Syst::JetEnBBEC12016Down ||
+             syst == Syst::JetEnEC22016Down ||
+             syst == Syst::JetEnHF2016Down ||
+             syst == Syst::JetEnRelativeSample2016Down ||
+             syst == Syst::JetEnAbsolute2017Down ||
+             syst == Syst::JetEnBBEC12017Down ||
+             syst == Syst::JetEnEC22017Down ||
+             syst == Syst::JetEnHF2017Down ||
+             syst == Syst::JetEnRelativeSample2017Down ||
+             syst == Syst::JetEnAbsolute2018Down ||
+             syst == Syst::JetEnBBEC12018Down ||
+             syst == Syst::JetEnEC22018Down ||
+             syst == Syst::JetEnHF2018Down ||
+             syst == Syst::JetEnRelativeSample2018Down)
+      tree->SetBranchAddress("weight_c_tag_down_jes_total", &weight_c_tag_jes_total_down);
+    else if (syst == Syst::JetEnUp ||
+             syst == Syst::JetEnAbsoluteUp ||
+             syst == Syst::JetEnBBEC1Up ||
+             syst == Syst::JetEnEC2Up ||
+             syst == Syst::JetEnFlavorQCDUp ||
+             syst == Syst::JetEnHFUp ||
+             syst == Syst::JetEnRelativeBalUp ||
+             syst == Syst::JetEnAbsolute2016Up ||
+             syst == Syst::JetEnBBEC12016Up ||
+             syst == Syst::JetEnEC22016Up ||
+             syst == Syst::JetEnHF2016Up ||
+             syst == Syst::JetEnRelativeSample2016Up ||
+             syst == Syst::JetEnAbsolute2017Up ||
+             syst == Syst::JetEnBBEC12017Up ||
+             syst == Syst::JetEnEC22017Up ||
+             syst == Syst::JetEnHF2017Up ||
+             syst == Syst::JetEnRelativeSample2017Up ||
+             syst == Syst::JetEnAbsolute2018Up ||
+             syst == Syst::JetEnBBEC12018Up ||
+             syst == Syst::JetEnEC22018Up ||
+             syst == Syst::JetEnHF2018Up ||
+             syst == Syst::JetEnRelativeSample2018Up)
+      tree->SetBranchAddress("weight_c_tag_up_jes_total", &weight_c_tag_jes_total_up);
+    else
+      tree->SetBranchAddress("weight_c_tag", &weight_c_tag);
+  } // if (tagger == "C")
 
   tree->SetBranchAddress("weight_lumi", &weight_lumi);
   tree->SetBranchAddress("weight_mc", &weight_mc);
@@ -892,6 +968,8 @@ void Result_Event::Setup_Tree_Cal_TF(TTree *tree, const Syst syst, const bool ch
   }
 
   tree->SetBranchAddress("weight_top_pt", &weight_top_pt);
+  tree->SetBranchAddress("weight_top_pt_mva", &weight_top_pt_mva);
+  tree->SetBranchAddress("weight_b_frag_mva_nominal", &weight_b_frag_mva_nominal);
 
   tree->SetBranchAddress("lepton_pt", &lepton_pt);
   tree->SetBranchAddress("lepton_pt_uncorr", &lepton_pt_uncorr);
@@ -957,7 +1035,8 @@ void Result_Event::Swap_Scale_Variation(const TString &sample_name_short)
     weight_scale_variation_7 = temp;
   }
   else if (sample_name_short == "WW" || sample_name_short == "WZ" || sample_name_short == "ZZ" ||
-           sample_name_short.Contains("CP5") || sample_name_short.Contains("mtop") || sample_name_short.Contains("hdamp"))
+           sample_name_short.Contains("QCD_MuEn") || sample_name_short.Contains("QCD_EMEn") || sample_name_short.Contains("QCD_bcToE") || 
+           sample_name_short.Contains("CP5") || sample_name_short.Contains("mtop") || sample_name_short.Contains("hdamp") || sample_name_short.Contains("erdOn") || sample_name_short.Contains("CR1") || sample_name_short.Contains("CR2"))
   {
     // irrelevant
     // do nothing

@@ -19,6 +19,8 @@ Tagging_RF_Flavor_DL::Tagging_RF_Flavor_DL(const TString &a_era, const TString &
   tagger = a_tagger;
   extension = a_extension;
 
+  lumi_corr = Lumi_Corr(era);
+
   index_tree_type = a_index_tree_type;
 
   if (tagger.Contains("C"))
@@ -282,32 +284,6 @@ Tagging_RF_Flavor_DL::Tagging_RF_Flavor_DL(const TString &a_era, const TString &
     vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB"));
     vec_short_name_mc.push_back("TTLJ_45"); // TTLJ, w->cb
 
-    // TT systematic
-    // TTLJ
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampDown"));
-    vec_short_name_mc.push_back("TTLJ_hdampDown_2");
-    vec_short_name_mc.push_back("TTLJ_hdampDown_4");
-
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampUp"));
-    vec_short_name_mc.push_back("TTLJ_hdampUp_2");
-    vec_short_name_mc.push_back("TTLJ_hdampUp_4");
-
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Down"));
-    vec_short_name_mc.push_back("TTLJ_CP5Down_2");
-    vec_short_name_mc.push_back("TTLJ_CP5Down_4");
-
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Up"));
-    vec_short_name_mc.push_back("TTLJ_CP5Up_2");
-    vec_short_name_mc.push_back("TTLJ_CP5Up_4");
-
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop171p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_2");
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_4");
-
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop173p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_2");
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_4");
-
     vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_TTbb_4f"));
     vec_short_name_mc.push_back("TTLJ_TTbb_4f_2"); // TTLJ_TTbb_4f, w->ud or w->us
     vec_short_name_mc.push_back("TTLJ_TTbb_4f_4"); // TTLJ_TTbb_4f, w->cd or w->cs
@@ -316,24 +292,62 @@ Tagging_RF_Flavor_DL::Tagging_RF_Flavor_DL(const TString &a_era, const TString &
     vec_short_name_mc.push_back("TTLJ_bbDPS_2"); // TTLJ_bbDPS, w->ud or w->us
     vec_short_name_mc.push_back("TTLJ_bbDPS_4"); // TTLJ_bbDPS, w->cd or w->cs
 
-    // TTLJ_WtoCB
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampDown"));
-    vec_short_name_mc.push_back("TTLJ_hdampDown_45");
+    // // TT systematic
+    // // TTLJ
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampDown"));
+    // vec_short_name_mc.push_back("TTLJ_hdampDown_2");
+    // vec_short_name_mc.push_back("TTLJ_hdampDown_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampUp"));
-    vec_short_name_mc.push_back("TTLJ_hdampUp_45");
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_hdampUp"));
+    // vec_short_name_mc.push_back("TTLJ_hdampUp_2");
+    // vec_short_name_mc.push_back("TTLJ_hdampUp_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Down"));
-    vec_short_name_mc.push_back("TTLJ_CP5Down_45");
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Down"));
+    // vec_short_name_mc.push_back("TTLJ_CP5Down_2");
+    // vec_short_name_mc.push_back("TTLJ_CP5Down_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Up"));
-    vec_short_name_mc.push_back("TTLJ_CP5Up_45");
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CP5Up"));
+    // vec_short_name_mc.push_back("TTLJ_CP5Up_2");
+    // vec_short_name_mc.push_back("TTLJ_CP5Up_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop171p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop171p5_45");
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop171p5"));
+    // vec_short_name_mc.push_back("TTLJ_mtop171p5_2");
+    // vec_short_name_mc.push_back("TTLJ_mtop171p5_4");
 
-    vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop173p5"));
-    vec_short_name_mc.push_back("TTLJ_mtop173p5_45");
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_mtop173p5"));
+    // vec_short_name_mc.push_back("TTLJ_mtop173p5_2");
+    // vec_short_name_mc.push_back("TTLJ_mtop173p5_4");
+
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_erdOn"));
+    // vec_short_name_mc.push_back("TTLJ_erdOn_2");
+    // vec_short_name_mc.push_back("TTLJ_erdOn_4");
+
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CR1"));
+    // vec_short_name_mc.push_back("TTLJ_CR1_2");
+    // vec_short_name_mc.push_back("TTLJ_CR1_4");
+
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_CR2"));
+    // vec_short_name_mc.push_back("TTLJ_CR2_2");
+    // vec_short_name_mc.push_back("TTLJ_CR2_4");
+
+    // // TTLJ_WtoCB
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampDown"));
+    // vec_short_name_mc.push_back("TTLJ_hdampDown_45");
+
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_hdampUp"));
+    // vec_short_name_mc.push_back("TTLJ_hdampUp_45");
+
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Down"));
+    // vec_short_name_mc.push_back("TTLJ_CP5Down_45");
+
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_CP5Up"));
+    // vec_short_name_mc.push_back("TTLJ_CP5Up_45");
+
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop171p5"));
+    // vec_short_name_mc.push_back("TTLJ_mtop171p5_45");
+
+    // vec_short_name_mc.erase(remove(vec_short_name_mc.begin(), vec_short_name_mc.end(), "TTLJ_WtoCB_mtop173p5"));
+    // vec_short_name_mc.push_back("TTLJ_mtop173p5_45");
   }
 
   n_sample_merge_mc = vec_short_name_mc.size();
@@ -470,7 +484,7 @@ float Tagging_RF_Flavor_DL::Get_Tagging_RF_DL_B_Tag(const TString &sample, const
 
   if (sample_index == vec_sample_tagging_rf.size())
   {
-    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL_C_Tag] Can not find " << sample << " Check it." << endl;
+    cout << "[Tagging_RF_DL::Get_Tagging_RF_DL_B_Tag] Can not find " << sample << " Check it." << endl;
     exit(1);
   }
 
@@ -686,6 +700,8 @@ void Tagging_RF_Flavor_DL::Clear()
   memset(weight_ps, 1, sizeof(weight_ps));
 
   weight_top_pt = 1;
+  weight_top_pt_mva = 1;
+  weight_b_frag_mva_nominal = 1;
 
   weight_scale_variation_1 = 1;
   weight_scale_variation_2 = 1;
@@ -1036,6 +1052,7 @@ void Tagging_RF_Flavor_DL::Fill_Histo_MC(const TString &sample_name, const TStri
   weight *= weight_ckm;
   weight *= weight_tthf;
   weight *= weight_lumi;
+  weight *= lumi_corr;
   weight *= weight_mc;
   weight *= weight_hem_veto;
   weight *= weight_pileup;
@@ -1595,6 +1612,7 @@ void Tagging_RF_Flavor_DL::Fill_Histo_Validation_MC_B_Tagger(const TString &samp
 
     weight_raw *= weight_baseline;
     weight_raw *= weight_lumi;
+    weight_raw *= lumi_corr;
     weight_raw *= weight_mc;
     weight_raw *= weight_hem_veto;
     weight_raw *= weight_pileup;
@@ -1745,6 +1763,7 @@ void Tagging_RF_Flavor_DL::Fill_Histo_Validation_MC_C_Tagger(const TString &samp
 
     weight_raw *= weight_baseline;
     weight_raw *= weight_lumi;
+    weight_raw *= lumi_corr;
     weight_raw *= weight_mc;
     weight_raw *= weight_hem_veto;
 
@@ -2007,6 +2026,15 @@ TString Tagging_RF_Flavor_DL::Histo_Name_RF(const TString &sample_name)
     if (histo_name_rf.Contains("WtoCB"))
       histo_name_rf.ReplaceAll("TTLJ_WtoCB", "TTLJ");
 
+    // apply nominal RF for top systematic samples to save time.
+    if (histo_name_rf.Contains("CP5") || histo_name_rf.Contains("hdamp") || histo_name_rf.Contains("mtop") || histo_name_rf.Contains("erdOn") || histo_name_rf.Contains("CR1") || histo_name_rf.Contains("CR2"))
+    {
+      if (histo_name_rf.Contains("TTLJ"))
+        histo_name_rf = "TTLJ";
+      else if (histo_name_rf.Contains("TTLL"))
+        histo_name_rf = "TTLL";
+    }
+
     if (chk_tthf_breakdown)
     {
       bool chk_b = false;
@@ -2230,6 +2258,8 @@ void Tagging_RF_Flavor_DL::Read_Tree()
         if (sample_name_modelling_patch != sample_name_modelling_patch_prev)
         {
           modelling_patch_top_pt_reweight = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Top_Pt_Reweight");
+          modelling_patch_top_pt_mva_reweight = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Top_Pt_MVA_Reweight");
+          modelling_patch_b_frag_mva_nominal = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "B_Frag_MVA_Reweight_Nominal");
           modelling_patch_scale_variation_1 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_1");
           modelling_patch_scale_variation_2 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_2");
           modelling_patch_scale_variation_3 = modelling_patch.Get_Modelling_Patch(sample_name_modelling_patch, "Scale_Variation_3");
@@ -2245,6 +2275,8 @@ void Tagging_RF_Flavor_DL::Read_Tree()
         }
 
         weight_top_pt *= modelling_patch_top_pt_reweight;
+        weight_top_pt_mva *= modelling_patch_top_pt_mva_reweight;
+        weight_b_frag_mva_nominal *= modelling_patch_b_frag_mva_nominal;
         weight_scale_variation_1 *= modelling_patch_scale_variation_1;
         weight_scale_variation_2 *= modelling_patch_scale_variation_2;
         weight_scale_variation_3 *= modelling_patch_scale_variation_3;
@@ -2456,7 +2488,7 @@ void Tagging_RF_Flavor_DL::Setup_Analysis()
     {
       TString tree_type = vec_tree_type[i];
 
-      if ((it->first.Contains("CP5") || it->first.Contains("hdamp") || it->first.Contains("mtop17")) && tree_type != "Central")
+      if ((it->first.Contains("CP5") || it->first.Contains("hdamp") || it->first.Contains("mtop17") || it->first.Contains("erdOn") || it->first.Contains("CR1") || it->first.Contains("CR2")) && tree_type != "Central")
         continue;
 
       // cout << tree_type << endl;
@@ -2508,7 +2540,7 @@ void Tagging_RF_Flavor_DL::Setup_Application()
     vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
                              "ST_sch", "ST_tch", "ST_tw",
                              "WJets", "DYJets",
-                             "QCD_bEn", "QCD",
+                             "QCD_bEn", "QCD", "QCD_MuEn", "QCD_EMEn", "QCD_bcToE",
                              "ttHTobb", "ttHToNonbb", "ttWToLNu", "ttWToQQ", "ttZToLLNuNu", "ttZToQQ",
                              "WW", "WZ", "ZZ",
                              "TTLJ_JJ_2", "TTLJ_CC_2", "TTLJ_BB_2",
@@ -2551,29 +2583,41 @@ void Tagging_RF_Flavor_DL::Setup_Application()
     vec_sample_tagging_rf = {//"ttV", "VV", "VJets", "ST", "QCD_bEn",
                              "ST_sch", "ST_tch", "ST_tw",
                              "WJets", "DYJets",
-                             "QCD_bEn", "QCD",
+                             "QCD_bEn", "QCD", "QCD_MuEn", "QCD_EMEn", "QCD_bcToE",
                              "ttHTobb", "ttHToNonbb",
                              "ttWToLNu", "ttWToQQ",
                              "ttZToLLNuNu", "ttZToQQ_ll", "ttZToQQ",
                              "WW", "WZ", "ZZ",
                              "TTLJ_2", "TTLJ_4", "TTLJ_45",
-                             /* CP5 */
-                             "TTLJ_CP5Down_2", "TTLJ_CP5Down_4", "TTLJ_CP5Down_45",
-                             "TTLJ_CP5Up_2", "TTLJ_CP5Up_4", "TTLJ_CP5Up_45",
-                             /* mtop */
-                             "TTLJ_mtop171p5_2", "TTLJ_mtop171p5_4", "TTLJ_mtop171p5_45",
-                             "TTLJ_mtop173p5_2", "TTLJ_mtop173p5_4", "TTLJ_mtop173p5_45",
-                             /* hdamp */
-                             "TTLJ_hdampDown_2", "TTLJ_hdampDown_4", "TTLJ_hdampDown_45",
-                             "TTLJ_hdampUp_2", "TTLJ_hdampUp_4", "TTLJ_hdampUp_45",
+                             //  /* CP5 */
+                             //  "TTLJ_CP5Down_2", "TTLJ_CP5Down_4", "TTLJ_CP5Down_45",
+                             //  "TTLJ_CP5Up_2", "TTLJ_CP5Up_4", "TTLJ_CP5Up_45",
+                             //  /* mtop */
+                             //  "TTLJ_mtop171p5_2", "TTLJ_mtop171p5_4", "TTLJ_mtop171p5_45",
+                             //  "TTLJ_mtop173p5_2", "TTLJ_mtop173p5_4", "TTLJ_mtop173p5_45",
+                             //  /* hdamp */
+                             //  "TTLJ_hdampDown_2", "TTLJ_hdampDown_4", "TTLJ_hdampDown_45",
+                             //  "TTLJ_hdampUp_2", "TTLJ_hdampUp_4", "TTLJ_hdampUp_45",
+                             //  /* erdOn */
+                             //  "TTLJ_erdOn_2", "TTLJ_erdOn_4",
+                             //  /* CR1 */
+                             //  "TTLJ_CR1_2", "TTLJ_CR1_4",
+                             //  /* CR2 */
+                             //  "TTLJ_CR2_2", "TTLJ_CR2_4",
                              "TTLL",
-                             /* CP5 */
-                             "TTLL_CP5Down", "TTLL_CP5Up",
-                             /* mtop */
-                             "TTLL_mtop171p5", "TTLL_mtop173p5",
-                             /* hdamp */
-                             "TTLL_hdampDown", "TTLL_hdampUp",
-                             "TTJJ",
+                             //  /* CP5 */
+                             //  "TTLL_CP5Down", "TTLL_CP5Up",
+                             //  /* mtop */
+                             //  "TTLL_mtop171p5", "TTLL_mtop173p5",
+                             //  /* hdamp */
+                             //  "TTLL_hdampDown", "TTLL_hdampUp",
+                             /* erdOn */
+                             //  "TTLL_erdOn",
+                             //  /* CR1 */
+                             //  "TTLL_CR1",
+                             //  /* CR2 */
+                             //  "TTLL_CR2",
+                             // "TTJJ",
                              /* TTbb */
                              "TTLJ_TTbb_4f_2", "TTLJ_TTbb_4f_4",
                              "TTLJ_bbDPS_2", "TTLJ_bbDPS_4",
@@ -2700,6 +2744,8 @@ void Tagging_RF_Flavor_DL::Setup_Tree(TTree *tree, const TString &syst)
 
   tree->SetBranchAddress("weight_prefire", &weight_prefire);
   tree->SetBranchAddress("weight_top_pt", &weight_top_pt);
+  tree->SetBranchAddress("weight_top_pt_mva", &weight_top_pt_mva);
+  tree->SetBranchAddress("weight_b_frag_mva_nominal", &weight_b_frag_mva_nominal);
   tree->SetBranchAddress("weight_pujet_veto", &weight_pujet_veto);
 
   if (syst == "Central")

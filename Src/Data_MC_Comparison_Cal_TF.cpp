@@ -4,7 +4,7 @@ ClassImp(Data_MC_Comparison_Cal_TF);
 
 //////////
 
-Data_MC_Comparison_Cal_TF::Data_MC_Comparison_Cal_TF(const TString &a_era, const TString &a_channel, const TString& a_tagger, const TString &a_extension)
+Data_MC_Comparison_Cal_TF::Data_MC_Comparison_Cal_TF(const TString &a_era, const TString &a_channel, const TString &a_tagger, const TString &a_extension)
     : samples(a_era, a_channel, "Vcb")
 {
   cout << "[Data_MC_Comparison_Cal_TF::Data_MC_Comparison_Cal_TF]: Init analysis" << endl;
@@ -21,7 +21,8 @@ Data_MC_Comparison_Cal_TF::Data_MC_Comparison_Cal_TF(const TString &a_era, const
   TString path_base = getenv("Vcb_Post_Analysis_WD");
 
   TString fin_name = path_base;
-  fin_name += "/Workplace/Cal_TF/Vcb_TF_" + era + "_" + channel + ".root";
+  fin_name += "/Workplace/Cal_TF/Vcb_TF_" + era + "_" + channel + "_" + tagger + "_tagger.root";
+  // fin_name += "/Workplace/Cal_TF/Vcb_TF_" + era + "_" + channel + ".root";
 
   color = {{"TTLJ_2", kSpring},
            {"TTLJ_CC_2", kSpring},
@@ -29,18 +30,45 @@ Data_MC_Comparison_Cal_TF::Data_MC_Comparison_Cal_TF(const TString &a_era, const
            {"TTLJ_4", kYellow},
            {"TTLJ_CC_4", kYellow},
            {"TTLJ_BB_4", kYellow},
-           {"TTLJ_45", kRed},
-           {"TTLJ_CC_45", kRed},
-           {"TTLJ_BB_45", kRed},
+           //  {"TTLJ_45", kRed},
+           //  {"TTLJ_CC_45", kRed},
+           //  {"TTLJ_BB_45", kRed},
            {"TTLL", kOrange},
            {"TTLL_CC", kOrange},
            {"TTLL_BB", kOrange},
-           {"TTJJ", kPink},
-           {"ST", kGreen},
-           {"ttV", kTeal},
-           {"VV", kCyan},
-           {"VJets", kAzure},
-           {"QCD", kBlue}};
+           // {"TTJJ", kPink},
+           {"ST", kPink},
+           {"ttV", kGray},
+           {"VV", kBlack},
+           {"VJets", kViolet},
+           {"QCD", kBlue},
+           {"QCD_bEn", kBlue},
+           {"QCD_MuEn", kBlue},
+           {"QCD_EMEn", kBlue},
+           {"QCD_bcToE", kBlue}};
+
+  // color = {{"TTLJ_2", kRed},
+  //          {"TTLJ_CC_2", kRed},
+  //          {"TTLJ_BB_2", kRed},
+  //          {"TTLJ_4", kRed},
+  //          {"TTLJ_CC_4", kRed},
+  //          {"TTLJ_BB_4", kRed},
+  //          {"TTLJ_45", kRed},
+  //          {"TTLJ_CC_45", kRed},
+  //          {"TTLJ_BB_45", kRed},
+  //          {"TTLL", kRed},
+  //          {"TTLL_CC", kRed},
+  //          {"TTLL_BB", kRed},
+  //          {"TTJJ", kRed},
+  //          {"ST", kRed},
+  //          {"ttV", kRed},
+  //          {"VV", kRed},
+  //          {"VJets", kRed},
+  //          {"QCD", kBlue},
+  //          {"QCD_bEn", kBlue},
+  //          {"QCD_MuEn", kBlue},
+  //          {"QCD_EMEn", kBlue},
+  //          {"QCD_bcToE", kBlue}};
 
   fin = new TFile(fin_name);
   if (fin == NULL)
@@ -101,13 +129,19 @@ void Data_MC_Comparison_Cal_TF::Draw()
   canvas = new TCanvas *[n_region];
   TH1D ****histo_data_proj = new TH1D ***[n_region];
 
+  // tl = new TLegend *[n_region];
   for (unsigned int i = 0; i < n_region; i++)
   {
     TString canvas_name = region_name[i];
-    canvas[i] = new TCanvas(canvas_name, canvas_name, 1400, 1200);
+    canvas[i] = new TCanvas(canvas_name, canvas_name, 1400, 800);
     canvas[i]->Divide(4, 2);
 
     histo_data_proj[i] = new TH1D **[n_abcd_region];
+
+    // tl[i] = new TLegend(0.12, 0.60, 0.88, 0.88);
+    // tl[i]->SetBorderSize(0);
+    // tl[i]->SetFillStyle(0);
+    // tl[i]->SetNColumns(3);
 
     for (unsigned int j = 0; j < n_abcd_region; j++)
     {
@@ -115,6 +149,7 @@ void Data_MC_Comparison_Cal_TF::Draw()
 
       for (unsigned int k = 0; k < 2; k++)
       {
+
         TString title;
         if (k == 0)
         {
@@ -127,14 +162,32 @@ void Data_MC_Comparison_Cal_TF::Draw()
           title = "Lepton p_{T}";
         }
 
-        if(k==1)
+        if (k == 1)
+        {
           canvas[i]->cd(1 + j + k * n_abcd_region)->SetLogx();
-        canvas[i]->cd(1 + j + k * n_abcd_region);
+          canvas[i]->cd(1 + j + k * n_abcd_region)->SetLogy();
+        }
+          canvas[i]->cd(1 + j + k * n_abcd_region);
 
         histo_data_proj[i][j][k]->Sumw2();
         histo_data_proj[i][j][k]->SetMarkerStyle(8);
         histo_data_proj[i][j][k]->GetXaxis()->SetTitle(title);
-        histo_data_proj[i][j][k]->GetYaxis()->SetRangeUser(0, histo_data_proj[i][j][k]->GetMaximum() * 1.5);
+
+        float max_data = histo_data_proj[i][j][k]->GetMaximum();
+
+        float max_mc;
+        if (k == 0)
+          max_mc = ((TH1D *)stack_mc_eta[i][j]->GetStack()->Last())->GetMaximum();
+        else if (k == 1)
+          max_mc = ((TH1D *)stack_mc_pt[i][j]->GetStack()->Last())->GetMaximum();
+
+        float max = (max_data > max_mc) ? max_data : max_mc;
+
+        if (k == 0)
+          histo_data_proj[i][j][k]->GetYaxis()->SetRangeUser(1, max * 2);
+        else if (k == 1)
+          histo_data_proj[i][j][k]->GetYaxis()->SetRangeUser(1, max * 2);
+
         histo_data_proj[i][j][k]->SetTitle(abcd_region_name[j]);
         histo_data_proj[i][j][k]->Draw();
 
@@ -144,6 +197,17 @@ void Data_MC_Comparison_Cal_TF::Draw()
           stack_mc_pt[i][j]->Draw("SAME BAR");
 
         histo_data_proj[i][j][k]->Draw("SAME");
+
+        if (j == 0 && k == 0)
+        {
+          tl[i]->SetBorderSize(0);
+          tl[i]->SetFillStyle(0);
+          tl[i]->SetNColumns(3);
+
+          tl[i]->AddEntry(histo_data_proj[i][j][k], "Data", "p");
+          tl[i]->SetTextSize(0.05);
+          tl[i]->Draw();
+        }
 
       } // eta or pt
     } // loop over n_abcd_region
@@ -181,22 +245,32 @@ void Data_MC_Comparison_Cal_TF::Ordering_Sample_Name()
   sample_name_order[0] = "VV";
   sample_name_order[1] = "ttV";
   sample_name_order[2] = "VJets";
-  sample_name_order[3] = "TTJJ";
-  sample_name_order[4] = "ST";
-  sample_name_order[5] = "TTLL";
-  sample_name_order[6] = "TTLL_CC";
-  sample_name_order[7] = "TTLL_BB";
-  sample_name_order[8] = "TTLJ_2";
-  sample_name_order[9] = "TTLJ_CC_2";
-  sample_name_order[10] = "TTLJ_BB_2";
-  sample_name_order[11] = "TTLJ_4";
-  sample_name_order[12] = "TTLJ_CC_4";
-  sample_name_order[13] = "TTLJ_BB_4";
-  sample_name_order[14] = "TTLJ_45";
-  sample_name_order[15] = "TTLJ_CC_45";
-  sample_name_order[16] = "TTLJ_BB_45";
-  sample_name_order[17] = "QCD";
+  // sample_name_order[3] = "TTJJ";
+  sample_name_order[3] = "ST";
+  sample_name_order[4] = "TTLL";
+  sample_name_order[5] = "TTLL_CC";
+  sample_name_order[6] = "TTLL_BB";
+  sample_name_order[7] = "TTLJ_2";
+  sample_name_order[8] = "TTLJ_CC_2";
+  sample_name_order[9] = "TTLJ_BB_2";
+  sample_name_order[10] = "TTLJ_4";
+  sample_name_order[11] = "TTLJ_CC_4";
+  sample_name_order[12] = "TTLJ_BB_4";
+  // sample_name_order[13] = "TTLJ_45";
+  // sample_name_order[14] = "TTLJ_CC_45";
+  // sample_name_order[15] = "TTLJ_BB_45";
 
+  // sample_name_order[13] = "QCD_bEn";
+  if (channel == "Mu")
+    sample_name_order[13] = "QCD_MuEn";
+  else if (channel == "El")
+  {
+    // sample_name_order[13] = "QCD_MuEn";
+    sample_name_order[13] = "QCD_bcToE";
+    // sample_name_order[13] = "QCD_EMEn";
+    // sample_name_order[14] = "QCD_bcToE";
+    // sample_name_order[13] = "QCD_bEn";
+  }
   return;
 } // void Data_MC_Comparison_Cal_TF::Ordering_Sample_Name()
 
@@ -275,10 +349,13 @@ void Data_MC_Comparison_Cal_TF::Stack_MC()
 
   stack_mc_eta = new THStack **[n_region];
   stack_mc_pt = new THStack **[n_region];
+  tl = new TLegend *[n_region];
+
   for (unsigned int i = 0; i < n_region; i++)
   {
     stack_mc_eta[i] = new THStack *[n_abcd_region];
     stack_mc_pt[i] = new THStack *[n_abcd_region];
+    tl[i] = new TLegend(0.12, 0.60, 0.92, 0.88);
 
     for (unsigned int j = 0; j < n_abcd_region; j++)
     {
@@ -295,12 +372,17 @@ void Data_MC_Comparison_Cal_TF::Stack_MC()
         {
           histo_mc[i][j][vec_sample_index[k]]->SetLineColor(color[it->second]);
           histo_mc[i][j][vec_sample_index[k]]->SetLineWidth(2);
-
           histo_mc[i][j][vec_sample_index[k]]->SetFillColor(color[it->second]);
 
           stack_mc_eta[i][j]->Add((TH1D *)dynamic_cast<TH2D *>(histo_mc[i][j][vec_sample_index[k]])->ProjectionX()->Clone());
           stack_mc_pt[i][j]->Add((TH1D *)dynamic_cast<TH2D *>(histo_mc[i][j][vec_sample_index[k]])->ProjectionY()->Clone());
         } // loop over histo group
+
+        if (j == 0)
+        {
+          if (!it->second.Contains("_CC") && !it->second.Contains("_BB"))
+            tl[i]->AddEntry(histo_mc[i][j][vec_sample_index[0]], it->second, "f");
+        }
       } // loop over sample_name_order
 
     } // loop over n_abcd_region

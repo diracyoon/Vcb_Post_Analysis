@@ -21,6 +21,9 @@
 #include <TLegend.h>
 #include "TROOT.h"
 #include <TPad.h>
+#include <TGraph.h>
+#include <TGraphSmooth.h>
+#include <Compression.h>
 
 #include <Const_Def.h>
 #include <Samples.h>
@@ -90,11 +93,13 @@ private:
 
   TString year;
 
+  float lumi_corr; 
+
   float threeb_cr_cut;
 
   bool chk_bin_optimizer = false;
 
-  bool chk_qcd_ben = true;
+  bool chk_qcd_ben = false;
 
   int index_tree_type;
   int last_index_tree_type;
@@ -138,6 +143,9 @@ private:
   map<TString, TFile *> map_fin_mc_hdamp_up;
   map<TString, TFile *> map_fin_mc_mtop_171p5;
   map<TString, TFile *> map_fin_mc_mtop_173p5;
+  map<TString, TFile *> map_fin_mc_erd_on;
+  map<TString, TFile *> map_fin_mc_cr1;
+  map<TString, TFile *> map_fin_mc_cr2;
   map<TString, TFile *> map_fin_mc_tt_4f;
 
   map<TString, TFile *> map_fin_template_mc;
@@ -147,7 +155,9 @@ private:
   map<TString, TFile *> map_fin_template_mc_hdamp_up;
   map<TString, TFile *> map_fin_template_mc_mtop_171p5;
   map<TString, TFile *> map_fin_template_mc_mtop_173p5;
-
+  map<TString, TFile *> map_fin_template_mc_erd_on;
+  map<TString, TFile *> map_fin_template_mc_cr1;
+  map<TString, TFile *> map_fin_template_mc_cr2;
   vector<map<TString, TTree *>> vec_map_tree_mc;
   vector<map<TString, TTree *>> vec_map_template_tree_mc;
 
@@ -158,6 +168,9 @@ private:
   map<TString, TTree *> map_tree_mc_hdamp_up;
   map<TString, TTree *> map_tree_mc_mtop_171p5;
   map<TString, TTree *> map_tree_mc_mtop_173p5;
+  map<TString, TTree *> map_tree_mc_erd_on;
+  map<TString, TTree *> map_tree_mc_cr1;
+  map<TString, TTree *> map_tree_mc_cr2;
   map<TString, TTree *> map_tree_mc_tt_4f;
 
   map<TString, TTree *> map_template_tree_mc_central;
@@ -167,6 +180,9 @@ private:
   map<TString, TTree *> map_template_tree_mc_hdamp_up;
   map<TString, TTree *> map_template_tree_mc_mtop_171p5;
   map<TString, TTree *> map_template_tree_mc_mtop_173p5;
+  map<TString, TTree *> map_template_tree_mc_erd_on;
+  map<TString, TTree *> map_template_tree_mc_cr1;   
+  map<TString, TTree *> map_template_tree_mc_cr2;
 
   map<TString, map<TString, TFile *> *> map_map_fin_mc;
   map<TString, map<TString, TTree *> *> map_map_tree_mc;
@@ -235,6 +251,8 @@ private:
   TFile *fin;
   TFile *fin_para_smoothing;
 
+  TGraphSmooth *gs;
+
   TFile *fout;
 
   bool chk_merge_pdf_error_set = false;
@@ -251,6 +269,11 @@ private:
   float modelling_patch_pdf_as_down;
   float modelling_patch_pdf_as_up;
   float modelling_patch_top_pt_reweight;
+  float modelling_patch_top_pt_mva_reweight;
+  float modelling_patch_hdamp_mva_down;
+  float modelling_patch_hdamp_mva_up;
+  float modelling_patch_b_frag_mva_nominal;
+  float modelling_patch_b_frag_mva_up;
   float modelling_patch_scale_variation_1;
   float modelling_patch_scale_variation_2;
   float modelling_patch_scale_variation_3;
@@ -305,6 +328,7 @@ private:
   void Smoothing();
   void Smoothing(const int region_index, const int syst_index, const int sample_index);
   void Smoothing(TH1D *histo_nominal, TH1D *histo_variated);
+  void Smoothing(vector<TH1D *> &vec_histo_nominal, vector<TH1D *> &vec_histo_variated);
 
   void printMemoryUsage(const std::string &stage)
   {

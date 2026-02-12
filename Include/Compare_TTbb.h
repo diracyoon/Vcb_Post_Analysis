@@ -17,6 +17,7 @@
 #include <Samples.h>
 #include <Result_Event.h>
 #include <Tagging_RF_Flavor.h>
+#include <Modelling_Patch.h>
 
 using namespace std;
 
@@ -33,6 +34,8 @@ private:
   TString channel;
   TString tagger;
 
+  float lumi_corr;
+
   bool use_spanet;
 
   Samples samples;
@@ -41,6 +44,15 @@ private:
   int n_sample_merge_mc;
 
   map<TString, TTree *> map_tree;
+
+  Modelling_Patch modelling_patch;
+
+  float modelling_patch_top_pt_reweight;
+  float modelling_patch_top_pt_mva_reweight;
+  float modelling_patch_b_frag_mva_nominal;
+
+  TString sample_name_modelling_patch;
+  TString sample_name_modelling_patch_prev;
 
   TFile *fin_5f;
   TFile *fin_4f;
@@ -67,6 +79,7 @@ private:
   void Draw();
   void Fill_Histo_MC(const TString &sample_name);
   int Histo_Index(const TString &sample_name);
+  TString Histo_Name_Modelling_Patch(const TString &sample_name);
   TString Histo_Name_RF(const TString &sample_name);
   void Init_Histo();
   void Read_Tree();
