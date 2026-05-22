@@ -8,13 +8,13 @@ transfer_input_files = Histo_Syst.py, ../../Corrections/Vcb_Tagging_RF_Flavor_$(
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 request_cpus = 1
-request_memory = 40*1024
+request_memory = $(Req_Memory)
 output = job_2D_$(Era)_$(Channel)_$(Index_Tree_Type).log
 error = job_2D_$(Era)_$(Channel)_$(Index_Tree_Type).log
 concurrency_limits = n1000.isyoon
 
 
-queue Era,Channel,Index_Tree_Type,Last_Index_Tree_Type, Tagger from external_2d.dat
+queue Era, Channel, Index_Tree_Type, Last_Index_Tree_Type, Tagger,Req_Memory from external_2d.dat
 
 #queue Index_Tree_Type from seq 0 49 |
 #queue Index_Tree_Type from seq 0 27 |

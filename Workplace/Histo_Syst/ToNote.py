@@ -11,12 +11,18 @@ args = parser.parse_args()
 if args.Era=="2016a": args.Era="2016preVFP"
 if args.Era=="2016b": args.Era="2016postVFP"
 
+if args.Era == "" or args.Era == "All" or args.Channel == "" or args.Channel == "All":
+    args.Era = "Inclusive"
+    
 import os
 path=os.environ['Vcb_Post_Analysis_WD']
 if args.Tagger == "B":
-    path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag_5f_New/{args.Era}/"
+    if args.Era == "Inclusive":
+        path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag_5f_Unblind_EqualBin/"
+    else:
+        path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag_5f_NewBin_7_MP_Fix/{args.Era}/"
 elif args.Tagger == "C":
-    path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag_5f/{args.Era}/"
+    path=f"{path}/Workplace/Histo_Syst/{args.Tagger}Tag_5f_New/{args.Era}/"
     
 import shutil
 
@@ -26,30 +32,30 @@ region_list = ['Control',]
 tf_list = ['Transfer_Function',
 ]
 
-for region in region_list:
-    for tf in tf_list:
-        origin = f"{tf}_{region}_{args.Era}_{args.Channel}.png"
-        print(origin)
+if args.Era != "Inclusive":
+    for region in region_list:
+        for tf in tf_list:
+            origin = f"{tf}_{region}_{args.Era}_{args.Channel}.png"
 
-        origin = f"{path}/{origin}"
-
-        if args.Tagger == "B":
-            des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataDriven/{args.Era}/{args.Channel}"
-        elif args.Tagger == "C":
-            continue
+            origin = f"{path}/{origin}"
             
-        os.makedirs(des, exist_ok=True)
-        shutil.copy(origin, des)
+            if args.Tagger == "B":
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataDriven/{args.Era}/{args.Channel}"
+            elif args.Tagger == "C":
+                continue
+
+            os.makedirs(des, exist_ok=True)
+            shutil.copy(origin, des)
 
 region_list = ['Control', 'Signal']
 var_list = ['Best_MVA_Score',
             'Template_MVA_Score',
-            'BvsC_Leading_Jet',
-            'BvsC_Subleading_Jet',
-            'BvsC_Had_t_b',
-            'BvsC_W_u',
-            'BvsC_W_d',
-            'BvsC_Lep_t_b',
+            'BvsAll_Leading_Jet',
+            'BvsAll_Subleading_Jet',
+            'BvsAll_Had_t_b',
+            'BvsAll_W_u',
+            'BvsAll_W_d',
+            'BvsAll_Lep_t_b',
             'CvsB_Leading_Jet',
             'CvsB_Subleading_Jet',
             'CvsB_W_u',
@@ -95,13 +101,19 @@ for region in region_list:
 
         ## Extract ## 
         if "Template_MVA_Score" in var:
-            origin = f"{region}_{args.Era}_{args.Channel}_{var}.png"
+            if args.Era == "Inclusive":
+                origin = f"{region}_{args.Era}_{var}.png"
+            else:
+                origin = f"{region}_{args.Era}_{args.Channel}_{var}.png"
             print(origin)
 
             origin = f"{path}/{origin}"
 
             if args.Tagger == "B":
-                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/BRExtraction/{args.Era}/{args.Channel}"
+                if args.Era == "Inclusive":
+                    des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/BRExtractionUnblind/{args.Era}/"
+                else:
+                    des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/BRExtractionUnblind/{args.Era}/{args.Channel}"
             elif args.Tagger == "C":
                 des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/CTaggingAnalysis/BRExtraction/{args.Era}/{args.Channel}"
 
@@ -109,14 +121,20 @@ for region in region_list:
             shutil.copy(origin, des)
 
         ## Data vs MC ## 
-        if args.Era == "2017":
-            origin = f"{region}_{args.Era}_{args.Channel}_{var}.png"
+        if args.Era == "2017" or args.Era == "Inclusive":
+            if args.Era == "Inclusive":
+                origin = f"{region}_{args.Era}_{var}.png"
+            else:
+                origin = f"{region}_{args.Era}_{args.Channel}_{var}.png"
             print(origin)
             
             origin = f"{path}/{origin}"
 
             if args.Tagger == "B":
-                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataMCComparison/{region}/{args.Era}/{args.Channel}"
+                if args.Era == "Inclusive":
+                    des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataMCComparison/{region}/{args.Era}"
+                else:
+                    des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataMCComparison/{region}/{args.Era}/{args.Channel}"
             elif args.Tagger == "C":
                 des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/CTaggingAnalysis/DataMCComparison/{region}/{args.Era}/{args.Channel}"
                 
@@ -150,7 +168,7 @@ if args.Era == "2017":
      
         if "Control" in each:
             if args.Tagger == "B":
-                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/DataMCComparison/Control/{args.Era}/{args.Channel}"
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/SystematicsBreakdowns/Control/{args.Era}/{args.Channel}"
             elif args.Tagger == "C":
                 des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/CTaggingAnalysis/DataMCComparison/Control/{args.Era}/{args.Channel}"
 
@@ -159,7 +177,7 @@ if args.Era == "2017":
         
         if "Signal" in each:
             if args.Tagger == "B":
-                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/BRExtraction/{args.Era}/{args.Channel}"
+                des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/SystematicsBreakdowns/Signal/{args.Era}/{args.Channel}"
             elif args.Tagger == "C":
                 des = f"/data6/Users/isyoon/CMS_Note/AN-23-046/Figs/CTaggingAnalysis/BRExtraction/{args.Era}/{args.Channel}"
 

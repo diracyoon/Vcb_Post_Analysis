@@ -8,6 +8,7 @@ transfer_input_files = Histo_Syst.py, ../../Corrections/Vcb_Tagging_RF_Flavor_$(
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 request_cpus = 1
+request_memory = 10*1024
 output = job_Para_Smoothing_$(Era)_$(Channel).log
 error = job_Para_Smoothing_$(Era)_$(Channel).log
 concurrency_limits = n1000.isyoon
