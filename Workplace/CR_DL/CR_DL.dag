@@ -1,6 +1,19 @@
 Job CR_DL Submit_CR_DL.jds
-Job Draw Submit_Draw.jds
+Job Para_Smoothing Submit_Para_Smoothing.jds DONE
+Job Smoothing Submit_Smoothing.jds DONE
+Job Draw Submit_Draw.jds DONE
+Job Draw_Smoothing Submit_Draw_Smoothing.jds DONE
 
+PARENT CR_DL CHILD Smoothing
+PARENT Para_Smoothing CHILD Smoothing
+PARENT Smoothing CHILD Draw
+PARENT Smoothing CHILD Draw_Smoothing
 PARENT CR_DL CHILD Draw
 
+ABORT-DAG-ON CR_DL 1
+ABORT-DAG-ON Para_Smoothing 1
+ABORT-DAG-ON Smoothing 1
 ABORT-DAG-ON Draw 1
+ABORT-DAG-ON Draw_Smoothing 1
+
+PRIORITY ALL_NODES 10

@@ -1,16 +1,16 @@
 executable = Run_Job.sh
 jobbatchname = CR_DL
 universe   = vanilla
-arguments  = CR_DL.py -e $(Era) -ch $(Channel) -tagger $(Tagger)
+arguments  = CR_DL.py -e $(Era) -ch $(Channel) -tagger $(Tagger) -smoothing
 log = condor.log
 getenv     = True
 transfer_input_files = CR_DL.py
 should_transfer_files = YES
 when_to_transfer_output = ON_EXIT
 request_cpus = 1
-request_memory = 20*1024
-output = job_CR_DL_$(Era)_$(Channel).log
-error = job_CR_DL_$(Era)_$(Channel).log
+request_memory = 10*1024
+output = job_Smoothing_$(Era)_$(Channel).log
+error = job_Smoothing_$(Era)_$(Channel).log
 concurrency_limits = n1100.isyoon
 
 queue Era, Channel, Tagger from external.dat

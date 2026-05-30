@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 
-Era = ['2016preVFP', '2016postVFP', '2017', '2018']
-#Era = ['2016preVFP']
+#Era = ['2016preVFP', '2016postVFP', '2017', '2018']
+Era = ['2018']
 
 Channel = ['MM', 'ME', 'EE']
-#Channel = ['EE']
+#Channel = ['MM']
 
-Tagger = 'B'
+#Tagger = 'B'
+Tagger = 'C'
 
 ## Submit_2D
 with open("external.dat", "w") as dat:

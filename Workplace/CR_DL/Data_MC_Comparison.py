@@ -4,7 +4,7 @@ import argparse
 parser = argparse.ArgumentParser(description='Vcb_Post_Analysis Command')
 parser.add_argument('-e', dest='Era', default="2017")
 parser.add_argument('-ch', dest='Channel', default="MM")
-parser.add_argument('-tagger', dest='Tagger', default="C")
+parser.add_argument('-tagger', dest='Tagger', default="B")
 args = parser.parse_args()
 
 if args.Era=="2016a": args.Era="2016preVFP"
